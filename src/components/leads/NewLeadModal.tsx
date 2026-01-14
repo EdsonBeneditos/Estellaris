@@ -36,13 +36,15 @@ import {
 } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 import { useCreateLead } from "@/hooks/useLeads";
+import {
+  useActiveVendedores,
+  useActiveTiposServico,
+  useActiveOrigens,
+} from "@/hooks/useSettings";
 import { maskCNPJ, maskPhone } from "@/lib/masks";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
-  VENDEDORES,
-  TIPOS_SERVICO,
-  ORIGENS,
   MEIOS_CONTATO,
   TIPOS_ATENDIMENTO,
   STATUS_OPTIONS,
