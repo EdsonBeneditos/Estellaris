@@ -89,20 +89,23 @@ export function useUpdateLead() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, ...lead }: LeadUpdate & { id: string }) => {
-      const { data, error } = await supabase
+    mutationFn: async ({ id, data }: { id: string; data: LeadUpdate }) => {
+      const { data: result, error } = await supabase
         .from("leads")
-        .update(lead)
+        .update(data)
         .eq("id", id)
         .select()
         .single();
 
       if (error) throw error;
-      return data;
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["leads"] });
       queryClient.invalidateQueries({ queryKey: ["leads-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["leads-per-day"] });
+      queryClient.invalidateQueries({ queryKey: ["vendedor-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["origem-stats"] });
     },
   });
 }

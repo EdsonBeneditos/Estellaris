@@ -1,5 +1,13 @@
-import { BarChart3, Users, TrendingUp, PieChart } from "lucide-react";
+import { useState, useMemo } from "react";
+import { BarChart3, Users, TrendingUp, PieChart, Briefcase, Calendar } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   ChartContainer,
   ChartTooltip,
@@ -11,19 +19,23 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  ResponsiveContainer,
   AreaChart,
   Area,
   PieChart as RechartsPieChart,
   Pie,
   Cell,
 } from "recharts";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import {
-  useVendedorStats,
-  useLeadsPerDay,
-  useOrigemStats,
-} from "@/hooks/useReportStats";
-import { format, parseISO } from "date-fns";
+  format,
+  parseISO,
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  isSameMonth,
+  isSameYear,
+} from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 const COLORS = [
@@ -45,63 +57,202 @@ const chartConfig = {
 };
 
 export default function Relatorios() {
-  const { data: vendedorStats = [], isLoading: vendedorLoading } =
-    useVendedorStats();
-  const { data: leadsPerDay = [], isLoading: leadsPerDayLoading } =
-    useLeadsPerDay();
-  const { data: origemStats = [], isLoading: origemLoading } = useOrigemStats();
+  const currentDate = new Date();
+  const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth());
+  const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
 
-  const totalLeads = origemStats.reduce((acc, curr) => acc + curr.count, 0);
+  // Fetch all leads
+  const { data: allLeads = [], isLoading: leadsLoading } = useQuery({
+    queryKey: ["all-leads-reports"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("leads")
+        .select("*")
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Filter leads by selected month/year
+  const filteredLeads = useMemo(() => {
+    return allLeads.filter((lead) => {
+      const leadDate = parseISO(lead.created_at);
+      return (
+        isSameMonth(leadDate, new Date(selectedYear, selectedMonth)) &&
+        isSameYear(leadDate, new Date(selectedYear, selectedMonth))
+      );
+    });
+  }, [allLeads, selectedMonth, selectedYear]);
+
+  // Vendedor stats for selected period
+  const vendedorStats = useMemo(() => {
+    const counts: Record<string, number> = {};
+    filteredLeads.forEach((lead) => {
+      const vendedor = lead.vendedor || "Não atribuído";
+      counts[vendedor] = (counts[vendedor] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .map(([vendedor, count]) => ({ vendedor, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [filteredLeads]);
+
+  // Leads per day for selected month (starting from day 1)
+  const leadsPerDay = useMemo(() => {
+    const start = startOfMonth(new Date(selectedYear, selectedMonth));
+    const end = endOfMonth(new Date(selectedYear, selectedMonth));
+    const days = eachDayOfInterval({ start, end });
+
+    const counts: Record<string, number> = {};
+    filteredLeads.forEach((lead) => {
+      const date = lead.created_at.split("T")[0];
+      counts[date] = (counts[date] || 0) + 1;
+    });
+
+    return days.map((day) => ({
+      date: format(day, "yyyy-MM-dd"),
+      displayDate: format(day, "dd"),
+      count: counts[format(day, "yyyy-MM-dd")] || 0,
+    }));
+  }, [filteredLeads, selectedMonth, selectedYear]);
+
+  // Origem stats
+  const origemStats = useMemo(() => {
+    const counts: Record<string, number> = {};
+    filteredLeads.forEach((lead) => {
+      const origem = lead.origem || "Não informado";
+      counts[origem] = (counts[origem] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .map(([origem, count]) => ({ origem, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [filteredLeads]);
+
+  // Serviço stats
+  const servicoStats = useMemo(() => {
+    const counts: Record<string, number> = {};
+    filteredLeads.forEach((lead) => {
+      const servico = lead.tipo_servico || "Não informado";
+      counts[servico] = (counts[servico] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .map(([servico, count]) => ({ servico, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [filteredLeads]);
+
+  const totalLeads = filteredLeads.length;
+
+  // Generate month/year options
+  const months = Array.from({ length: 12 }, (_, i) => ({
+    value: i,
+    label: format(new Date(2024, i), "MMMM", { locale: ptBR }),
+  }));
+
+  const years = Array.from({ length: 5 }, (_, i) => ({
+    value: currentDate.getFullYear() - 2 + i,
+    label: (currentDate.getFullYear() - 2 + i).toString(),
+  }));
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">
-          Relatórios e Análises
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Dashboard analítico do funil de vendas da Acqua Nobilis
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">
+            Relatórios e Análises
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Dashboard analítico do funil de vendas da Acqua Nobilis
+          </p>
+        </div>
+
+        {/* Period Filters */}
+        <div className="flex items-center gap-2">
+          <Calendar className="h-4 w-4 text-muted-foreground" />
+          <Select
+            value={selectedMonth.toString()}
+            onValueChange={(v) => setSelectedMonth(parseInt(v))}
+          >
+            <SelectTrigger className="w-[140px] bg-background">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {months.map((m) => (
+                <SelectItem key={m.value} value={m.value.toString()}>
+                  <span className="capitalize">{m.label}</span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={selectedYear.toString()}
+            onValueChange={(v) => setSelectedYear(parseInt(v))}
+          >
+            <SelectTrigger className="w-[100px] bg-background">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {years.map((y) => (
+                <SelectItem key={y.value} value={y.value.toString()}>
+                  {y.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Leads</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total de Leads
+            </CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalLeads}</div>
-            <p className="text-xs text-muted-foreground">
-              Todos os leads cadastrados
-            </p>
+            <p className="text-xs text-muted-foreground">No período selecionado</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Vendedores Ativos</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Vendedores Ativos
+            </CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {vendedorStats.filter((v) => v.vendedor !== "Não atribuído").length}
             </div>
-            <p className="text-xs text-muted-foreground">
-              Com leads atribuídos
-            </p>
+            <p className="text-xs text-muted-foreground">Com leads atribuídos</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Origens de Lead</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Origens de Lead
+            </CardTitle>
             <PieChart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{origemStats.length}</div>
             <p className="text-xs text-muted-foreground">
-              Canais de captação identificados
+              Canais de captação
             </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Serviços Solicitados
+            </CardTitle>
+            <Briefcase className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{servicoStats.length}</div>
+            <p className="text-xs text-muted-foreground">Tipos diferentes</p>
           </CardContent>
         </Card>
       </div>
@@ -117,7 +268,7 @@ export default function Relatorios() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {vendedorLoading ? (
+            {leadsLoading ? (
               <div className="h-[300px] flex items-center justify-center text-muted-foreground">
                 Carregando...
               </div>
@@ -132,7 +283,11 @@ export default function Relatorios() {
                   layout="vertical"
                   margin={{ left: 0, right: 20 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    horizontal={true}
+                    vertical={false}
+                  />
                   <XAxis type="number" />
                   <YAxis
                     dataKey="vendedor"
@@ -162,7 +317,7 @@ export default function Relatorios() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {origemLoading ? (
+            {leadsLoading ? (
               <div className="h-[300px] flex items-center justify-center text-muted-foreground">
                 Carregando...
               </div>
@@ -171,16 +326,19 @@ export default function Relatorios() {
                 Nenhum dado disponível
               </div>
             ) : (
-              <div className="h-[300px] flex items-center">
-                <ChartContainer config={chartConfig} className="h-full w-1/2">
+              <div className="h-[300px] flex flex-col sm:flex-row items-center">
+                <ChartContainer
+                  config={chartConfig}
+                  className="h-full w-full sm:w-1/2"
+                >
                   <RechartsPieChart>
                     <ChartTooltip content={<ChartTooltipContent />} />
                     <Pie
                       data={origemStats}
                       cx="50%"
                       cy="50%"
-                      innerRadius={60}
-                      outerRadius={90}
+                      innerRadius={50}
+                      outerRadius={80}
                       paddingAngle={2}
                       dataKey="count"
                       nameKey="origem"
@@ -194,12 +352,14 @@ export default function Relatorios() {
                     </Pie>
                   </RechartsPieChart>
                 </ChartContainer>
-                <div className="w-1/2 space-y-2">
+                <div className="w-full sm:w-1/2 space-y-2 mt-4 sm:mt-0">
                   {origemStats.map((item, index) => (
                     <div key={item.origem} className="flex items-center gap-2">
                       <div
                         className="w-3 h-3 rounded-full shrink-0"
-                        style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                        style={{
+                          backgroundColor: COLORS[index % COLORS.length],
+                        }}
                       />
                       <span className="text-sm text-muted-foreground truncate">
                         {item.origem}
@@ -215,16 +375,65 @@ export default function Relatorios() {
           </CardContent>
         </Card>
 
-        {/* Volume de Leads por Data */}
-        <Card className="lg:col-span-2">
+        {/* Serviços Mais Solicitados */}
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Volume de Leads por Data (Últimos 30 dias)
+              <Briefcase className="h-5 w-5" />
+              Serviços Mais Solicitados
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {leadsPerDayLoading ? (
+            {leadsLoading ? (
+              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                Carregando...
+              </div>
+            ) : servicoStats.length === 0 ? (
+              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                Nenhum dado disponível
+              </div>
+            ) : (
+              <ChartContainer config={chartConfig} className="h-[300px] w-full">
+                <BarChart
+                  data={servicoStats}
+                  layout="vertical"
+                  margin={{ left: 0, right: 20 }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    horizontal={true}
+                    vertical={false}
+                  />
+                  <XAxis type="number" />
+                  <YAxis
+                    dataKey="servico"
+                    type="category"
+                    width={150}
+                    tick={{ fontSize: 11 }}
+                  />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar
+                    dataKey="count"
+                    fill="hsl(var(--chart-2))"
+                    radius={[0, 4, 4, 0]}
+                    name="Leads"
+                  />
+                </BarChart>
+              </ChartContainer>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Volume de Leads por Data */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              Volume de Leads por Dia
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {leadsLoading ? (
               <div className="h-[300px] flex items-center justify-center text-muted-foreground">
                 Carregando...
               </div>
@@ -254,21 +463,23 @@ export default function Relatorios() {
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
                   <XAxis
-                    dataKey="date"
-                    tickFormatter={(value) =>
-                      format(parseISO(value), "dd/MM", { locale: ptBR })
-                    }
+                    dataKey="displayDate"
                     tick={{ fontSize: 11 }}
                     interval="preserveStartEnd"
                   />
                   <YAxis tick={{ fontSize: 11 }} />
                   <ChartTooltip
                     content={<ChartTooltipContent />}
-                    labelFormatter={(value) =>
-                      format(parseISO(value as string), "dd 'de' MMMM", {
-                        locale: ptBR,
-                      })
-                    }
+                    labelFormatter={(_, payload) => {
+                      if (payload && payload[0]) {
+                        return format(
+                          parseISO(payload[0].payload.date),
+                          "dd 'de' MMMM",
+                          { locale: ptBR }
+                        );
+                      }
+                      return "";
+                    }}
                   />
                   <Area
                     type="monotone"
