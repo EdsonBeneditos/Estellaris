@@ -1,7 +1,9 @@
-import { LayoutDashboard, Users, BarChart3, Settings } from "lucide-react";
+import { LayoutDashboard, Users, BarChart3, Settings, LogOut } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import logo from "@/assets/logo.png";
+import { useAuthContext } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 import {
   Sidebar,
@@ -12,8 +14,10 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
 
 const menuItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -26,8 +30,18 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
+  const { signOut, user } = useAuthContext();
 
   const isActive = (path: string) => location.pathname === path;
+
+  const handleLogout = async () => {
+    const { error } = await signOut();
+    if (error) {
+      toast.error("Erro ao sair", { description: error.message });
+    } else {
+      toast.success("Você saiu do sistema");
+    }
+  };
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
@@ -68,6 +82,25 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+
+      <SidebarFooter className="p-2 border-t border-sidebar-border">
+        <div className="flex flex-col gap-2">
+          {!collapsed && user && (
+            <div className="px-3 py-2 text-xs text-muted-foreground truncate">
+              {user.email}
+            </div>
+          )}
+          <Button
+            variant="ghost"
+            size={collapsed ? "icon" : "default"}
+            className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
+            onClick={handleLogout}
+          >
+            <LogOut className="h-5 w-5 shrink-0" />
+            {!collapsed && <span>Sair</span>}
+          </Button>
+        </div>
+      </SidebarFooter>
     </Sidebar>
   );
 }
