@@ -39,6 +39,15 @@ import { useCreateLead } from "@/hooks/useLeads";
 import { maskCNPJ, maskPhone } from "@/lib/masks";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import {
+  VENDEDORES,
+  TIPOS_SERVICO,
+  ORIGENS,
+  MEIOS_CONTATO,
+  TIPOS_ATENDIMENTO,
+  STATUS_OPTIONS,
+  PRIORIDADES,
+} from "@/lib/constants";
 
 const formSchema = z.object({
   empresa: z.string().min(1, "Nome da empresa é obrigatório"),
@@ -64,14 +73,6 @@ interface NewLeadModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
-
-const origens = ["Site", "Indicação", "LinkedIn", "Google", "Evento", "Outro"];
-const meiosContato = ["WhatsApp", "Email", "Telefone", "Reunião", "Visita"];
-const tiposAtendimento = ["Ativo", "Receptivo"];
-const tiposServico = ["Consultoria", "Implementação", "Suporte", "Treinamento"];
-const vendedores = ["João", "Maria", "Pedro", "Ana"];
-const statusOptions = ["Novo", "Em Contato", "Qualificado", "Convertido", "Perdido"];
-const prioridades = ["Alta", "Média", "Baixa"];
 
 export function NewLeadModal({ open, onOpenChange }: NewLeadModalProps) {
   const createLead = useCreateLead();
@@ -257,7 +258,7 @@ export function NewLeadModal({ open, onOpenChange }: NewLeadModalProps) {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {meiosContato.map((meio) => (
+                          {MEIOS_CONTATO.map((meio) => (
                             <SelectItem key={meio} value={meio}>
                               {meio}
                             </SelectItem>
@@ -293,7 +294,7 @@ export function NewLeadModal({ open, onOpenChange }: NewLeadModalProps) {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {origens.map((origem) => (
+                          {ORIGENS.map((origem) => (
                             <SelectItem key={origem} value={origem}>
                               {origem}
                             </SelectItem>
@@ -320,7 +321,7 @@ export function NewLeadModal({ open, onOpenChange }: NewLeadModalProps) {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {tiposAtendimento.map((tipo) => (
+                          {TIPOS_ATENDIMENTO.map((tipo) => (
                             <SelectItem key={tipo} value={tipo}>
                               {tipo}
                             </SelectItem>
@@ -347,7 +348,7 @@ export function NewLeadModal({ open, onOpenChange }: NewLeadModalProps) {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {tiposServico.map((tipo) => (
+                          {TIPOS_SERVICO.map((tipo) => (
                             <SelectItem key={tipo} value={tipo}>
                               {tipo}
                             </SelectItem>
@@ -374,7 +375,7 @@ export function NewLeadModal({ open, onOpenChange }: NewLeadModalProps) {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {vendedores.map((vendedor) => (
+                          {VENDEDORES.map((vendedor) => (
                             <SelectItem key={vendedor} value={vendedor}>
                               {vendedor}
                             </SelectItem>
@@ -410,7 +411,7 @@ export function NewLeadModal({ open, onOpenChange }: NewLeadModalProps) {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {statusOptions.map((status) => (
+                          {STATUS_OPTIONS.map((status) => (
                             <SelectItem key={status} value={status}>
                               {status}
                             </SelectItem>
@@ -437,7 +438,7 @@ export function NewLeadModal({ open, onOpenChange }: NewLeadModalProps) {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {prioridades.map((prioridade) => (
+                          {PRIORIDADES.map((prioridade) => (
                             <SelectItem key={prioridade} value={prioridade}>
                               {prioridade}
                             </SelectItem>
@@ -478,6 +479,9 @@ export function NewLeadModal({ open, onOpenChange }: NewLeadModalProps) {
                             mode="single"
                             selected={field.value}
                             onSelect={field.onChange}
+                            disabled={(date) =>
+                              date < new Date(new Date().setHours(0, 0, 0, 0))
+                            }
                             initialFocus
                           />
                         </PopoverContent>
@@ -486,26 +490,27 @@ export function NewLeadModal({ open, onOpenChange }: NewLeadModalProps) {
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={form.control}
+                  name="proximo_passo"
+                  render={({ field }) => (
+                    <FormItem className="col-span-2">
+                      <FormLabel>Próximo Passo</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Descreva a próxima ação a ser tomada..."
+                          className="resize-none"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
-              <FormField
-                control={form.control}
-                name="proximo_passo"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Próximo Passo</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Descreva o próximo passo..."
-                        className="resize-none"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
             </div>
 
+            {/* Submit */}
             <div className="flex justify-end gap-3 pt-4 border-t border-border">
               <Button
                 type="button"

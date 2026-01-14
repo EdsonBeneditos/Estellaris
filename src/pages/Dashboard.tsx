@@ -1,15 +1,42 @@
 import { useState } from "react";
-import { Plus, Users, CalendarClock, FolderOpen } from "lucide-react";
+import { Plus, Users, CalendarClock, FolderOpen, Filter, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { StatsCard } from "@/components/leads/StatsCard";
 import { LeadsTable } from "@/components/leads/LeadsTable";
 import { NewLeadModal } from "@/components/leads/NewLeadModal";
 import { useLeads, useLeadsStats } from "@/hooks/useLeads";
+import { VENDEDORES, TIPOS_SERVICO } from "@/lib/constants";
 
 export default function Dashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [vendedorFilter, setVendedorFilter] = useState<string>("all");
+  const [servicoFilter, setServicoFilter] = useState<string>("all");
+  
   const { data: leads = [], isLoading: leadsLoading } = useLeads();
   const { data: stats, isLoading: statsLoading } = useLeadsStats();
+
+  // Apply filters
+  const filteredLeads = leads.filter((lead) => {
+    const matchVendedor =
+      vendedorFilter === "all" || lead.vendedor === vendedorFilter;
+    const matchServico =
+      servicoFilter === "all" || lead.tipo_servico === servicoFilter;
+    return matchVendedor && matchServico;
+  });
+
+  const hasActiveFilters = vendedorFilter !== "all" || servicoFilter !== "all";
+
+  const clearFilters = () => {
+    setVendedorFilter("all");
+    setServicoFilter("all");
+  };
 
   return (
     <div className="space-y-6">
@@ -49,12 +76,66 @@ export default function Dashboard() {
         />
       </div>
 
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-3 p-4 rounded-lg bg-muted/50 border border-border">
+        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+          <Filter className="h-4 w-4" />
+          Filtros:
+        </div>
+        
+        <Select value={vendedorFilter} onValueChange={setVendedorFilter}>
+          <SelectTrigger className="w-[180px] bg-background">
+            <SelectValue placeholder="Vendedor" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os Vendedores</SelectItem>
+            {VENDEDORES.map((vendedor) => (
+              <SelectItem key={vendedor} value={vendedor}>
+                {vendedor}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={servicoFilter} onValueChange={setServicoFilter}>
+          <SelectTrigger className="w-[200px] bg-background">
+            <SelectValue placeholder="Tipo de Serviço" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os Serviços</SelectItem>
+            {TIPOS_SERVICO.map((servico) => (
+              <SelectItem key={servico} value={servico}>
+                {servico}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {hasActiveFilters && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={clearFilters}
+            className="gap-1 text-muted-foreground hover:text-foreground"
+          >
+            <X className="h-4 w-4" />
+            Limpar
+          </Button>
+        )}
+
+        {hasActiveFilters && (
+          <span className="text-sm text-muted-foreground ml-auto">
+            {filteredLeads.length} lead(s) encontrado(s)
+          </span>
+        )}
+      </div>
+
       {/* Leads Table */}
       <div>
         <h2 className="text-lg font-semibold text-foreground mb-4">
           Últimos Leads
         </h2>
-        <LeadsTable leads={leads} isLoading={leadsLoading} />
+        <LeadsTable leads={filteredLeads} isLoading={leadsLoading} />
       </div>
 
       {/* New Lead Modal */}

@@ -32,17 +32,12 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
       <SidebarHeader className="p-4 border-b border-sidebar-border">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center justify-center">
           <img
             src={logo}
             alt="Acqua Nobilis"
             className="h-10 w-auto object-contain"
           />
-          {!collapsed && (
-            <span className="text-sidebar-foreground font-semibold text-sm">
-              Acqua Nobilis
-            </span>
-          )}
         </div>
       </SidebarHeader>
 
