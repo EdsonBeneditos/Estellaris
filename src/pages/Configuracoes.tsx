@@ -44,9 +44,9 @@ interface SettingsListProps {
   icon: React.ElementType;
   items: Array<{ id: string; nome: string; ativo: boolean }>;
   isLoading: boolean;
-  onAdd: (nome: string) => Promise<void>;
-  onDelete: (id: string) => Promise<void>;
-  onToggle: (id: string, ativo: boolean) => Promise<void>;
+  onAdd: (nome: string) => Promise<unknown>;
+  onDelete: (id: string) => Promise<unknown>;
+  onToggle: (id: string, ativo: boolean) => Promise<unknown>;
   placeholder: string;
   description: string;
 }
