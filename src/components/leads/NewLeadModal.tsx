@@ -78,6 +78,9 @@ interface NewLeadModalProps {
 
 export function NewLeadModal({ open, onOpenChange }: NewLeadModalProps) {
   const createLead = useCreateLead();
+  const { data: vendedores = [] } = useActiveVendedores();
+  const { data: tiposServico = [] } = useActiveTiposServico();
+  const { data: origens = [] } = useActiveOrigens();
   const [cnpjValue, setCnpjValue] = useState("");
   const [phoneValue, setPhoneValue] = useState("");
 
@@ -296,9 +299,9 @@ export function NewLeadModal({ open, onOpenChange }: NewLeadModalProps) {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {ORIGENS.map((origem) => (
-                            <SelectItem key={origem} value={origem}>
-                              {origem}
+                          {origens.map((o) => (
+                            <SelectItem key={o.id} value={o.nome}>
+                              {o.nome}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -350,9 +353,9 @@ export function NewLeadModal({ open, onOpenChange }: NewLeadModalProps) {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {TIPOS_SERVICO.map((tipo) => (
-                            <SelectItem key={tipo} value={tipo}>
-                              {tipo}
+                          {tiposServico.map((t) => (
+                            <SelectItem key={t.id} value={t.nome}>
+                              {t.nome}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -377,9 +380,9 @@ export function NewLeadModal({ open, onOpenChange }: NewLeadModalProps) {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {VENDEDORES.map((vendedor) => (
-                            <SelectItem key={vendedor} value={vendedor}>
-                              {vendedor}
+                          {vendedores.map((v) => (
+                            <SelectItem key={v.id} value={v.nome}>
+                              {v.nome}
                             </SelectItem>
                           ))}
                         </SelectContent>
