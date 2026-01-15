@@ -37,7 +37,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: 'hsl(215, 50%, 15%)' }}>
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center mb-8">
           <img
@@ -50,7 +50,7 @@ export default function Login() {
           </p>
         </div>
 
-        <Card className="border-border shadow-lg">
+        <Card className="border-0 shadow-2xl bg-white">
           <form onSubmit={handleLogin}>
             <CardHeader className="text-center pb-4">
               <CardTitle className="text-xl">Acesso ao Sistema</CardTitle>
@@ -101,7 +101,7 @@ export default function Login() {
           </form>
         </Card>
         
-        <p className="text-center text-xs text-muted-foreground mt-6">
+        <p className="text-center text-xs text-white/70 mt-6">
           Soluções em Gestão Ambiental
         </p>
       </div>
