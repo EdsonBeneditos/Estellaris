@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Plus, Users, CalendarClock, FolderOpen, Filter, X } from "lucide-react";
+import { Plus, Users, CalendarClock, FolderOpen, Filter, X, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -8,6 +8,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell } from "recharts";
 import { StatsCard } from "@/components/leads/StatsCard";
 import { LeadsTable } from "@/components/leads/LeadsTable";
 import { NewLeadModal } from "@/components/leads/NewLeadModal";
@@ -17,6 +20,24 @@ import { useActiveVendedores, useActiveTiposServico } from "@/hooks/useSettings"
 import { DateRange } from "react-day-picker";
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay, startOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
+
+// Fixed colors for each salesperson
+const VENDEDOR_COLORS: Record<string, string> = {
+  "Maria Victoria": "hsl(210, 100%, 45%)", // Blue
+  "Francielli": "hsl(142, 71%, 45%)",      // Green
+  "Mikaela": "hsl(280, 70%, 50%)",         // Purple
+  "Cleriston": "hsl(25, 95%, 53%)",        // Orange
+  "Roberto": "hsl(340, 75%, 55%)",         // Pink/Red
+};
+
+const DEFAULT_VENDEDOR_COLOR = "hsl(215, 20%, 60%)";
+
+const chartConfig = {
+  count: {
+    label: "Leads",
+    color: "hsl(var(--primary))",
+  },
+};
 
 export default function Dashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -29,11 +50,18 @@ export default function Dashboard() {
   const { data: vendedores = [] } = useActiveVendedores();
   const { data: tiposServico = [] } = useActiveTiposServico();
 
-  // Group leads by month
+  // Filter out "Perdido" status leads and sort by most recent
+  const activeLeads = useMemo(() => {
+    return leads
+      .filter((lead) => lead.status !== "Perdido")
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }, [leads]);
+
+  // Group leads by month (using activeLeads)
   const groupedLeads = useMemo(() => {
-    const groups: Record<string, typeof leads> = {};
+    const groups: Record<string, typeof activeLeads> = {};
     
-    leads.forEach((lead) => {
+    activeLeads.forEach((lead) => {
       const monthKey = lead.mes_referencia || lead.created_at.slice(0, 7);
       if (!groups[monthKey]) {
         groups[monthKey] = [];
@@ -42,11 +70,27 @@ export default function Dashboard() {
     });
 
     return Object.entries(groups).sort((a, b) => b[0].localeCompare(a[0]));
-  }, [leads]);
+  }, [activeLeads]);
 
-  // Apply filters
+  // Vendedor stats for chart
+  const vendedorStats = useMemo(() => {
+    const counts: Record<string, number> = {};
+    activeLeads.forEach((lead) => {
+      const vendedor = lead.vendedor || "Não atribuído";
+      counts[vendedor] = (counts[vendedor] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .map(([vendedor, count]) => ({ 
+        vendedor, 
+        count,
+        color: VENDEDOR_COLORS[vendedor] || DEFAULT_VENDEDOR_COLOR 
+      }))
+      .sort((a, b) => b.count - a.count);
+  }, [activeLeads]);
+
+  // Apply filters (using activeLeads which already excludes "Perdido")
   const filteredLeads = useMemo(() => {
-    return leads.filter((lead) => {
+    return activeLeads.filter((lead) => {
       const matchVendedor =
         vendedorFilter === "all" || lead.vendedor === vendedorFilter;
       const matchServico =
@@ -62,7 +106,7 @@ export default function Dashboard() {
 
       return matchVendedor && matchServico && matchDate;
     });
-  }, [leads, vendedorFilter, servicoFilter, dateRange]);
+  }, [activeLeads, vendedorFilter, servicoFilter, dateRange]);
 
   const hasActiveFilters =
     vendedorFilter !== "all" || servicoFilter !== "all" || dateRange !== undefined;
@@ -202,6 +246,50 @@ export default function Dashboard() {
           <LeadsTable leads={filteredLeads} isLoading={leadsLoading} />
         </div>
       )}
+
+      {/* Desempenho por Vendedor Chart */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BarChart3 className="h-5 w-5" />
+            Desempenho por Vendedor
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {leadsLoading ? (
+            <div className="h-[280px] flex items-center justify-center text-muted-foreground">
+              Carregando...
+            </div>
+          ) : vendedorStats.length === 0 ? (
+            <div className="h-[280px] flex items-center justify-center text-muted-foreground">
+              Nenhum dado disponível
+            </div>
+          ) : (
+            <ChartContainer config={chartConfig} className="h-[280px] w-full">
+              <BarChart
+                data={vendedorStats}
+                layout="vertical"
+                margin={{ left: 0, right: 20 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
+                <XAxis type="number" />
+                <YAxis
+                  dataKey="vendedor"
+                  type="category"
+                  width={120}
+                  tick={{ fontSize: 12 }}
+                />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Bar dataKey="count" radius={[0, 4, 4, 0]} name="Leads">
+                  {vendedorStats.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ChartContainer>
+          )}
+        </CardContent>
+      </Card>
 
       {/* New Lead Modal */}
       <NewLeadModal open={isModalOpen} onOpenChange={setIsModalOpen} />

@@ -38,16 +38,42 @@ import {
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-const COLORS = [
-  "hsl(var(--primary))",
-  "hsl(var(--chart-2))",
-  "hsl(var(--chart-3))",
-  "hsl(var(--chart-4))",
-  "hsl(var(--chart-5))",
-  "hsl(210 40% 60%)",
-  "hsl(210 40% 70%)",
-  "hsl(210 40% 80%)",
+// Vibrant colors for origin chart slices
+const ORIGEM_COLORS: Record<string, string> = {
+  "WhatsApp": "hsl(142, 70%, 45%)",     // Green (WhatsApp brand)
+  "Site": "hsl(210, 100%, 50%)",        // Blue
+  "Indicação": "hsl(280, 70%, 55%)",    // Purple
+  "Instagram": "hsl(340, 75%, 55%)",    // Pink/Magenta
+  "Google": "hsl(45, 95%, 50%)",        // Yellow/Gold
+  "Telefone": "hsl(25, 95%, 53%)",      // Orange
+  "E-mail": "hsl(195, 85%, 45%)",       // Cyan
+  "Evento": "hsl(0, 75%, 55%)",         // Red
+  "LinkedIn": "hsl(201, 100%, 35%)",    // LinkedIn Blue
+  "Facebook": "hsl(220, 70%, 50%)",     // Facebook Blue
+};
+
+const DEFAULT_ORIGIN_COLORS = [
+  "hsl(215, 60%, 50%)",
+  "hsl(180, 60%, 45%)",
+  "hsl(320, 60%, 50%)",
+  "hsl(60, 70%, 45%)",
+  "hsl(150, 60%, 45%)",
 ];
+
+// Fixed colors for each salesperson
+const VENDEDOR_COLORS: Record<string, string> = {
+  "Maria Victoria": "hsl(210, 100%, 45%)", // Blue
+  "Francielli": "hsl(142, 71%, 45%)",      // Green
+  "Mikaela": "hsl(280, 70%, 50%)",         // Purple
+  "Cleriston": "hsl(25, 95%, 53%)",        // Orange
+  "Roberto": "hsl(340, 75%, 55%)",         // Pink/Red
+};
+
+const DEFAULT_VENDEDOR_COLOR = "hsl(215, 20%, 60%)";
+
+const getOrigemColor = (origem: string, index: number): string => {
+  return ORIGEM_COLORS[origem] || DEFAULT_ORIGIN_COLORS[index % DEFAULT_ORIGIN_COLORS.length];
+};
 
 const chartConfig = {
   count: {
@@ -85,7 +111,7 @@ export default function Relatorios() {
     });
   }, [allLeads, selectedMonth, selectedYear]);
 
-  // Vendedor stats for selected period
+  // Vendedor stats for selected period with fixed colors
   const vendedorStats = useMemo(() => {
     const counts: Record<string, number> = {};
     filteredLeads.forEach((lead) => {
@@ -93,7 +119,11 @@ export default function Relatorios() {
       counts[vendedor] = (counts[vendedor] || 0) + 1;
     });
     return Object.entries(counts)
-      .map(([vendedor, count]) => ({ vendedor, count }))
+      .map(([vendedor, count]) => ({ 
+        vendedor, 
+        count,
+        color: VENDEDOR_COLORS[vendedor] || DEFAULT_VENDEDOR_COLOR 
+      }))
       .sort((a, b) => b.count - a.count);
   }, [filteredLeads]);
 
@@ -296,12 +326,11 @@ export default function Relatorios() {
                     tick={{ fontSize: 12 }}
                   />
                   <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar
-                    dataKey="count"
-                    fill="hsl(var(--primary))"
-                    radius={[0, 4, 4, 0]}
-                    name="Leads"
-                  />
+                  <Bar dataKey="count" radius={[0, 4, 4, 0]} name="Leads">
+                    {vendedorStats.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Bar>
                 </BarChart>
               </ChartContainer>
             )}
@@ -343,10 +372,10 @@ export default function Relatorios() {
                       dataKey="count"
                       nameKey="origem"
                     >
-                      {origemStats.map((_, index) => (
+                      {origemStats.map((item, index) => (
                         <Cell
                           key={`cell-${index}`}
-                          fill={COLORS[index % COLORS.length]}
+                          fill={getOrigemColor(item.origem, index)}
                         />
                       ))}
                     </Pie>
@@ -358,7 +387,7 @@ export default function Relatorios() {
                       <div
                         className="w-3 h-3 rounded-full shrink-0"
                         style={{
-                          backgroundColor: COLORS[index % COLORS.length],
+                          backgroundColor: getOrigemColor(item.origem, index),
                         }}
                       />
                       <span className="text-sm text-muted-foreground truncate">
