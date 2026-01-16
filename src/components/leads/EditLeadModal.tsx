@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon, History, MessageSquare, ArrowRight } from "lucide-react";
+import { CalendarIcon, History, MessageSquare, ArrowRight, Trash2 } from "lucide-react";
 
 import {
   Dialog,
@@ -12,6 +12,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import {
   Form,
   FormControl,
@@ -40,22 +51,34 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 
-import { useUpdateLead, type Lead } from "@/hooks/useLeads";
+import { useUpdateLead, useDeleteLead, type Lead } from "@/hooks/useLeads";
 import {
   useLeadInteracoes,
   useCreateInteracao,
 } from "@/hooks/useLeadInteracoes";
 import { useActiveVendedores } from "@/hooks/useSettings";
+import { usePermissions } from "@/hooks/usePermissions";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { STATUS_OPTIONS, PRIORIDADES } from "@/lib/constants";
 
+// Schema with conditional validation for motivo_perda
 const formSchema = z.object({
   status: z.string().optional(),
   prioridade: z.string().optional(),
   vendedor: z.string().optional(),
   data_retorno: z.date().optional().nullable(),
   proximo_passo: z.string().optional(),
+  motivo_perda: z.string().optional(),
+}).refine((data) => {
+  // If status is "Perdido", motivo_perda is required
+  if (data.status === "Perdido") {
+    return data.motivo_perda && data.motivo_perda.trim().length > 0;
+  }
+  return true;
+}, {
+  message: "O motivo da perda é obrigatório quando o status é 'Perdido'",
+  path: ["motivo_perda"],
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -68,16 +91,20 @@ interface EditLeadModalProps {
 
 export function EditLeadModal({ lead, open, onOpenChange }: EditLeadModalProps) {
   const updateLead = useUpdateLead();
+  const deleteLead = useDeleteLead();
   const createInteracao = useCreateInteracao();
   const { data: vendedores = [] } = useActiveVendedores();
   const { data: interacoes = [], isLoading: interacoesLoading } =
     useLeadInteracoes(lead?.id || "");
+  const { canDeleteLeads } = usePermissions();
 
   const [observacao, setObservacao] = useState("");
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
   });
+
+  const watchedStatus = form.watch("status");
 
   useEffect(() => {
     if (lead) {
@@ -87,6 +114,7 @@ export function EditLeadModal({ lead, open, onOpenChange }: EditLeadModalProps) 
         vendedor: lead.vendedor || "",
         data_retorno: lead.data_retorno ? new Date(lead.data_retorno) : null,
         proximo_passo: lead.proximo_passo || "",
+        motivo_perda: lead.motivo_perda || "",
       });
     }
   }, [lead, form]);
@@ -103,15 +131,21 @@ export function EditLeadModal({ lead, open, onOpenChange }: EditLeadModalProps) 
         data: {
           ...data,
           data_retorno: data.data_retorno?.toISOString() || null,
+          motivo_perda: data.status === "Perdido" ? data.motivo_perda : null,
         },
       });
 
       // Create interaction record if status changed
       if (previousStatus !== newStatus) {
+        let descricao = `Status alterado de "${previousStatus || "Novo"}" para "${newStatus}"`;
+        if (newStatus === "Perdido" && data.motivo_perda) {
+          descricao += `. Motivo: ${data.motivo_perda}`;
+        }
+        
         await createInteracao.mutateAsync({
           lead_id: lead.id,
           tipo: "status_change",
-          descricao: `Status alterado de "${previousStatus || "Novo"}" para "${newStatus}"`,
+          descricao,
           status_anterior: previousStatus || "Novo",
           status_novo: newStatus,
         });
@@ -121,6 +155,19 @@ export function EditLeadModal({ lead, open, onOpenChange }: EditLeadModalProps) 
       onOpenChange(false);
     } catch (error) {
       toast.error("Erro ao atualizar lead");
+      console.error(error);
+    }
+  };
+
+  const handleDeleteLead = async () => {
+    if (!lead) return;
+
+    try {
+      await deleteLead.mutateAsync(lead.id);
+      toast.success("Lead excluído com sucesso!");
+      onOpenChange(false);
+    } catch (error) {
+      toast.error("Erro ao excluir lead");
       console.error(error);
     }
   };
@@ -150,12 +197,47 @@ export function EditLeadModal({ lead, open, onOpenChange }: EditLeadModalProps) 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle className="text-xl font-semibold">
-            {lead.empresa || "Lead sem nome"}
-          </DialogTitle>
-          {lead.cnpj && (
-            <p className="text-sm text-muted-foreground">{lead.cnpj}</p>
-          )}
+          <div className="flex items-start justify-between">
+            <div>
+              <DialogTitle className="text-xl font-semibold">
+                {lead.empresa || "Lead sem nome"}
+              </DialogTitle>
+              {lead.cnpj && (
+                <p className="text-sm text-muted-foreground">{lead.cnpj}</p>
+              )}
+            </div>
+            {canDeleteLeads && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  >
+                    <Trash2 className="h-5 w-5" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Excluir Lead</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Tem certeza que deseja excluir o lead "{lead.empresa || "Lead sem nome"}"? 
+                      Esta ação não pode ser desfeita.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleDeleteLead}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Excluir
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </div>
         </DialogHeader>
 
         <Tabs defaultValue="editar" className="flex-1 overflow-hidden flex flex-col">
@@ -238,6 +320,31 @@ export function EditLeadModal({ lead, open, onOpenChange }: EditLeadModalProps) 
                     )}
                   />
                 </div>
+
+                {/* Motivo da Perda - Only shown when status is "Perdido" */}
+                {watchedStatus === "Perdido" && (
+                  <FormField
+                    control={form.control}
+                    name="motivo_perda"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-destructive">
+                          Motivo da Perda *
+                        </FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Descreva o motivo da perda deste lead..."
+                            className="resize-none border-destructive/50 focus-visible:ring-destructive/50"
+                            rows={3}
+                            disabled={isConcluded}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
 
                 {/* Vendedor e Data de Retorno */}
                 <div className="grid grid-cols-2 gap-4">

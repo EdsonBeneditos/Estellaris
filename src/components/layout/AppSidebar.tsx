@@ -3,6 +3,7 @@ import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import logo from "@/assets/logo.png";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
 import { toast } from "sonner";
 
 import {
@@ -19,11 +20,10 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 
-const menuItems = [
+const baseMenuItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Leads", url: "/leads", icon: Users },
   { title: "Relatórios", url: "/relatorios", icon: BarChart3 },
-  { title: "Configurações", url: "/configuracoes", icon: Settings },
 ];
 
 export function AppSidebar() {
@@ -31,8 +31,14 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const location = useLocation();
   const { signOut, user } = useAuthContext();
+  const { canViewSettings } = usePermissions();
 
   const isActive = (path: string) => location.pathname === path;
+
+  // Build menu items based on permissions
+  const menuItems = canViewSettings
+    ? [...baseMenuItems, { title: "Configurações", url: "/configuracoes", icon: Settings }]
+    : baseMenuItems;
 
   const handleLogout = async () => {
     const { error } = await signOut();

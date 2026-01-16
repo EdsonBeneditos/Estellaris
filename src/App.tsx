@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/layout/ProtectedRoute";
+import { AdminRoute } from "@/components/layout/AdminRoute";
 import { MainLayout } from "@/components/layout/MainLayout";
 import Dashboard from "@/pages/Dashboard";
 import Leads from "@/pages/Leads";
@@ -56,9 +57,11 @@ const App = () => (
               path="/configuracoes"
               element={
                 <ProtectedRoute>
-                  <MainLayout>
-                    <Configuracoes />
-                  </MainLayout>
+                  <AdminRoute>
+                    <MainLayout>
+                      <Configuracoes />
+                    </MainLayout>
+                  </AdminRoute>
                 </ProtectedRoute>
               }
             />
