@@ -63,6 +63,7 @@ export type Database = {
           localizacao: string | null
           meio_contato: string | null
           mes_referencia: string | null
+          motivo_perda: string | null
           nome_contato: string | null
           origem: string | null
           prioridade: string | null
@@ -83,6 +84,7 @@ export type Database = {
           localizacao?: string | null
           meio_contato?: string | null
           mes_referencia?: string | null
+          motivo_perda?: string | null
           nome_contato?: string | null
           origem?: string | null
           prioridade?: string | null
@@ -103,6 +105,7 @@ export type Database = {
           localizacao?: string | null
           meio_contato?: string | null
           mes_referencia?: string | null
+          motivo_perda?: string | null
           nome_contato?: string | null
           origem?: string | null
           prioridade?: string | null
