@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { BarChart3, Users, TrendingUp, PieChart, Briefcase, Calendar } from "lucide-react";
+import { BarChart3, Users, TrendingUp, PieChart, Briefcase, Calendar, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
@@ -27,6 +27,7 @@ import {
 } from "recharts";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useVendedores, useOrigens, useTiposServico } from "@/hooks/useSettings";
 import {
   format,
   parseISO,
@@ -37,43 +38,22 @@ import {
   isSameYear,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { MOTIVOS_PERDA } from "@/lib/constants";
 
-// Vibrant colors for origin chart slices
-const ORIGEM_COLORS: Record<string, string> = {
-  "WhatsApp": "hsl(142, 70%, 45%)",     // Green (WhatsApp brand)
-  "Site": "hsl(210, 100%, 50%)",        // Blue
-  "Indicação": "hsl(280, 70%, 55%)",    // Purple
-  "Instagram": "hsl(340, 75%, 55%)",    // Pink/Magenta
-  "Google": "hsl(45, 95%, 50%)",        // Yellow/Gold
-  "Telefone": "hsl(25, 95%, 53%)",      // Orange
-  "E-mail": "hsl(195, 85%, 45%)",       // Cyan
-  "Evento": "hsl(0, 75%, 55%)",         // Red
-  "LinkedIn": "hsl(201, 100%, 35%)",    // LinkedIn Blue
-  "Facebook": "hsl(220, 70%, 50%)",     // Facebook Blue
-};
+// Default colors as fallback
+const DEFAULT_ORIGEM_COLOR = "#3B82F6";
+const DEFAULT_VENDEDOR_COLOR = "#10B981";
+const DEFAULT_SERVICO_COLOR = "#8B5CF6";
 
-const DEFAULT_ORIGIN_COLORS = [
-  "hsl(215, 60%, 50%)",
-  "hsl(180, 60%, 45%)",
-  "hsl(320, 60%, 50%)",
-  "hsl(60, 70%, 45%)",
-  "hsl(150, 60%, 45%)",
+// Colors for loss reasons chart
+const LOSS_COLORS = [
+  "#EF4444", // Red
+  "#F97316", // Orange
+  "#F59E0B", // Amber
+  "#84CC16", // Lime
+  "#14B8A6", // Teal
+  "#6366F1", // Indigo
 ];
-
-// Fixed colors for each salesperson
-const VENDEDOR_COLORS: Record<string, string> = {
-  "Maria Victoria": "hsl(210, 100%, 45%)", // Blue
-  "Francielli": "hsl(142, 71%, 45%)",      // Green
-  "Mikaela": "hsl(280, 70%, 50%)",         // Purple
-  "Cleriston": "hsl(25, 95%, 53%)",        // Orange
-  "Roberto": "hsl(340, 75%, 55%)",         // Pink/Red
-};
-
-const DEFAULT_VENDEDOR_COLOR = "hsl(215, 20%, 60%)";
-
-const getOrigemColor = (origem: string, index: number): string => {
-  return ORIGEM_COLORS[origem] || DEFAULT_ORIGIN_COLORS[index % DEFAULT_ORIGIN_COLORS.length];
-};
 
 const chartConfig = {
   count: {
@@ -86,6 +66,11 @@ export default function Relatorios() {
   const currentDate = new Date();
   const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth());
   const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
+
+  // Fetch settings with colors
+  const { data: vendedoresConfig = [] } = useVendedores();
+  const { data: origensConfig = [] } = useOrigens();
+  const { data: servicosConfig = [] } = useTiposServico();
 
   // Fetch all leads
   const { data: allLeads = [], isLoading: leadsLoading } = useQuery({
@@ -111,7 +96,23 @@ export default function Relatorios() {
     });
   }, [allLeads, selectedMonth, selectedYear]);
 
-  // Vendedor stats for selected period with fixed colors
+  // Get color from config
+  const getVendedorColor = (vendedor: string) => {
+    const config = vendedoresConfig.find((v) => v.nome === vendedor);
+    return config?.cor || DEFAULT_VENDEDOR_COLOR;
+  };
+
+  const getOrigemColor = (origem: string) => {
+    const config = origensConfig.find((o) => o.nome === origem);
+    return config?.cor || DEFAULT_ORIGEM_COLOR;
+  };
+
+  const getServicoColor = (servico: string) => {
+    const config = servicosConfig.find((s) => s.nome === servico);
+    return config?.cor || DEFAULT_SERVICO_COLOR;
+  };
+
+  // Vendedor stats for selected period with custom colors
   const vendedorStats = useMemo(() => {
     const counts: Record<string, number> = {};
     filteredLeads.forEach((lead) => {
@@ -122,10 +123,10 @@ export default function Relatorios() {
       .map(([vendedor, count]) => ({ 
         vendedor, 
         count,
-        color: VENDEDOR_COLORS[vendedor] || DEFAULT_VENDEDOR_COLOR 
+        color: getVendedorColor(vendedor)
       }))
       .sort((a, b) => b.count - a.count);
-  }, [filteredLeads]);
+  }, [filteredLeads, vendedoresConfig]);
 
   // Leads per day for selected month (starting from day 1)
   const leadsPerDay = useMemo(() => {
@@ -146,7 +147,7 @@ export default function Relatorios() {
     }));
   }, [filteredLeads, selectedMonth, selectedYear]);
 
-  // Origem stats
+  // Origem stats with custom colors
   const origemStats = useMemo(() => {
     const counts: Record<string, number> = {};
     filteredLeads.forEach((lead) => {
@@ -154,11 +155,15 @@ export default function Relatorios() {
       counts[origem] = (counts[origem] || 0) + 1;
     });
     return Object.entries(counts)
-      .map(([origem, count]) => ({ origem, count }))
+      .map(([origem, count]) => ({ 
+        origem, 
+        count,
+        color: getOrigemColor(origem)
+      }))
       .sort((a, b) => b.count - a.count);
-  }, [filteredLeads]);
+  }, [filteredLeads, origensConfig]);
 
-  // Serviço stats
+  // Serviço stats with custom colors
   const servicoStats = useMemo(() => {
     const counts: Record<string, number> = {};
     filteredLeads.forEach((lead) => {
@@ -166,11 +171,35 @@ export default function Relatorios() {
       counts[servico] = (counts[servico] || 0) + 1;
     });
     return Object.entries(counts)
-      .map(([servico, count]) => ({ servico, count }))
+      .map(([servico, count]) => ({ 
+        servico, 
+        count,
+        color: getServicoColor(servico)
+      }))
+      .sort((a, b) => b.count - a.count);
+  }, [filteredLeads, servicosConfig]);
+
+  // Loss reasons stats
+  const lossStats = useMemo(() => {
+    const lostLeads = filteredLeads.filter((lead) => lead.status === "Perdido");
+    const counts: Record<string, number> = {};
+    
+    lostLeads.forEach((lead) => {
+      const motivo = lead.motivo_perda || "Não informado";
+      counts[motivo] = (counts[motivo] || 0) + 1;
+    });
+
+    return Object.entries(counts)
+      .map(([motivo, count], index) => ({ 
+        motivo, 
+        count,
+        color: LOSS_COLORS[index % LOSS_COLORS.length]
+      }))
       .sort((a, b) => b.count - a.count);
   }, [filteredLeads]);
 
   const totalLeads = filteredLeads.length;
+  const totalLostLeads = filteredLeads.filter((lead) => lead.status === "Perdido").length;
 
   // Generate month/year options
   const months = Array.from({ length: 12 }, (_, i) => ({
@@ -273,16 +302,16 @@ export default function Relatorios() {
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="border-destructive/30 bg-destructive/5">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Serviços Solicitados
+            <CardTitle className="text-sm font-medium text-destructive">
+              Leads Perdidos
             </CardTitle>
-            <Briefcase className="h-4 w-4 text-muted-foreground" />
+            <AlertTriangle className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{servicoStats.length}</div>
-            <p className="text-xs text-muted-foreground">Tipos diferentes</p>
+            <div className="text-2xl font-bold text-destructive">{totalLostLeads}</div>
+            <p className="text-xs text-muted-foreground">No período selecionado</p>
           </CardContent>
         </Card>
       </div>
@@ -375,20 +404,18 @@ export default function Relatorios() {
                       {origemStats.map((item, index) => (
                         <Cell
                           key={`cell-${index}`}
-                          fill={getOrigemColor(item.origem, index)}
+                          fill={item.color}
                         />
                       ))}
                     </Pie>
                   </RechartsPieChart>
                 </ChartContainer>
                 <div className="w-full sm:w-1/2 space-y-2 mt-4 sm:mt-0">
-                  {origemStats.map((item, index) => (
+                  {origemStats.map((item) => (
                     <div key={item.origem} className="flex items-center gap-2">
                       <div
                         className="w-3 h-3 rounded-full shrink-0"
-                        style={{
-                          backgroundColor: getOrigemColor(item.origem, index),
-                        }}
+                        style={{ backgroundColor: item.color }}
                       />
                       <span className="text-sm text-muted-foreground truncate">
                         {item.origem}
@@ -441,12 +468,11 @@ export default function Relatorios() {
                     tick={{ fontSize: 11 }}
                   />
                   <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar
-                    dataKey="count"
-                    fill="hsl(var(--chart-2))"
-                    radius={[0, 4, 4, 0]}
-                    name="Leads"
-                  />
+                  <Bar dataKey="count" radius={[0, 4, 4, 0]} name="Leads">
+                    {servicoStats.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Bar>
                 </BarChart>
               </ChartContainer>
             )}
@@ -520,6 +546,79 @@ export default function Relatorios() {
                   />
                 </AreaChart>
               </ChartContainer>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Motivos de Perda - BI Chart */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Análise de Motivos de Perda
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {leadsLoading ? (
+              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                Carregando...
+              </div>
+            ) : lossStats.length === 0 ? (
+              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                <div className="text-center">
+                  <AlertTriangle className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p>Nenhum lead perdido no período</p>
+                </div>
+              </div>
+            ) : (
+              <div className="h-[300px] flex flex-col sm:flex-row items-center">
+                <ChartContainer
+                  config={chartConfig}
+                  className="h-full w-full sm:w-1/2"
+                >
+                  <RechartsPieChart>
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Pie
+                      data={lossStats}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={100}
+                      paddingAngle={3}
+                      dataKey="count"
+                      nameKey="motivo"
+                    >
+                      {lossStats.map((item, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={item.color}
+                        />
+                      ))}
+                    </Pie>
+                  </RechartsPieChart>
+                </ChartContainer>
+                <div className="w-full sm:w-1/2 space-y-3 mt-4 sm:mt-0">
+                  {lossStats.map((item) => (
+                    <div key={item.motivo} className="flex items-center gap-3">
+                      <div
+                        className="w-4 h-4 rounded-full shrink-0"
+                        style={{ backgroundColor: item.color }}
+                      />
+                      <span className="text-sm font-medium flex-1">
+                        {item.motivo}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg font-bold">
+                          {item.count}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          ({Math.round((item.count / totalLostLeads) * 100)}%)
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
           </CardContent>
         </Card>

@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      futuros_leads: {
+        Row: {
+          cnpj: string | null
+          created_at: string
+          email: string | null
+          empresa: string | null
+          id: string
+          nome_contato: string | null
+          observacoes: string | null
+          origem: string | null
+          telefone: string | null
+          updated_at: string
+        }
+        Insert: {
+          cnpj?: string | null
+          created_at?: string
+          email?: string | null
+          empresa?: string | null
+          id?: string
+          nome_contato?: string | null
+          observacoes?: string | null
+          origem?: string | null
+          telefone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cnpj?: string | null
+          created_at?: string
+          email?: string | null
+          empresa?: string | null
+          id?: string
+          nome_contato?: string | null
+          observacoes?: string | null
+          origem?: string | null
+          telefone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       lead_interacoes: {
         Row: {
           created_at: string
@@ -64,6 +103,7 @@ export type Database = {
           meio_contato: string | null
           mes_referencia: string | null
           motivo_perda: string | null
+          motivo_perda_detalhe: string | null
           nome_contato: string | null
           origem: string | null
           prioridade: string | null
@@ -85,6 +125,7 @@ export type Database = {
           meio_contato?: string | null
           mes_referencia?: string | null
           motivo_perda?: string | null
+          motivo_perda_detalhe?: string | null
           nome_contato?: string | null
           origem?: string | null
           prioridade?: string | null
@@ -106,6 +147,7 @@ export type Database = {
           meio_contato?: string | null
           mes_referencia?: string | null
           motivo_perda?: string | null
+          motivo_perda_detalhe?: string | null
           nome_contato?: string | null
           origem?: string | null
           prioridade?: string | null
@@ -121,18 +163,21 @@ export type Database = {
       origens: {
         Row: {
           ativo: boolean
+          cor: string | null
           created_at: string
           id: string
           nome: string
         }
         Insert: {
           ativo?: boolean
+          cor?: string | null
           created_at?: string
           id?: string
           nome: string
         }
         Update: {
           ativo?: boolean
+          cor?: string | null
           created_at?: string
           id?: string
           nome?: string
@@ -142,18 +187,21 @@ export type Database = {
       tipos_servico: {
         Row: {
           ativo: boolean
+          cor: string | null
           created_at: string
           id: string
           nome: string
         }
         Insert: {
           ativo?: boolean
+          cor?: string | null
           created_at?: string
           id?: string
           nome: string
         }
         Update: {
           ativo?: boolean
+          cor?: string | null
           created_at?: string
           id?: string
           nome?: string
@@ -163,18 +211,21 @@ export type Database = {
       vendedores: {
         Row: {
           ativo: boolean
+          cor: string | null
           created_at: string
           id: string
           nome: string
         }
         Insert: {
           ativo?: boolean
+          cor?: string | null
           created_at?: string
           id?: string
           nome: string
         }
         Update: {
           ativo?: boolean
+          cor?: string | null
           created_at?: string
           id?: string
           nome?: string

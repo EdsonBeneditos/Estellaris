@@ -110,7 +110,7 @@ export function LeadsTableModern({ leads, isLoading }: LeadsTableModernProps) {
                     <div>
                       <p className="font-bold text-[#003366] dark:text-blue-400">{lead.empresa || "—"}</p>
                       {lead.cnpj && (
-                        <p className="text-xs text-muted-foreground/70 mt-0.5 font-mono">{lead.cnpj}</p>
+                        <p className="text-xs text-[#4B5563] mt-0.5 font-mono">{lead.cnpj}</p>
                       )}
                     </div>
                     <Badge variant="outline" className={statusStyles[lead.status || ""] || ""}>
@@ -121,7 +121,7 @@ export function LeadsTableModern({ leads, isLoading }: LeadsTableModernProps) {
                     <div>
                       <span className="font-semibold text-foreground">{lead.nome_contato || "—"}</span>
                       {lead.telefone && (
-                        <span className="text-muted-foreground/70 ml-2">{lead.telefone}</span>
+                        <span className="text-[#4B5563] ml-2">{lead.telefone}</span>
                       )}
                     </div>
                   </div>
@@ -142,7 +142,7 @@ export function LeadsTableModern({ leads, isLoading }: LeadsTableModernProps) {
                   <div>
                     <p className="font-bold text-[#003366] dark:text-blue-400 truncate">{lead.empresa || "—"}</p>
                     {lead.cnpj && (
-                      <p className="text-xs text-muted-foreground/60 mt-0.5 font-mono truncate">{lead.cnpj}</p>
+                      <p className="text-xs text-[#4B5563] mt-0.5 font-mono truncate">{lead.cnpj}</p>
                     )}
                   </div>
 
@@ -150,7 +150,7 @@ export function LeadsTableModern({ leads, isLoading }: LeadsTableModernProps) {
                   <div>
                     <p className="font-semibold text-foreground truncate">{lead.nome_contato || "—"}</p>
                     {lead.telefone && (
-                      <p className="text-xs text-muted-foreground/60 mt-0.5 truncate">{lead.telefone}</p>
+                      <p className="text-xs text-[#4B5563] mt-0.5 truncate">{lead.telefone}</p>
                     )}
                   </div>
 

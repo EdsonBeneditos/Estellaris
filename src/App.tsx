@@ -8,6 +8,7 @@ import { AdminRoute } from "@/components/layout/AdminRoute";
 import { MainLayout } from "@/components/layout/MainLayout";
 import Dashboard from "@/pages/Dashboard";
 import Leads from "@/pages/Leads";
+import FuturosLeads from "@/pages/FuturosLeads";
 import Relatorios from "@/pages/Relatorios";
 import Configuracoes from "@/pages/Configuracoes";
 import Login from "@/pages/Login";
@@ -39,6 +40,16 @@ const App = () => (
                 <ProtectedRoute>
                   <MainLayout>
                     <Leads />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/futuros-leads"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <FuturosLeads />
                   </MainLayout>
                 </ProtectedRoute>
               }

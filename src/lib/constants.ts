@@ -55,6 +55,16 @@ export const STATUS_OPTIONS = [
 // Prioridades
 export const PRIORIDADES = ["Alta", "Média", "Baixa"] as const;
 
+// Motivos de perda
+export const MOTIVOS_PERDA = [
+  "Preço Elevado",
+  "Prazo de Execução",
+  "Concorrência",
+  "Falta de Retorno",
+  "Decisão Adiada",
+  "Outros",
+] as const;
+
 // Types
 export type Vendedor = (typeof VENDEDORES)[number];
 export type TipoServico = (typeof TIPOS_SERVICO)[number];
@@ -63,3 +73,4 @@ export type MeioContato = (typeof MEIOS_CONTATO)[number];
 export type TipoAtendimento = (typeof TIPOS_ATENDIMENTO)[number];
 export type StatusOption = (typeof STATUS_OPTIONS)[number];
 export type Prioridade = (typeof PRIORIDADES)[number];
+export type MotivoPerda = (typeof MOTIVOS_PERDA)[number];

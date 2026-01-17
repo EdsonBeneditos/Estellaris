@@ -30,25 +30,31 @@ import {
   useCreateVendedor,
   useDeleteVendedor,
   useToggleVendedor,
+  useUpdateVendedorColor,
   useCreateTipoServico,
   useDeleteTipoServico,
   useToggleTipoServico,
+  useUpdateTipoServicoColor,
   useCreateOrigem,
   useDeleteOrigem,
   useToggleOrigem,
+  useUpdateOrigemColor,
 } from "@/hooks/useSettings";
+import { ColorPicker } from "@/components/settings/ColorPicker";
 import { toast } from "sonner";
 
 interface SettingsListProps {
   title: string;
   icon: React.ElementType;
-  items: Array<{ id: string; nome: string; ativo: boolean }>;
+  items: Array<{ id: string; nome: string; ativo: boolean; cor: string | null }>;
   isLoading: boolean;
   onAdd: (nome: string) => Promise<unknown>;
   onDelete: (id: string) => Promise<unknown>;
   onToggle: (id: string, ativo: boolean) => Promise<unknown>;
+  onColorChange: (id: string, cor: string) => Promise<unknown>;
   placeholder: string;
   description: string;
+  defaultColor: string;
 }
 
 function SettingsList({
@@ -59,8 +65,10 @@ function SettingsList({
   onAdd,
   onDelete,
   onToggle,
+  onColorChange,
   placeholder,
   description,
+  defaultColor,
 }: SettingsListProps) {
   const [newItem, setNewItem] = useState("");
   const [isAdding, setIsAdding] = useState(false);
@@ -100,6 +108,15 @@ function SettingsList({
       );
     } catch (error) {
       toast.error("Erro ao alterar status");
+    }
+  };
+
+  const handleColorChange = async (id: string, cor: string) => {
+    try {
+      await onColorChange(id, cor);
+      toast.success("Cor atualizada!");
+    } catch (error) {
+      toast.error("Erro ao atualizar cor");
     }
   };
 
@@ -154,11 +171,8 @@ function SettingsList({
               >
                 <div className="flex items-center gap-3">
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                      item.ativo
-                        ? "bg-primary/10 text-primary"
-                        : "bg-muted text-muted-foreground"
-                    }`}
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium text-white"
+                    style={{ backgroundColor: item.cor || defaultColor }}
                   >
                     {item.nome.charAt(0).toUpperCase()}
                   </div>
@@ -167,6 +181,10 @@ function SettingsList({
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
+                  <ColorPicker
+                    value={item.cor || defaultColor}
+                    onChange={(cor) => handleColorChange(item.id, cor)}
+                  />
                   <Badge
                     variant={item.ativo ? "secondary" : "outline"}
                     className="text-xs"
@@ -232,14 +250,17 @@ export default function Configuracoes() {
   const createVendedor = useCreateVendedor();
   const deleteVendedor = useDeleteVendedor();
   const toggleVendedor = useToggleVendedor();
+  const updateVendedorColor = useUpdateVendedorColor();
 
   const createTipoServico = useCreateTipoServico();
   const deleteTipoServico = useDeleteTipoServico();
   const toggleTipoServico = useToggleTipoServico();
+  const updateTipoServicoColor = useUpdateTipoServicoColor();
 
   const createOrigem = useCreateOrigem();
   const deleteOrigem = useDeleteOrigem();
   const toggleOrigem = useToggleOrigem();
+  const updateOrigemColor = useUpdateOrigemColor();
 
   return (
     <div className="space-y-6">
@@ -259,8 +280,10 @@ export default function Configuracoes() {
           onAdd={(nome) => createVendedor.mutateAsync(nome)}
           onDelete={(id) => deleteVendedor.mutateAsync(id)}
           onToggle={(id, ativo) => toggleVendedor.mutateAsync({ id, ativo })}
+          onColorChange={(id, cor) => updateVendedorColor.mutateAsync({ id, cor })}
           placeholder="Nome do vendedor"
           description="Equipe comercial cadastrada no sistema"
+          defaultColor="#10B981"
         />
 
         <SettingsList
@@ -271,8 +294,10 @@ export default function Configuracoes() {
           onAdd={(nome) => createTipoServico.mutateAsync(nome)}
           onDelete={(id) => deleteTipoServico.mutateAsync(id)}
           onToggle={(id, ativo) => toggleTipoServico.mutateAsync({ id, ativo })}
+          onColorChange={(id, cor) => updateTipoServicoColor.mutateAsync({ id, cor })}
           placeholder="Nome do serviço"
           description="Serviços ambientais oferecidos pela Acqua Nobilis"
+          defaultColor="#8B5CF6"
         />
 
         <SettingsList
@@ -283,8 +308,10 @@ export default function Configuracoes() {
           onAdd={(nome) => createOrigem.mutateAsync(nome)}
           onDelete={(id) => deleteOrigem.mutateAsync(id)}
           onToggle={(id, ativo) => toggleOrigem.mutateAsync({ id, ativo })}
+          onColorChange={(id, cor) => updateOrigemColor.mutateAsync({ id, cor })}
           placeholder="Nome da origem"
           description="Canais de captação de leads configurados"
+          defaultColor="#3B82F6"
         />
       </div>
     </div>

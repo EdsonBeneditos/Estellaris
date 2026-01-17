@@ -60,7 +60,7 @@ import { useActiveVendedores } from "@/hooks/useSettings";
 import { usePermissions } from "@/hooks/usePermissions";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { STATUS_OPTIONS, PRIORIDADES } from "@/lib/constants";
+import { STATUS_OPTIONS, PRIORIDADES, MOTIVOS_PERDA } from "@/lib/constants";
 
 // Schema with conditional validation for motivo_perda
 const formSchema = z.object({
@@ -70,6 +70,7 @@ const formSchema = z.object({
   data_retorno: z.date().optional().nullable(),
   proximo_passo: z.string().optional(),
   motivo_perda: z.string().optional(),
+  motivo_perda_detalhe: z.string().optional(),
 }).refine((data) => {
   // If status is "Perdido", motivo_perda is required
   if (data.status === "Perdido") {
@@ -77,8 +78,17 @@ const formSchema = z.object({
   }
   return true;
 }, {
-  message: "O motivo da perda é obrigatório quando o status é 'Perdido'",
+  message: "Selecione o motivo da perda",
   path: ["motivo_perda"],
+}).refine((data) => {
+  // If motivo_perda is "Outros", motivo_perda_detalhe is required
+  if (data.status === "Perdido" && data.motivo_perda === "Outros") {
+    return data.motivo_perda_detalhe && data.motivo_perda_detalhe.trim().length > 0;
+  }
+  return true;
+}, {
+  message: "Descreva o motivo da perda",
+  path: ["motivo_perda_detalhe"],
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -105,6 +115,7 @@ export function EditLeadModal({ lead, open, onOpenChange }: EditLeadModalProps) 
   });
 
   const watchedStatus = form.watch("status");
+  const watchedMotivoPerda = form.watch("motivo_perda");
 
   useEffect(() => {
     if (lead) {
@@ -115,6 +126,7 @@ export function EditLeadModal({ lead, open, onOpenChange }: EditLeadModalProps) 
         data_retorno: lead.data_retorno ? new Date(lead.data_retorno) : null,
         proximo_passo: lead.proximo_passo || "",
         motivo_perda: lead.motivo_perda || "",
+        motivo_perda_detalhe: lead.motivo_perda_detalhe || "",
       });
     }
   }, [lead, form]);
@@ -132,6 +144,9 @@ export function EditLeadModal({ lead, open, onOpenChange }: EditLeadModalProps) 
           ...data,
           data_retorno: data.data_retorno?.toISOString() || null,
           motivo_perda: data.status === "Perdido" ? data.motivo_perda : null,
+          motivo_perda_detalhe: data.status === "Perdido" && data.motivo_perda === "Outros" 
+            ? data.motivo_perda_detalhe 
+            : null,
         },
       });
 
@@ -140,6 +155,9 @@ export function EditLeadModal({ lead, open, onOpenChange }: EditLeadModalProps) 
         let descricao = `Status alterado de "${previousStatus || "Novo"}" para "${newStatus}"`;
         if (newStatus === "Perdido" && data.motivo_perda) {
           descricao += `. Motivo: ${data.motivo_perda}`;
+          if (data.motivo_perda === "Outros" && data.motivo_perda_detalhe) {
+            descricao += ` - ${data.motivo_perda_detalhe}`;
+          }
         }
         
         await createInteracao.mutateAsync({
@@ -323,27 +341,63 @@ export function EditLeadModal({ lead, open, onOpenChange }: EditLeadModalProps) 
 
                 {/* Motivo da Perda - Only shown when status is "Perdido" */}
                 {watchedStatus === "Perdido" && (
-                  <FormField
-                    control={form.control}
-                    name="motivo_perda"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-destructive">
-                          Motivo da Perda *
-                        </FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="Descreva o motivo da perda deste lead..."
-                            className="resize-none border-destructive/50 focus-visible:ring-destructive/50"
-                            rows={3}
+                  <div className="space-y-4 p-4 rounded-lg border border-destructive/30 bg-destructive/5">
+                    <FormField
+                      control={form.control}
+                      name="motivo_perda"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-destructive font-medium">
+                            Motivo da Perda *
+                          </FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
                             disabled={isConcluded}
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
+                          >
+                            <FormControl>
+                              <SelectTrigger className="border-destructive/50">
+                                <SelectValue placeholder="Selecione o motivo" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {MOTIVOS_PERDA.map((motivo) => (
+                                <SelectItem key={motivo} value={motivo}>
+                                  {motivo}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Detail field when "Outros" is selected */}
+                    {watchedMotivoPerda === "Outros" && (
+                      <FormField
+                        control={form.control}
+                        name="motivo_perda_detalhe"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-destructive font-medium">
+                              Detalhamento *
+                            </FormLabel>
+                            <FormControl>
+                              <Textarea
+                                placeholder="Descreva o motivo da perda em detalhes..."
+                                className="resize-none border-destructive/50 focus-visible:ring-destructive/50"
+                                rows={3}
+                                disabled={isConcluded}
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     )}
-                  />
+                  </div>
                 )}
 
                 {/* Vendedor e Data de Retorno */}
@@ -481,45 +535,71 @@ export function EditLeadModal({ lead, open, onOpenChange }: EditLeadModalProps) 
           </TabsContent>
 
           <TabsContent value="historico" className="flex-1 overflow-hidden mt-4">
-            <ScrollArea className="h-[400px] pr-4">
+            <ScrollArea className="h-full pr-4">
               {interacoesLoading ? (
                 <div className="flex items-center justify-center py-8">
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
                 </div>
               ) : interacoes.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  Nenhuma interação registrada.
+                  <History className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p>Nenhuma interação registrada</p>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {interacoes.map((interacao) => (
-                    <div
-                      key={interacao.id}
-                      className="p-3 rounded-lg bg-muted/50 border border-border"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1">
-                          {interacao.tipo === "status_change" ? (
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <Badge variant="outline" className="text-xs">
-                                {interacao.status_anterior}
-                              </Badge>
-                              <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                              <Badge className="text-xs">
-                                {interacao.status_novo}
-                              </Badge>
-                            </div>
-                          ) : (
-                            <p className="text-sm">{interacao.descricao}</p>
+                  {interacoes.map((interacao, index) => (
+                    <div key={interacao.id}>
+                      <div className="flex gap-3">
+                        <div className="flex flex-col items-center">
+                          <div
+                            className={cn(
+                              "w-8 h-8 rounded-full flex items-center justify-center",
+                              interacao.tipo === "status_change"
+                                ? "bg-primary/10 text-primary"
+                                : "bg-muted text-muted-foreground"
+                            )}
+                          >
+                            {interacao.tipo === "status_change" ? (
+                              <ArrowRight className="h-4 w-4" />
+                            ) : (
+                              <MessageSquare className="h-4 w-4" />
+                            )}
+                          </div>
+                          {index < interacoes.length - 1 && (
+                            <div className="w-px flex-1 bg-border mt-2" />
                           )}
                         </div>
-                        <span className="text-xs text-muted-foreground shrink-0">
-                          {format(
-                            new Date(interacao.created_at),
-                            "dd/MM/yy HH:mm",
-                            { locale: ptBR }
+                        <div className="flex-1 pb-4">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge
+                              variant={
+                                interacao.tipo === "status_change"
+                                  ? "default"
+                                  : "secondary"
+                              }
+                              className="text-xs"
+                            >
+                              {interacao.tipo === "status_change"
+                                ? "Mudança de Status"
+                                : "Observação"}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {format(
+                                new Date(interacao.created_at),
+                                "dd/MM/yyyy 'às' HH:mm",
+                                { locale: ptBR }
+                              )}
+                            </span>
+                          </div>
+                          <p className="text-sm">{interacao.descricao}</p>
+                          {interacao.status_anterior && interacao.status_novo && (
+                            <div className="flex items-center gap-2 mt-2 text-xs">
+                              <Badge variant="outline">{interacao.status_anterior}</Badge>
+                              <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                              <Badge variant="outline">{interacao.status_novo}</Badge>
+                            </div>
                           )}
-                        </span>
+                        </div>
                       </div>
                     </div>
                   ))}
