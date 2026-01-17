@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Plus, Users, CalendarClock, FolderOpen, Filter, X, BarChart3 } from "lucide-react";
+import { Plus, Users, CalendarClock, FolderOpen, Filter, X, BarChart3, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -12,13 +12,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell } from "recharts";
 import { StatsCard } from "@/components/leads/StatsCard";
-import { LeadsTable } from "@/components/leads/LeadsTable";
+import { LeadsTableModern } from "@/components/leads/LeadsTableModern";
+import { SearchBar } from "@/components/leads/SearchBar";
 import { NewLeadModal } from "@/components/leads/NewLeadModal";
 import { DateRangePicker } from "@/components/leads/DateRangePicker";
 import { useLeads, useLeadsStats } from "@/hooks/useLeads";
 import { useActiveVendedores, useActiveTiposServico } from "@/hooks/useSettings";
 import { DateRange } from "react-day-picker";
-import { format, parseISO, isWithinInterval, startOfDay, endOfDay, startOfMonth } from "date-fns";
+import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 // Fixed colors for each salesperson
@@ -44,6 +45,7 @@ export default function Dashboard() {
   const [vendedorFilter, setVendedorFilter] = useState<string>("all");
   const [servicoFilter, setServicoFilter] = useState<string>("all");
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [searchQuery, setSearchQuery] = useState("");
   
   const { data: leads = [], isLoading: leadsLoading } = useLeads();
   const { data: stats, isLoading: statsLoading } = useLeadsStats();
@@ -104,17 +106,29 @@ export default function Dashboard() {
         matchDate = isWithinInterval(leadDate, { start: from, end: to });
       }
 
-      return matchVendedor && matchServico && matchDate;
+      // Search filter
+      let matchSearch = true;
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        matchSearch = 
+          (lead.empresa?.toLowerCase().includes(query)) ||
+          (lead.nome_contato?.toLowerCase().includes(query)) ||
+          (lead.vendedor?.toLowerCase().includes(query)) ||
+          false;
+      }
+
+      return matchVendedor && matchServico && matchDate && matchSearch;
     });
-  }, [activeLeads, vendedorFilter, servicoFilter, dateRange]);
+  }, [activeLeads, vendedorFilter, servicoFilter, dateRange, searchQuery]);
 
   const hasActiveFilters =
-    vendedorFilter !== "all" || servicoFilter !== "all" || dateRange !== undefined;
+    vendedorFilter !== "all" || servicoFilter !== "all" || dateRange !== undefined || searchQuery.trim() !== "";
 
   const clearFilters = () => {
     setVendedorFilter("all");
     setServicoFilter("all");
     setDateRange(undefined);
+    setSearchQuery("");
   };
 
   const formatMonthLabel = (monthKey: string) => {
@@ -139,8 +153,8 @@ export default function Dashboard() {
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* Stats Cards - 4 columns grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatsCard
           title="Total de Leads (Mês)"
           value={statsLoading ? "..." : stats?.totalMonth || 0}
@@ -159,7 +173,21 @@ export default function Dashboard() {
           icon={FolderOpen}
           description="Leads ativos aguardando fechamento"
         />
+        <StatsCard
+          title="Leads em Atraso"
+          value={statsLoading ? "..." : stats?.overdueLeads || 0}
+          icon={AlertTriangle}
+          description="Retornos não realizados"
+          variant="danger"
+        />
       </div>
+
+      {/* Global Search Bar */}
+      <SearchBar
+        value={searchQuery}
+        onChange={setSearchQuery}
+        placeholder="Buscar por empresa, contato ou vendedor..."
+      />
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3 p-4 rounded-lg bg-muted/50 border border-border">
@@ -229,7 +257,7 @@ export default function Dashboard() {
               <h2 className="text-lg font-semibold text-foreground mb-4 capitalize">
                 {formatMonthLabel(monthKey)}
               </h2>
-              <LeadsTable leads={monthLeads} isLoading={leadsLoading} />
+              <LeadsTableModern leads={monthLeads} isLoading={leadsLoading} />
             </div>
           ))}
           {groupedLeads.length === 0 && !leadsLoading && (
@@ -243,7 +271,7 @@ export default function Dashboard() {
           <h2 className="text-lg font-semibold text-foreground mb-4">
             Resultados Filtrados
           </h2>
-          <LeadsTable leads={filteredLeads} isLoading={leadsLoading} />
+          <LeadsTableModern leads={filteredLeads} isLoading={leadsLoading} />
         </div>
       )}
 
