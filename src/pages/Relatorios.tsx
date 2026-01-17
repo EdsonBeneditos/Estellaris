@@ -179,6 +179,23 @@ export default function Relatorios() {
       .sort((a, b) => b.count - a.count);
   }, [filteredLeads, servicosConfig]);
 
+  // Serviços mais convertidos (only converted leads)
+  const servicoConvertidoStats = useMemo(() => {
+    const convertedLeads = filteredLeads.filter((lead) => lead.status === "Convertido");
+    const counts: Record<string, number> = {};
+    convertedLeads.forEach((lead) => {
+      const servico = lead.tipo_servico || "Não informado";
+      counts[servico] = (counts[servico] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .map(([servico, count]) => ({ 
+        servico, 
+        count,
+        color: getServicoColor(servico)
+      }))
+      .sort((a, b) => b.count - a.count);
+  }, [filteredLeads, servicosConfig]);
+
   // Loss reasons stats
   const lossStats = useMemo(() => {
     const lostLeads = filteredLeads.filter((lead) => lead.status === "Perdido");
@@ -339,23 +356,26 @@ export default function Relatorios() {
               <ChartContainer config={chartConfig} className="h-[300px] w-full">
                 <BarChart
                   data={vendedorStats}
-                  layout="vertical"
-                  margin={{ left: 0, right: 20 }}
+                  layout="horizontal"
+                  margin={{ left: 10, right: 10, top: 20, bottom: 40 }}
                 >
                   <CartesianGrid
                     strokeDasharray="3 3"
                     horizontal={true}
                     vertical={false}
                   />
-                  <XAxis type="number" />
-                  <YAxis
-                    dataKey="vendedor"
+                  <XAxis 
+                    dataKey="vendedor" 
                     type="category"
-                    width={120}
-                    tick={{ fontSize: 12 }}
+                    tick={{ fontSize: 11 }}
+                    angle={-35}
+                    textAnchor="end"
+                    height={60}
+                    interval={0}
                   />
+                  <YAxis type="number" tick={{ fontSize: 11 }} />
                   <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="count" radius={[0, 4, 4, 0]} name="Leads">
+                  <Bar dataKey="count" radius={[4, 4, 0, 0]} name="Leads" barSize={32}>
                     {vendedorStats.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
@@ -452,24 +472,81 @@ export default function Relatorios() {
               <ChartContainer config={chartConfig} className="h-[300px] w-full">
                 <BarChart
                   data={servicoStats}
-                  layout="vertical"
-                  margin={{ left: 0, right: 20 }}
+                  layout="horizontal"
+                  margin={{ left: 10, right: 10, top: 20, bottom: 60 }}
                 >
                   <CartesianGrid
                     strokeDasharray="3 3"
                     horizontal={true}
                     vertical={false}
                   />
-                  <XAxis type="number" />
-                  <YAxis
-                    dataKey="servico"
+                  <XAxis 
+                    dataKey="servico" 
                     type="category"
-                    width={150}
-                    tick={{ fontSize: 11 }}
+                    tick={{ fontSize: 10 }}
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                    interval={0}
                   />
+                  <YAxis type="number" tick={{ fontSize: 11 }} />
                   <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="count" radius={[0, 4, 4, 0]} name="Leads">
+                  <Bar dataKey="count" radius={[4, 4, 0, 0]} name="Leads" barSize={28}>
                     {servicoStats.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ChartContainer>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Serviços Mais Convertidos */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-emerald-500" />
+              Serviços Mais Convertidos
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {leadsLoading ? (
+              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                Carregando...
+              </div>
+            ) : servicoConvertidoStats.length === 0 ? (
+              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                <div className="text-center">
+                  <TrendingUp className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p>Nenhuma conversão no período</p>
+                </div>
+              </div>
+            ) : (
+              <ChartContainer config={chartConfig} className="h-[300px] w-full">
+                <BarChart
+                  data={servicoConvertidoStats}
+                  layout="horizontal"
+                  margin={{ left: 10, right: 10, top: 20, bottom: 60 }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    horizontal={true}
+                    vertical={false}
+                  />
+                  <XAxis 
+                    dataKey="servico" 
+                    type="category"
+                    tick={{ fontSize: 10 }}
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                    interval={0}
+                  />
+                  <YAxis type="number" tick={{ fontSize: 11 }} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar dataKey="count" radius={[4, 4, 0, 0]} name="Convertidos" barSize={28}>
+                    {servicoConvertidoStats.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Bar>
@@ -483,7 +560,7 @@ export default function Relatorios() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
+              <Calendar className="h-5 w-5" />
               Volume de Leads por Dia
             </CardTitle>
           </CardHeader>

@@ -10,6 +10,7 @@ export interface FuturoLead {
   email: string | null;
   origem: string | null;
   observacoes: string | null;
+  data_prevista_contato: string;
   created_at: string;
   updated_at: string;
 }

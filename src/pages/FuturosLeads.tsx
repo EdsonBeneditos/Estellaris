@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { Plus, Trash2, ArrowRight, Users, Building2, Phone, Mail, MessageSquare } from "lucide-react";
+import { Plus, Trash2, ArrowRight, Users, Building2, Phone, Mail, MessageSquare, CalendarDays } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Dialog,
   DialogContent,
@@ -42,6 +44,9 @@ import { useActiveOrigens } from "@/hooks/useSettings";
 import { toast } from "sonner";
 import { maskCNPJ, maskPhone } from "@/lib/masks";
 import { SearchBar } from "@/components/leads/SearchBar";
+import { format, parseISO, isBefore, startOfDay } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 export default function FuturosLeads() {
   const { data: futurosLeads = [], isLoading } = useFuturosLeads();
@@ -60,6 +65,7 @@ export default function FuturosLeads() {
     email: "",
     origem: "",
     observacoes: "",
+    data_prevista_contato: new Date(),
   });
 
   const filteredLeads = futurosLeads.filter((lead) => {
@@ -73,8 +79,15 @@ export default function FuturosLeads() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.data_prevista_contato) {
+      toast.error("Data prevista de contacto é obrigatória");
+      return;
+    }
     try {
-      await createFuturoLead.mutateAsync(formData);
+      await createFuturoLead.mutateAsync({
+        ...formData,
+        data_prevista_contato: format(formData.data_prevista_contato, "yyyy-MM-dd"),
+      });
       toast.success("Prospect adicionado com sucesso!");
       setFormData({
         empresa: "",
@@ -84,6 +97,7 @@ export default function FuturosLeads() {
         email: "",
         origem: "",
         observacoes: "",
+        data_prevista_contato: new Date(),
       });
       setIsDialogOpen(false);
     } catch (error) {
@@ -213,6 +227,37 @@ export default function FuturosLeads() {
                 </div>
               </div>
               <div className="space-y-2">
+                <Label htmlFor="data_prevista_contato">Data Prevista de Contacto *</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !formData.data_prevista_contato && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarDays className="mr-2 h-4 w-4" />
+                      {formData.data_prevista_contato ? (
+                        format(formData.data_prevista_contato, "dd/MM/yyyy", { locale: ptBR })
+                      ) : (
+                        <span>Selecione a data</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={formData.data_prevista_contato}
+                      onSelect={(date) => date && setFormData({ ...formData, data_prevista_contato: date })}
+                      initialFocus
+                      className="p-3 pointer-events-auto"
+                      locale={ptBR}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="observacoes">Observações</Label>
                 <Textarea
                   id="observacoes"
@@ -302,6 +347,22 @@ export default function FuturosLeads() {
                 </div>
 
                 <div className="space-y-2 mb-4">
+                  {lead.data_prevista_contato && (
+                    <div className={cn(
+                      "flex items-center gap-2 text-sm px-2 py-1 rounded-md",
+                      isBefore(parseISO(lead.data_prevista_contato), startOfDay(new Date()))
+                        ? "bg-destructive/10 text-destructive"
+                        : "bg-primary/10 text-primary"
+                    )}>
+                      <CalendarDays className="h-3.5 w-3.5" />
+                      <span className="font-medium">
+                        {format(parseISO(lead.data_prevista_contato), "dd/MM/yyyy", { locale: ptBR })}
+                      </span>
+                      {isBefore(parseISO(lead.data_prevista_contato), startOfDay(new Date())) && (
+                        <Badge variant="destructive" className="text-[10px] h-4 px-1.5">Atrasado</Badge>
+                      )}
+                    </div>
+                  )}
                   {lead.nome_contato && (
                     <div className="flex items-center gap-2 text-sm">
                       <Users className="h-3.5 w-3.5 text-muted-foreground" />
