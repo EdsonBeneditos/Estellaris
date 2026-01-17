@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           cnpj: string | null
           created_at: string
+          data_prevista_contato: string
           email: string | null
           empresa: string | null
           id: string
@@ -30,6 +31,7 @@ export type Database = {
         Insert: {
           cnpj?: string | null
           created_at?: string
+          data_prevista_contato?: string
           email?: string | null
           empresa?: string | null
           id?: string
@@ -42,6 +44,7 @@ export type Database = {
         Update: {
           cnpj?: string | null
           created_at?: string
+          data_prevista_contato?: string
           email?: string | null
           empresa?: string | null
           id?: string
