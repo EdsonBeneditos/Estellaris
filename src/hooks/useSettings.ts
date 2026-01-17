@@ -6,6 +6,7 @@ export interface Vendedor {
   id: string;
   nome: string;
   ativo: boolean;
+  cor: string | null;
   created_at: string;
 }
 
@@ -13,6 +14,7 @@ export interface TipoServico {
   id: string;
   nome: string;
   ativo: boolean;
+  cor: string | null;
   created_at: string;
 }
 
@@ -20,6 +22,7 @@ export interface Origem {
   id: string;
   nome: string;
   ativo: boolean;
+  cor: string | null;
   created_at: string;
 }
 
@@ -91,6 +94,22 @@ export function useToggleVendedor() {
       const { error } = await supabase
         .from("vendedores")
         .update({ ativo })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["vendedores"] });
+    },
+  });
+}
+
+export function useUpdateVendedorColor() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, cor }: { id: string; cor: string }) => {
+      const { error } = await supabase
+        .from("vendedores")
+        .update({ cor })
         .eq("id", id);
       if (error) throw error;
     },
@@ -177,6 +196,22 @@ export function useToggleTipoServico() {
   });
 }
 
+export function useUpdateTipoServicoColor() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, cor }: { id: string; cor: string }) => {
+      const { error } = await supabase
+        .from("tipos_servico")
+        .update({ cor })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tipos-servico"] });
+    },
+  });
+}
+
 // Origens
 export function useOrigens() {
   return useQuery({
@@ -245,6 +280,22 @@ export function useToggleOrigem() {
       const { error } = await supabase
         .from("origens")
         .update({ ativo })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["origens"] });
+    },
+  });
+}
+
+export function useUpdateOrigemColor() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, cor }: { id: string; cor: string }) => {
+      const { error } = await supabase
+        .from("origens")
+        .update({ cor })
         .eq("id", id);
       if (error) throw error;
     },

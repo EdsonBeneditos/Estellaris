@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, BarChart3, Settings, LogOut } from "lucide-react";
+import { LayoutDashboard, Users, BarChart3, Settings, LogOut, UserPlus } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import logo from "@/assets/logo.png";
@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 const baseMenuItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Leads", url: "/leads", icon: Users },
+  { title: "Futuros Leads", url: "/futuros-leads", icon: UserPlus },
   { title: "Relatórios", url: "/relatorios", icon: BarChart3 },
 ];
 
