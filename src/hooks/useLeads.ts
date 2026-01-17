@@ -55,10 +55,20 @@ export function useLeadsStats() {
 
       if (openError) throw openError;
 
+      // Overdue leads (return date before today and not finalized)
+      const { count: overdueLeads, error: overdueError } = await supabase
+        .from("leads")
+        .select("*", { count: "exact", head: true })
+        .lt("data_retorno", todayStart)
+        .not("status", "in", '("Fechado","Convertido","Perdido")');
+
+      if (overdueError) throw overdueError;
+
       return {
         totalMonth: totalMonth || 0,
         todayReturns: todayReturns || 0,
         openLeads: openLeads || 0,
+        overdueLeads: overdueLeads || 0,
       };
     },
   });

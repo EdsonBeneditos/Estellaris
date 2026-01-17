@@ -8,7 +8,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { LeadsTable } from "@/components/leads/LeadsTable";
+import { LeadsTableModern } from "@/components/leads/LeadsTableModern";
+import { SearchBar } from "@/components/leads/SearchBar";
 import { NewLeadModal } from "@/components/leads/NewLeadModal";
 import { DateRangePicker } from "@/components/leads/DateRangePicker";
 import { useLeads } from "@/hooks/useLeads";
@@ -29,6 +30,7 @@ export default function Leads() {
   const [servicoFilter, setServicoFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { data: leads = [], isLoading } = useLeads();
   const { data: vendedores = [] } = useActiveVendedores();
@@ -69,21 +71,34 @@ export default function Leads() {
         matchDate = isWithinInterval(leadDate, { start: from, end: to });
       }
 
-      return matchVendedor && matchServico && matchStatus && matchDate;
+      // Search filter
+      let matchSearch = true;
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        matchSearch = 
+          (lead.empresa?.toLowerCase().includes(query)) ||
+          (lead.nome_contato?.toLowerCase().includes(query)) ||
+          (lead.vendedor?.toLowerCase().includes(query)) ||
+          false;
+      }
+
+      return matchVendedor && matchServico && matchStatus && matchDate && matchSearch;
     });
-  }, [leads, vendedorFilter, servicoFilter, statusFilter, dateRange]);
+  }, [leads, vendedorFilter, servicoFilter, statusFilter, dateRange, searchQuery]);
 
   const hasActiveFilters =
     vendedorFilter !== "all" ||
     servicoFilter !== "all" ||
     statusFilter !== "all" ||
-    dateRange !== undefined;
+    dateRange !== undefined ||
+    searchQuery.trim() !== "";
 
   const clearFilters = () => {
     setVendedorFilter("all");
     setServicoFilter("all");
     setStatusFilter("all");
     setDateRange(undefined);
+    setSearchQuery("");
   };
 
   const formatMonthLabel = (monthKey: string) => {
@@ -120,8 +135,15 @@ export default function Leads() {
         </Button>
       </div>
 
+      {/* Global Search Bar */}
+      <SearchBar
+        value={searchQuery}
+        onChange={setSearchQuery}
+        placeholder="Buscar por empresa, contato ou vendedor..."
+      />
+
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3 p-4 rounded-lg bg-muted/50 border border-border">
+      <div className="flex flex-wrap items-center gap-3 p-4 rounded-xl bg-card/50 backdrop-blur-sm border border-border/50">
         <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
           <Filter className="h-4 w-4" />
           Filtros:
@@ -202,7 +224,7 @@ export default function Leads() {
               <h2 className="text-lg font-semibold text-foreground mb-4 capitalize">
                 {formatMonthLabel(monthKey)}
               </h2>
-              <LeadsTable leads={monthLeads} isLoading={isLoading} />
+              <LeadsTableModern leads={monthLeads} isLoading={isLoading} />
             </div>
           ))}
           {groupedLeads.length === 0 && !isLoading && (
@@ -216,7 +238,7 @@ export default function Leads() {
           <h2 className="text-lg font-semibold text-foreground mb-4">
             Resultados Filtrados
           </h2>
-          <LeadsTable leads={filteredLeads} isLoading={isLoading} />
+          <LeadsTableModern leads={filteredLeads} isLoading={isLoading} />
         </div>
       )}
 
