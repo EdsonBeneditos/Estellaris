@@ -14,6 +14,7 @@ import Configuracoes from "@/pages/Configuracoes";
 import Estoque from "@/pages/Estoque";
 import Orcamentos from "@/pages/Orcamentos";
 import NotasFiscais from "@/pages/NotasFiscais";
+import Financeiro from "@/pages/Financeiro";
 import Login from "@/pages/Login";
 import NotFound from "@/pages/NotFound";
 
@@ -92,6 +93,16 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <NotasFiscais />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/financeiro"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <Financeiro />
+                  </MainLayout>
                 </ProtectedRoute>
               }
             />

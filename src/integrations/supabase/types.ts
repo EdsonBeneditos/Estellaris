@@ -14,6 +14,75 @@ export type Database = {
   }
   public: {
     Tables: {
+      caixas: {
+        Row: {
+          created_at: string
+          data_abertura: string
+          data_fechamento: string | null
+          diferenca: number | null
+          id: string
+          observacoes: string | null
+          saldo_final: number | null
+          saldo_inicial: number
+          saldo_sistema: number | null
+          status: string
+          usuario_abertura: string
+          usuario_fechamento: string | null
+        }
+        Insert: {
+          created_at?: string
+          data_abertura?: string
+          data_fechamento?: string | null
+          diferenca?: number | null
+          id?: string
+          observacoes?: string | null
+          saldo_final?: number | null
+          saldo_inicial?: number
+          saldo_sistema?: number | null
+          status?: string
+          usuario_abertura: string
+          usuario_fechamento?: string | null
+        }
+        Update: {
+          created_at?: string
+          data_abertura?: string
+          data_fechamento?: string | null
+          diferenca?: number | null
+          id?: string
+          observacoes?: string | null
+          saldo_final?: number | null
+          saldo_inicial?: number
+          saldo_sistema?: number | null
+          status?: string
+          usuario_abertura?: string
+          usuario_fechamento?: string | null
+        }
+        Relationships: []
+      }
+      categorias_financeiras: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          nome: string
+          tipo: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome: string
+          tipo?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome?: string
+          tipo?: string
+        }
+        Relationships: []
+      }
       futuros_leads: {
         Row: {
           cnpj: string | null
@@ -186,6 +255,73 @@ export type Database = {
           vendedor?: string | null
         }
         Relationships: []
+      }
+      movimentacoes_caixa: {
+        Row: {
+          caixa_id: string | null
+          categoria_id: string | null
+          categoria_nome: string | null
+          created_at: string
+          data_hora: string
+          descricao: string | null
+          forma_pagamento: string
+          id: string
+          orcamento_id: string | null
+          tipo: string
+          usuario_email: string | null
+          valor: number
+        }
+        Insert: {
+          caixa_id?: string | null
+          categoria_id?: string | null
+          categoria_nome?: string | null
+          created_at?: string
+          data_hora?: string
+          descricao?: string | null
+          forma_pagamento?: string
+          id?: string
+          orcamento_id?: string | null
+          tipo: string
+          usuario_email?: string | null
+          valor?: number
+        }
+        Update: {
+          caixa_id?: string | null
+          categoria_id?: string | null
+          categoria_nome?: string | null
+          created_at?: string
+          data_hora?: string
+          descricao?: string | null
+          forma_pagamento?: string
+          id?: string
+          orcamento_id?: string | null
+          tipo?: string
+          usuario_email?: string | null
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "movimentacoes_caixa_caixa_id_fkey"
+            columns: ["caixa_id"]
+            isOneToOne: false
+            referencedRelation: "caixas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimentacoes_caixa_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categorias_financeiras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimentacoes_caixa_orcamento_id_fkey"
+            columns: ["orcamento_id"]
+            isOneToOne: false
+            referencedRelation: "orcamentos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       nota_fiscal_itens: {
         Row: {

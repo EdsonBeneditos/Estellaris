@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, BarChart3, Settings, LogOut, UserPlus, Package, FileText, Receipt } from "lucide-react";
+import { LayoutDashboard, Users, BarChart3, Settings, LogOut, UserPlus, Package, FileText, Receipt, Wallet } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -26,6 +26,7 @@ const baseMenuItems = [
   { title: "Estoque", url: "/estoque", icon: Package },
   { title: "Orçamentos", url: "/orcamentos", icon: FileText },
   { title: "Notas Fiscais", url: "/notas-fiscais", icon: Receipt },
+  { title: "Financeiro", url: "/financeiro", icon: Wallet },
   { title: "Relatórios", url: "/relatorios", icon: BarChart3 },
 ];
 

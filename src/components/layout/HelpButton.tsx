@@ -153,6 +153,36 @@ const helpContents: Record<string, HelpContent> = {
       },
     ],
   },
+  "/financeiro": {
+    title: "Financeiro / Caixa - Manual Rápido",
+    description: "Controle de caixa, movimentações financeiras e fluxo de caixa.",
+    sections: [
+      {
+        title: "🔓 Abertura de Caixa",
+        content: "Inicie o dia clicando em 'Abrir Caixa' e informe o saldo inicial em dinheiro. O caixa precisa estar aberto para registrar movimentações.",
+      },
+      {
+        title: "💵 Registrar Movimentação",
+        content: "Clique em 'Nova Movimentação' para registrar entradas (recebimentos) ou saídas (despesas). Selecione categoria e forma de pagamento.",
+      },
+      {
+        title: "🔗 Vendas Automáticas",
+        content: "Quando um orçamento é aprovado, uma entrada é criada automaticamente no caixa com os dados da venda.",
+      },
+      {
+        title: "🔒 Fechamento de Caixa",
+        content: "No final do dia, clique em 'Fechar Caixa'. Informe o valor conferido fisicamente. O sistema compara com o saldo calculado e mostra eventuais diferenças.",
+      },
+      {
+        title: "📊 Totalizadores",
+        content: "Visualize o total de entradas, saídas e saldo líquido do período. O resumo por forma de pagamento mostra quanto entrou em cada método (Pix, Cartão, Dinheiro).",
+      },
+      {
+        title: "🔍 Filtros",
+        content: "Use os botões rápidos (Hoje, Semana, Mês) ou selecione um período personalizado. Filtre também por forma de pagamento ou tipo (Entrada/Saída).",
+      },
+    ],
+  },
   "/relatorios": {
     title: "Relatórios - Manual Rápido",
     description: "Análises e relatórios gerenciais.",
