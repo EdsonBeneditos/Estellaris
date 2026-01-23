@@ -187,6 +187,227 @@ export type Database = {
         }
         Relationships: []
       }
+      nota_fiscal_itens: {
+        Row: {
+          aliquota_icms: number | null
+          aliquota_ipi: number | null
+          base_icms: number | null
+          cfop: string | null
+          codigo: string
+          created_at: string
+          descricao: string
+          id: string
+          ncm: string | null
+          nota_fiscal_id: string
+          produto_id: string
+          quantidade: number
+          unidade: string
+          valor_icms: number | null
+          valor_ipi: number | null
+          valor_total: number
+          valor_unitario: number
+        }
+        Insert: {
+          aliquota_icms?: number | null
+          aliquota_ipi?: number | null
+          base_icms?: number | null
+          cfop?: string | null
+          codigo: string
+          created_at?: string
+          descricao: string
+          id?: string
+          ncm?: string | null
+          nota_fiscal_id: string
+          produto_id: string
+          quantidade?: number
+          unidade?: string
+          valor_icms?: number | null
+          valor_ipi?: number | null
+          valor_total: number
+          valor_unitario: number
+        }
+        Update: {
+          aliquota_icms?: number | null
+          aliquota_ipi?: number | null
+          base_icms?: number | null
+          cfop?: string | null
+          codigo?: string
+          created_at?: string
+          descricao?: string
+          id?: string
+          ncm?: string | null
+          nota_fiscal_id?: string
+          produto_id?: string
+          quantidade?: number
+          unidade?: string
+          valor_icms?: number | null
+          valor_ipi?: number | null
+          valor_total?: number
+          valor_unitario?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nota_fiscal_itens_nota_fiscal_id_fkey"
+            columns: ["nota_fiscal_id"]
+            isOneToOne: false
+            referencedRelation: "notas_fiscais"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nota_fiscal_itens_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notas_fiscais: {
+        Row: {
+          base_calculo_icms: number | null
+          base_calculo_icms_st: number | null
+          chave_acesso: string | null
+          created_at: string
+          data_emissao: string | null
+          data_saida: string | null
+          destinatario_cep: string | null
+          destinatario_cidade: string | null
+          destinatario_cnpj: string | null
+          destinatario_email: string | null
+          destinatario_endereco: string | null
+          destinatario_ie: string | null
+          destinatario_nome: string
+          destinatario_telefone: string | null
+          destinatario_uf: string | null
+          emitente_cep: string | null
+          emitente_cidade: string | null
+          emitente_cnpj: string | null
+          emitente_endereco: string | null
+          emitente_ie: string | null
+          emitente_razao_social: string | null
+          emitente_telefone: string | null
+          emitente_uf: string | null
+          id: string
+          informacoes_adicionais: string | null
+          natureza_operacao: string | null
+          numero_nota: number
+          observacoes_fisco: string | null
+          orcamento_id: string | null
+          status: string
+          updated_at: string
+          valor_cofins: number | null
+          valor_desconto: number | null
+          valor_frete: number | null
+          valor_icms: number | null
+          valor_icms_st: number | null
+          valor_ipi: number | null
+          valor_outras_despesas: number | null
+          valor_pis: number | null
+          valor_produtos: number
+          valor_seguro: number | null
+          valor_total: number
+          valor_total_tributos: number | null
+        }
+        Insert: {
+          base_calculo_icms?: number | null
+          base_calculo_icms_st?: number | null
+          chave_acesso?: string | null
+          created_at?: string
+          data_emissao?: string | null
+          data_saida?: string | null
+          destinatario_cep?: string | null
+          destinatario_cidade?: string | null
+          destinatario_cnpj?: string | null
+          destinatario_email?: string | null
+          destinatario_endereco?: string | null
+          destinatario_ie?: string | null
+          destinatario_nome: string
+          destinatario_telefone?: string | null
+          destinatario_uf?: string | null
+          emitente_cep?: string | null
+          emitente_cidade?: string | null
+          emitente_cnpj?: string | null
+          emitente_endereco?: string | null
+          emitente_ie?: string | null
+          emitente_razao_social?: string | null
+          emitente_telefone?: string | null
+          emitente_uf?: string | null
+          id?: string
+          informacoes_adicionais?: string | null
+          natureza_operacao?: string | null
+          numero_nota?: number
+          observacoes_fisco?: string | null
+          orcamento_id?: string | null
+          status?: string
+          updated_at?: string
+          valor_cofins?: number | null
+          valor_desconto?: number | null
+          valor_frete?: number | null
+          valor_icms?: number | null
+          valor_icms_st?: number | null
+          valor_ipi?: number | null
+          valor_outras_despesas?: number | null
+          valor_pis?: number | null
+          valor_produtos?: number
+          valor_seguro?: number | null
+          valor_total?: number
+          valor_total_tributos?: number | null
+        }
+        Update: {
+          base_calculo_icms?: number | null
+          base_calculo_icms_st?: number | null
+          chave_acesso?: string | null
+          created_at?: string
+          data_emissao?: string | null
+          data_saida?: string | null
+          destinatario_cep?: string | null
+          destinatario_cidade?: string | null
+          destinatario_cnpj?: string | null
+          destinatario_email?: string | null
+          destinatario_endereco?: string | null
+          destinatario_ie?: string | null
+          destinatario_nome?: string
+          destinatario_telefone?: string | null
+          destinatario_uf?: string | null
+          emitente_cep?: string | null
+          emitente_cidade?: string | null
+          emitente_cnpj?: string | null
+          emitente_endereco?: string | null
+          emitente_ie?: string | null
+          emitente_razao_social?: string | null
+          emitente_telefone?: string | null
+          emitente_uf?: string | null
+          id?: string
+          informacoes_adicionais?: string | null
+          natureza_operacao?: string | null
+          numero_nota?: number
+          observacoes_fisco?: string | null
+          orcamento_id?: string | null
+          status?: string
+          updated_at?: string
+          valor_cofins?: number | null
+          valor_desconto?: number | null
+          valor_frete?: number | null
+          valor_icms?: number | null
+          valor_icms_st?: number | null
+          valor_ipi?: number | null
+          valor_outras_despesas?: number | null
+          valor_pis?: number | null
+          valor_produtos?: number
+          valor_seguro?: number | null
+          valor_total?: number
+          valor_total_tributos?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notas_fiscais_orcamento_id_fkey"
+            columns: ["orcamento_id"]
+            isOneToOne: false
+            referencedRelation: "orcamentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orcamento_itens: {
         Row: {
           created_at: string
