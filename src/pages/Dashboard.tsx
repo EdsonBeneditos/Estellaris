@@ -138,16 +138,16 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full overflow-x-hidden">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-muted-foreground mt-1 truncate">
             Gerencie seus leads e acompanhe o progresso
           </p>
         </div>
-        <Button onClick={() => setIsModalOpen(true)} className="gap-2 w-full sm:w-auto">
+        <Button onClick={() => setIsModalOpen(true)} className="gap-2 w-full sm:w-auto shrink-0">
           <Plus className="h-4 w-4" />
           Novo Lead
         </Button>
@@ -190,7 +190,7 @@ export default function Dashboard() {
       />
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3 p-4 rounded-lg bg-muted/50 border border-border">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3 p-4 rounded-lg bg-muted/50 border border-border">
         <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
           <Filter className="h-4 w-4" />
           Filtros:
@@ -230,23 +230,25 @@ export default function Dashboard() {
           className="w-full sm:w-auto"
         />
 
-        {hasActiveFilters && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={clearFilters}
-            className="gap-1 text-muted-foreground hover:text-foreground"
-          >
-            <X className="h-4 w-4" />
-            Limpar
-          </Button>
-        )}
+        <div className="flex items-center gap-2 sm:ml-auto">
+          {hasActiveFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearFilters}
+              className="gap-1 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+              Limpar
+            </Button>
+          )}
 
-        {hasActiveFilters && (
-          <span className="text-sm text-muted-foreground ml-auto">
-            {filteredLeads.length} lead(s) encontrado(s)
-          </span>
-        )}
+          {hasActiveFilters && (
+            <span className="text-sm text-muted-foreground">
+              {filteredLeads.length} lead(s)
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Leads Table - Grouped by Month when no filters */}
@@ -275,40 +277,48 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Desempenho por Vendedor Chart */}
-      <Card>
+      {/* Desempenho por Vendedor Chart - Vertical with thin bars */}
+      <Card className="overflow-hidden">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BarChart3 className="h-5 w-5" />
             Desempenho por Vendedor
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="overflow-x-auto">
           {leadsLoading ? (
-            <div className="h-[280px] flex items-center justify-center text-muted-foreground">
+            <div className="h-[320px] flex items-center justify-center text-muted-foreground">
               Carregando...
             </div>
           ) : vendedorStats.length === 0 ? (
-            <div className="h-[280px] flex items-center justify-center text-muted-foreground">
+            <div className="h-[320px] flex items-center justify-center text-muted-foreground">
               Nenhum dado disponível
             </div>
           ) : (
-            <ChartContainer config={chartConfig} className="h-[280px] w-full">
+            <ChartContainer config={chartConfig} className="h-[320px] w-full min-w-[300px]">
               <BarChart
                 data={vendedorStats}
-                layout="vertical"
-                margin={{ left: 0, right: 20 }}
+                layout="horizontal"
+                margin={{ top: 20, right: 20, left: 10, bottom: 60 }}
               >
-                <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
-                <XAxis type="number" />
-                <YAxis
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis 
                   dataKey="vendedor"
                   type="category"
-                  width={120}
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: 11 }}
+                  angle={-35}
+                  textAnchor="end"
+                  height={60}
+                  interval={0}
+                />
+                <YAxis 
+                  type="number"
+                  allowDecimals={false}
+                  tickFormatter={(value) => Math.floor(value).toString()}
+                  tick={{ fontSize: 11 }}
                 />
                 <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="count" radius={[0, 4, 4, 0]} name="Leads">
+                <Bar dataKey="count" radius={[4, 4, 0, 0]} name="Leads" barSize={32}>
                   {vendedorStats.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}

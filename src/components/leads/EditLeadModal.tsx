@@ -60,13 +60,14 @@ import { useActiveVendedores } from "@/hooks/useSettings";
 import { usePermissions } from "@/hooks/usePermissions";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { STATUS_OPTIONS, PRIORIDADES, MOTIVOS_PERDA } from "@/lib/constants";
+import { STATUS_OPTIONS, PRIORIDADES, MOTIVOS_PERDA, MEIOS_CONTATO } from "@/lib/constants";
 
 // Schema with conditional validation for motivo_perda
 const formSchema = z.object({
   status: z.string().optional(),
   prioridade: z.string().optional(),
   vendedor: z.string().optional(),
+  meio_contato: z.string().optional(),
   data_retorno: z.date().optional().nullable(),
   proximo_passo: z.string().optional(),
   motivo_perda: z.string().optional(),
@@ -123,6 +124,7 @@ export function EditLeadModal({ lead, open, onOpenChange }: EditLeadModalProps) 
         status: lead.status || "Novo",
         prioridade: lead.prioridade || "",
         vendedor: lead.vendedor || "",
+        meio_contato: lead.meio_contato || "",
         data_retorno: lead.data_retorno ? new Date(lead.data_retorno) : null,
         proximo_passo: lead.proximo_passo || "",
         motivo_perda: lead.motivo_perda || "",
@@ -400,7 +402,7 @@ export function EditLeadModal({ lead, open, onOpenChange }: EditLeadModalProps) 
                   </div>
                 )}
 
-                {/* Vendedor e Data de Retorno */}
+                {/* Vendedor e Meio de Contato */}
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
@@ -432,45 +434,75 @@ export function EditLeadModal({ lead, open, onOpenChange }: EditLeadModalProps) 
                   />
                   <FormField
                     control={form.control}
-                    name="data_retorno"
+                    name="meio_contato"
                     render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel>Data de Retorno</FormLabel>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant="outline"
-                                disabled={isConcluded}
-                                className={cn(
-                                  "w-full pl-3 text-left font-normal",
-                                  !field.value && "text-muted-foreground"
-                                )}
-                              >
-                                {field.value ? (
-                                  format(field.value, "dd/MM/yyyy")
-                                ) : (
-                                  <span>Selecione uma data</span>
-                                )}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={field.value || undefined}
-                              onSelect={field.onChange}
-                              initialFocus
-                              className={cn("p-3 pointer-events-auto")}
-                            />
-                          </PopoverContent>
-                        </Popover>
+                      <FormItem>
+                        <FormLabel>Meio de Contato</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                          disabled={isConcluded}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {MEIOS_CONTATO.map((meio) => (
+                              <SelectItem key={meio} value={meio}>
+                                {meio}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
                 </div>
+
+                {/* Data de Retorno */}
+                <FormField
+                  control={form.control}
+                  name="data_retorno"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Data de Retorno</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              disabled={isConcluded}
+                              className={cn(
+                                "w-full pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value ? (
+                                format(field.value, "dd/MM/yyyy")
+                              ) : (
+                                <span>Selecione uma data</span>
+                              )}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value || undefined}
+                            onSelect={field.onChange}
+                            initialFocus
+                            className={cn("p-3 pointer-events-auto")}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                 {/* Próximo Passo */}
                 <FormField

@@ -80,7 +80,7 @@ export default function FuturosLeads() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.data_prevista_contato) {
-      toast.error("Data prevista de contacto é obrigatória");
+      toast.error("Data prevista de contato é obrigatória");
       return;
     }
     try {
@@ -227,7 +227,7 @@ export default function FuturosLeads() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="data_prevista_contato">Data Prevista de Contacto *</Label>
+                <Label htmlFor="data_prevista_contato">Data Prevista de Contato *</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
