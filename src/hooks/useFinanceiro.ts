@@ -20,6 +20,7 @@ export interface MovimentacaoCaixa {
   descricao: string | null;
   data_hora: string;
   usuario_email: string | null;
+  realizado_por: string | null;
   orcamento_id: string | null;
   caixa_id: string | null;
   created_at: string;
