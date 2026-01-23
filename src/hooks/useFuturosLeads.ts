@@ -84,7 +84,7 @@ export function useConvertToActiveLead() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (futuroLead: FuturoLead) => {
-      // Create active lead
+      // Create active lead with all mapped fields including meio_contato
       const { error: createError } = await supabase.from("leads").insert({
         empresa: futuroLead.empresa,
         cnpj: futuroLead.cnpj,
@@ -93,6 +93,8 @@ export function useConvertToActiveLead() {
         email: futuroLead.email,
         origem: futuroLead.origem,
         status: "Novo",
+        // Default meio_contato based on available contact info
+        meio_contato: futuroLead.telefone ? "Telefone" : (futuroLead.email ? "E-mail" : null),
       });
       
       if (createError) throw createError;

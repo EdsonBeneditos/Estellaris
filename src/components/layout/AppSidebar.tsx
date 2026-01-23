@@ -1,7 +1,6 @@
 import { LayoutDashboard, Users, BarChart3, Settings, LogOut, UserPlus } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
-import logo from "@/assets/logo.png";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { toast } from "sonner";
@@ -53,12 +52,13 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
       <SidebarHeader className="p-4 border-b border-sidebar-border">
-        <div className="flex items-center justify-center">
-          <img
-            src={logo}
-            alt="Acqua Nobilis"
-            className="h-10 w-auto object-contain"
-          />
+        <div className="flex items-center justify-center gap-2">
+          <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
+            <span className="text-sm font-bold text-primary">CRM</span>
+          </div>
+          <span className="font-semibold text-foreground group-data-[collapsible=icon]:hidden">
+            Meu CRM
+          </span>
         </div>
       </SidebarHeader>
 

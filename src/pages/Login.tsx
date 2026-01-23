@@ -7,7 +7,6 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
-import logo from "@/assets/logo.png";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -40,12 +39,11 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: 'hsl(215, 50%, 15%)' }}>
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center mb-8">
-          <img
-            src={logo}
-            alt="Acqua Nobilis"
-            className="h-20 w-auto object-contain mb-4"
-          />
-          <p className="text-muted-foreground text-center text-sm">
+          <div className="h-20 w-20 rounded-xl bg-primary/20 flex items-center justify-center mb-4">
+            <span className="text-3xl font-bold text-primary">CRM</span>
+          </div>
+          <h1 className="text-2xl font-bold text-white">Meu CRM</h1>
+          <p className="text-white/70 text-center text-sm mt-1">
             Sistema de Gestão de Leads
           </p>
         </div>
@@ -102,7 +100,7 @@ export default function Login() {
         </Card>
         
         <p className="text-center text-xs text-white/70 mt-6">
-          Soluções em Gestão Ambiental
+          Sistema de Gestão de Leads e Vendas
         </p>
       </div>
     </div>
