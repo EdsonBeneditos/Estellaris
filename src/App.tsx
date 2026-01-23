@@ -12,6 +12,7 @@ import FuturosLeads from "@/pages/FuturosLeads";
 import Relatorios from "@/pages/Relatorios";
 import Configuracoes from "@/pages/Configuracoes";
 import Estoque from "@/pages/Estoque";
+import Orcamentos from "@/pages/Orcamentos";
 import Login from "@/pages/Login";
 import NotFound from "@/pages/NotFound";
 
@@ -71,6 +72,16 @@ const App = () => (
                 <ProtectedRoute>
                   <MainLayout>
                     <Estoque />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/orcamentos"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <Orcamentos />
                   </MainLayout>
                 </ProtectedRoute>
               }

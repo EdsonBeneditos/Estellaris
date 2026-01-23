@@ -128,3 +128,64 @@
     scrollbar-width: thin;
   }
 }
+
+/* Print styles for document preview */
+@media print {
+  body {
+    margin: 0;
+    padding: 0;
+    background: white !important;
+  }
+  
+  /* Hide everything except the print content */
+  body > *:not(.print-content) {
+    display: none !important;
+  }
+
+  /* Hide sidebar, header, and other UI elements */
+  [data-sidebar],
+  .sidebar,
+  nav,
+  header,
+  footer,
+  .no-print {
+    display: none !important;
+  }
+
+  /* Show only the document */
+  .print-content {
+    display: block !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+
+  /* Dialog adjustments */
+  [role="dialog"] {
+    position: absolute !important;
+    transform: none !important;
+    max-width: none !important;
+    max-height: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Hide dialog overlays and close buttons */
+  [data-state="open"][role="dialog"] > *:not(:last-child) {
+    display: none !important;
+  }
+
+  /* Document preview styles */
+  .document-preview {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0 auto;
+    padding: 20mm;
+    background: white;
+    box-shadow: none;
+  }
+}
