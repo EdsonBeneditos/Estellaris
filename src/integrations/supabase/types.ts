@@ -187,6 +187,134 @@ export type Database = {
         }
         Relationships: []
       }
+      orcamento_itens: {
+        Row: {
+          created_at: string
+          desconto_percentual: number | null
+          desconto_valor: number | null
+          id: string
+          orcamento_id: string
+          preco_unitario: number
+          produto_id: string
+          produto_nome: string
+          produto_sku: string
+          quantidade: number
+          unidade_medida: string
+          valor_total: number
+        }
+        Insert: {
+          created_at?: string
+          desconto_percentual?: number | null
+          desconto_valor?: number | null
+          id?: string
+          orcamento_id: string
+          preco_unitario: number
+          produto_id: string
+          produto_nome: string
+          produto_sku: string
+          quantidade?: number
+          unidade_medida?: string
+          valor_total: number
+        }
+        Update: {
+          created_at?: string
+          desconto_percentual?: number | null
+          desconto_valor?: number | null
+          id?: string
+          orcamento_id?: string
+          preco_unitario?: number
+          produto_id?: string
+          produto_nome?: string
+          produto_sku?: string
+          quantidade?: number
+          unidade_medida?: string
+          valor_total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orcamento_itens_orcamento_id_fkey"
+            columns: ["orcamento_id"]
+            isOneToOne: false
+            referencedRelation: "orcamentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orcamento_itens_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orcamentos: {
+        Row: {
+          cliente_cnpj: string | null
+          cliente_email: string | null
+          cliente_endereco: string | null
+          cliente_nome: string | null
+          cliente_telefone: string | null
+          created_at: string
+          data_validade: string | null
+          desconto_total: number
+          id: string
+          lead_id: string | null
+          numero_orcamento: number
+          observacoes: string | null
+          status: string
+          subtotal: number
+          updated_at: string
+          validade_dias: number | null
+          valor_total: number
+        }
+        Insert: {
+          cliente_cnpj?: string | null
+          cliente_email?: string | null
+          cliente_endereco?: string | null
+          cliente_nome?: string | null
+          cliente_telefone?: string | null
+          created_at?: string
+          data_validade?: string | null
+          desconto_total?: number
+          id?: string
+          lead_id?: string | null
+          numero_orcamento?: number
+          observacoes?: string | null
+          status?: string
+          subtotal?: number
+          updated_at?: string
+          validade_dias?: number | null
+          valor_total?: number
+        }
+        Update: {
+          cliente_cnpj?: string | null
+          cliente_email?: string | null
+          cliente_endereco?: string | null
+          cliente_nome?: string | null
+          cliente_telefone?: string | null
+          created_at?: string
+          data_validade?: string | null
+          desconto_total?: number
+          id?: string
+          lead_id?: string | null
+          numero_orcamento?: number
+          observacoes?: string | null
+          status?: string
+          subtotal?: number
+          updated_at?: string
+          validade_dias?: number | null
+          valor_total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orcamentos_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       origens: {
         Row: {
           ativo: boolean
