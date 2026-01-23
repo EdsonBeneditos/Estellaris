@@ -373,7 +373,7 @@ export default function Relatorios() {
                     height={60}
                     interval={0}
                   />
-                  <YAxis type="number" tick={{ fontSize: 11 }} />
+                  <YAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Bar dataKey="count" radius={[4, 4, 0, 0]} name="Leads" barSize={32}>
                     {vendedorStats.map((entry, index) => (
@@ -489,7 +489,7 @@ export default function Relatorios() {
                     height={80}
                     interval={0}
                   />
-                  <YAxis type="number" tick={{ fontSize: 11 }} />
+                  <YAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Bar dataKey="count" radius={[4, 4, 0, 0]} name="Leads" barSize={28}>
                     {servicoStats.map((entry, index) => (
@@ -543,7 +543,7 @@ export default function Relatorios() {
                     height={80}
                     interval={0}
                   />
-                  <YAxis type="number" tick={{ fontSize: 11 }} />
+                  <YAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Bar dataKey="count" radius={[4, 4, 0, 0]} name="Convertidos" barSize={28}>
                     {servicoConvertidoStats.map((entry, index) => (
