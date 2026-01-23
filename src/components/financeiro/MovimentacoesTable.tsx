@@ -10,6 +10,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -25,7 +31,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MoreHorizontal, Pencil, Trash2, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, ArrowUpCircle, ArrowDownCircle, User } from "lucide-react";
 import { MovimentacaoCaixa, useDeleteMovimentacao } from "@/hooks/useFinanceiro";
 import { MovimentacaoModal } from "./MovimentacaoModal";
 import { format } from "date-fns";
@@ -76,6 +82,7 @@ export function MovimentacoesTable({ movimentacoes, caixaId }: MovimentacoesTabl
               <TableHead>Pagamento</TableHead>
               <TableHead className="text-right">Valor</TableHead>
               <TableHead>Data/Hora</TableHead>
+              <TableHead>Responsável</TableHead>
               <TableHead className="w-[60px]"></TableHead>
             </TableRow>
           </TableHeader>
@@ -122,6 +129,27 @@ export function MovimentacoesTable({ movimentacoes, caixaId }: MovimentacoesTabl
                 </TableCell>
                 <TableCell className="text-muted-foreground text-sm">
                   {format(new Date(mov.data_hora), "dd/MM/yy HH:mm", { locale: ptBR })}
+                </TableCell>
+                <TableCell>
+                  {mov.usuario_email ? (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                            <User className="h-3.5 w-3.5" />
+                            <span className="max-w-[100px] truncate">
+                              {mov.usuario_email.split("@")[0]}
+                            </span>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>{mov.usuario_email}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  ) : (
+                    <span className="text-muted-foreground/50 text-sm">-</span>
+                  )}
                 </TableCell>
                 <TableCell>
                   <DropdownMenu>

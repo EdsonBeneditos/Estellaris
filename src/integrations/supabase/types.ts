@@ -267,6 +267,7 @@ export type Database = {
           forma_pagamento: string
           id: string
           orcamento_id: string | null
+          realizado_por: string | null
           tipo: string
           usuario_email: string | null
           valor: number
@@ -281,6 +282,7 @@ export type Database = {
           forma_pagamento?: string
           id?: string
           orcamento_id?: string | null
+          realizado_por?: string | null
           tipo: string
           usuario_email?: string | null
           valor?: number
@@ -295,6 +297,7 @@ export type Database = {
           forma_pagamento?: string
           id?: string
           orcamento_id?: string | null
+          realizado_por?: string | null
           tipo?: string
           usuario_email?: string | null
           valor?: number

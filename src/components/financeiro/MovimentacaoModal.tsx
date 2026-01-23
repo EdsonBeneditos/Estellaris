@@ -85,6 +85,7 @@ export function MovimentacaoModal({
       forma_pagamento: formaPagamento,
       descricao: descricao || null,
       usuario_email: user?.email || null,
+      realizado_por: user?.id || null,
       caixa_id: caixaId || null,
       data_hora: new Date().toISOString(),
       orcamento_id: null,

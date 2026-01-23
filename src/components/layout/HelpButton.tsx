@@ -155,7 +155,7 @@ const helpContents: Record<string, HelpContent> = {
   },
   "/financeiro": {
     title: "Financeiro / Caixa - Manual Rápido",
-    description: "Controle de caixa, movimentações financeiras e fluxo de caixa.",
+    description: "Controle de caixa, movimentações financeiras e auditoria.",
     sections: [
       {
         title: "🔓 Abertura de Caixa",
@@ -163,11 +163,11 @@ const helpContents: Record<string, HelpContent> = {
       },
       {
         title: "💵 Registrar Movimentação",
-        content: "Clique em 'Nova Movimentação' para registrar entradas (recebimentos) ou saídas (despesas). Selecione categoria e forma de pagamento.",
+        content: "Clique em 'Nova Movimentação' para registrar entradas ou saídas. O sistema captura automaticamente o usuário responsável para rastreabilidade.",
       },
       {
         title: "🔗 Vendas Automáticas",
-        content: "Quando um orçamento é aprovado, uma entrada é criada automaticamente no caixa com os dados da venda.",
+        content: "Quando um orçamento é aprovado, uma entrada é criada automaticamente no caixa com os dados da venda e o vendedor responsável é registrado.",
       },
       {
         title: "🔒 Fechamento de Caixa",
@@ -175,11 +175,19 @@ const helpContents: Record<string, HelpContent> = {
       },
       {
         title: "📊 Totalizadores",
-        content: "Visualize o total de entradas, saídas e saldo líquido do período. O resumo por forma de pagamento mostra quanto entrou em cada método (Pix, Cartão, Dinheiro).",
+        content: "Visualize o total de entradas, saídas e saldo líquido. O resumo mostra quanto entrou por cada método de pagamento (Pix, Cartão, Dinheiro, etc.).",
       },
       {
-        title: "🔍 Filtros",
-        content: "Use os botões rápidos (Hoje, Semana, Mês) ou selecione um período personalizado. Filtre também por forma de pagamento ou tipo (Entrada/Saída).",
+        title: "🔍 Filtros Avançados",
+        content: "Use os filtros rápidos (Hoje, Semana, Mês) ou personalize o período. Filtre por forma de pagamento e tipo de movimentação.",
+      },
+      {
+        title: "👤 Auditoria de Usuários",
+        content: "Cada movimentação registra o usuário responsável. A coluna 'Responsável' mostra quem realizou a operação, garantindo total rastreabilidade para auditorias.",
+      },
+      {
+        title: "🏦 Conciliação Bancária",
+        content: "Compare o saldo do sistema com seu extrato bancário. Use os filtros por forma de pagamento para reconciliar: filtre 'Pix' e compare com sua conta. Diferenças indicam lançamentos pendentes.",
       },
     ],
   },
