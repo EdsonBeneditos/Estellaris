@@ -11,6 +11,7 @@ import Leads from "@/pages/Leads";
 import FuturosLeads from "@/pages/FuturosLeads";
 import Relatorios from "@/pages/Relatorios";
 import Configuracoes from "@/pages/Configuracoes";
+import Estoque from "@/pages/Estoque";
 import Login from "@/pages/Login";
 import NotFound from "@/pages/NotFound";
 
@@ -60,6 +61,16 @@ const App = () => (
                 <ProtectedRoute>
                   <MainLayout>
                     <Relatorios />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/estoque"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <Estoque />
                   </MainLayout>
                 </ProtectedRoute>
               }

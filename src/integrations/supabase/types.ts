@@ -56,6 +56,30 @@ export type Database = {
         }
         Relationships: []
       }
+      grupos_produtos: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+          numero_referencia: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome: string
+          numero_referencia: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
+          numero_referencia?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       lead_interacoes: {
         Row: {
           created_at: string
@@ -186,6 +210,56 @@ export type Database = {
           nome?: string
         }
         Relationships: []
+      }
+      produtos: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          grupo_id: string | null
+          id: string
+          nome: string
+          preco_custo: number
+          preco_venda: number
+          quantidade_estoque: number
+          sku: string
+          unidade_medida: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          grupo_id?: string | null
+          id?: string
+          nome: string
+          preco_custo?: number
+          preco_venda?: number
+          quantidade_estoque?: number
+          sku: string
+          unidade_medida?: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          grupo_id?: string | null
+          id?: string
+          nome?: string
+          preco_custo?: number
+          preco_venda?: number
+          quantidade_estoque?: number
+          sku?: string
+          unidade_medida?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "produtos_grupo_id_fkey"
+            columns: ["grupo_id"]
+            isOneToOne: false
+            referencedRelation: "grupos_produtos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tipos_servico: {
         Row: {
