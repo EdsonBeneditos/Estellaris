@@ -58,6 +58,8 @@ interface NotaItem {
   descricao: string;
   ncm: string;
   cfop: string;
+  cst_csosn: string;
+  origem: number;
   unidade: string;
   quantidade: number;
   valor_unitario: number;
@@ -100,6 +102,10 @@ export function NotaFiscalForm({ nota, orcamentoId, onBack, onSuccess }: NotaFis
   const [informacoesAdicionais, setInformacoesAdicionais] = useState(nota?.informacoes_adicionais || "");
   const [observacoesFisco, setObservacoesFisco] = useState(nota?.observacoes_fisco || "");
 
+  // Configurações de Emissão
+  const [serieNota, setSerieNota] = useState("001");
+  const [cfopPadrao, setCfopPadrao] = useState("5102");
+
   // Valores extras
   const [valorFrete, setValorFrete] = useState(nota?.valor_frete || 0);
   const [valorSeguro, setValorSeguro] = useState(nota?.valor_seguro || 0);
@@ -138,7 +144,9 @@ export function NotaFiscalForm({ nota, orcamentoId, onBack, onSuccess }: NotaFis
         codigo: item.produto_sku,
         descricao: item.produto_nome,
         ncm: "00000000",
-        cfop: "5102",
+        cfop: cfopPadrao,
+        cst_csosn: "102",
+        origem: 0,
         unidade: item.unidade_medida,
         quantidade: item.quantidade,
         valor_unitario: item.preco_unitario,
@@ -149,7 +157,7 @@ export function NotaFiscalForm({ nota, orcamentoId, onBack, onSuccess }: NotaFis
       }));
       setItems(orcItems);
     }
-  }, [orcamentoItens, items.length, nota]);
+  }, [orcamentoItens, items.length, nota, cfopPadrao]);
 
   const handleAddProduct = (produto: NonNullable<typeof produtos>[number]) => {
     const existingItem = items.find((item) => item.produto_id === produto.id);
@@ -175,8 +183,10 @@ export function NotaFiscalForm({ nota, orcamentoId, onBack, onSuccess }: NotaFis
           produto_id: produto.id,
           codigo: produto.sku,
           descricao: produto.nome,
-          ncm: "00000000",
-          cfop: "5102",
+          ncm: produto.ncm || "00000000",
+          cfop: cfopPadrao,
+          cst_csosn: produto.cst_csosn || "102",
+          origem: produto.origem_mercadoria ?? 0,
           unidade: produto.unidade_medida,
           quantidade: 1,
           valor_unitario: produto.preco_venda,
@@ -467,28 +477,56 @@ export function NotaFiscalForm({ nota, orcamentoId, onBack, onSuccess }: NotaFis
         </Card>
       </div>
 
-      {/* Natureza da Operação */}
+      {/* Configurações da Nota */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            Dados da Operação
+            Configurações de Emissão
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2">
-            <Label>Natureza da Operação</Label>
-            <Select value={naturezaOperacao} onValueChange={setNaturezaOperacao}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Venda de Mercadoria">Venda de Mercadoria</SelectItem>
-                <SelectItem value="Prestação de Serviço">Prestação de Serviço</SelectItem>
-                <SelectItem value="Devolução">Devolução</SelectItem>
-                <SelectItem value="Remessa">Remessa</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="space-y-2">
+              <Label>Natureza da Operação</Label>
+              <Select value={naturezaOperacao} onValueChange={setNaturezaOperacao}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Venda de Mercadoria">Venda de Mercadoria</SelectItem>
+                  <SelectItem value="Prestação de Serviço">Prestação de Serviço</SelectItem>
+                  <SelectItem value="Devolução">Devolução</SelectItem>
+                  <SelectItem value="Remessa">Remessa</SelectItem>
+                  <SelectItem value="Transferência">Transferência</SelectItem>
+                  <SelectItem value="Bonificação">Bonificação</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Série da Nota</Label>
+              <Input
+                value={serieNota}
+                onChange={(e) => setSerieNota(e.target.value)}
+                placeholder="001"
+                maxLength={3}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>CFOP Padrão</Label>
+              <Select value={cfopPadrao} onValueChange={setCfopPadrao}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5102">5102 - Venda de mercadoria</SelectItem>
+                  <SelectItem value="5405">5405 - Venda de mercadoria com ST</SelectItem>
+                  <SelectItem value="5933">5933 - Prestação de serviço</SelectItem>
+                  <SelectItem value="6102">6102 - Venda interestadual</SelectItem>
+                  <SelectItem value="6108">6108 - Venda interestadual não contribuinte</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -553,6 +591,7 @@ export function NotaFiscalForm({ nota, orcamentoId, onBack, onSuccess }: NotaFis
                     <TableHead>Descrição</TableHead>
                     <TableHead>NCM</TableHead>
                     <TableHead>CFOP</TableHead>
+                    <TableHead>CST</TableHead>
                     <TableHead className="text-center">Qtd</TableHead>
                     <TableHead className="text-right">Valor Unit.</TableHead>
                     <TableHead className="text-right">ICMS %</TableHead>
@@ -576,6 +615,13 @@ export function NotaFiscalForm({ nota, orcamentoId, onBack, onSuccess }: NotaFis
                         <Input
                           value={item.cfop}
                           onChange={(e) => setItems(prev => prev.map((it, i) => i === index ? { ...it, cfop: e.target.value } : it))}
+                          className="h-8 w-16 font-mono text-xs"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          value={item.cst_csosn}
+                          onChange={(e) => setItems(prev => prev.map((it, i) => i === index ? { ...it, cst_csosn: e.target.value } : it))}
                           className="h-8 w-16 font-mono text-xs"
                         />
                       </TableCell>

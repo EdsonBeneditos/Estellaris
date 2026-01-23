@@ -20,6 +20,10 @@ export interface Produto {
   unidade_medida: string;
   grupo_id: string | null;
   ativo: boolean;
+  ncm: string | null;
+  cest: string | null;
+  origem_mercadoria: number | null;
+  cst_csosn: string | null;
   created_at: string;
   updated_at: string;
   grupo?: GrupoProduto;

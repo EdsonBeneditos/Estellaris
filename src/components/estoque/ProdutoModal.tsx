@@ -16,6 +16,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import {
   Produto,
@@ -43,6 +45,10 @@ const formSchema = z.object({
   unidade_medida: z.string().min(1, "Unidade é obrigatória"),
   grupo_id: z.string().nullable(),
   ativo: z.boolean(),
+  ncm: z.string().length(8, "NCM deve ter 8 dígitos").regex(/^\d+$/, "NCM deve conter apenas números").optional().or(z.literal("")),
+  cest: z.string().optional().or(z.literal("")),
+  origem_mercadoria: z.coerce.number().min(0).max(8),
+  cst_csosn: z.string().optional().or(z.literal("")),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -58,6 +64,42 @@ const UNIDADES = [
   { value: "PC", label: "Peça (PC)" },
   { value: "PAR", label: "Par (PAR)" },
   { value: "PCT", label: "Pacote (PCT)" },
+];
+
+const ORIGENS_MERCADORIA = [
+  { value: 0, label: "0 - Nacional" },
+  { value: 1, label: "1 - Estrangeira (Importação direta)" },
+  { value: 2, label: "2 - Estrangeira (Adquirida no mercado interno)" },
+  { value: 3, label: "3 - Nacional (Conteúdo importado > 40%)" },
+  { value: 4, label: "4 - Nacional (Conforme processos básicos)" },
+  { value: 5, label: "5 - Nacional (Conteúdo importado < 40%)" },
+  { value: 6, label: "6 - Estrangeira (Import. direta, sem similar nacional)" },
+  { value: 7, label: "7 - Estrangeira (Merc. interno, sem similar nacional)" },
+  { value: 8, label: "8 - Nacional (Conteúdo importado > 70%)" },
+];
+
+const CST_CSOSN_OPTIONS = [
+  { value: "00", label: "00 - Tributada integralmente" },
+  { value: "10", label: "10 - Tributada com ICMS ST" },
+  { value: "20", label: "20 - Com redução de base de cálculo" },
+  { value: "30", label: "30 - Isenta/Não tributada com ICMS ST" },
+  { value: "40", label: "40 - Isenta" },
+  { value: "41", label: "41 - Não tributada" },
+  { value: "50", label: "50 - Suspensão" },
+  { value: "51", label: "51 - Diferimento" },
+  { value: "60", label: "60 - ICMS cobrado anteriormente por ST" },
+  { value: "70", label: "70 - Redução de base + ICMS ST" },
+  { value: "90", label: "90 - Outras" },
+  { value: "101", label: "101 - CSOSN - Tributada com permissão de crédito" },
+  { value: "102", label: "102 - CSOSN - Tributada sem permissão de crédito" },
+  { value: "103", label: "103 - CSOSN - Isenção do ICMS" },
+  { value: "201", label: "201 - CSOSN - Tributada com ST e crédito" },
+  { value: "202", label: "202 - CSOSN - Tributada com ST sem crédito" },
+  { value: "203", label: "203 - CSOSN - Isenção com ST" },
+  { value: "300", label: "300 - CSOSN - Imune" },
+  { value: "400", label: "400 - CSOSN - Não tributada" },
+  { value: "500", label: "500 - CSOSN - ICMS cobrado anteriormente por ST" },
+  { value: "900", label: "900 - CSOSN - Outros" },
 ];
 
 interface ProdutoModalProps {
@@ -82,6 +124,10 @@ export function ProdutoModal({ open, onOpenChange, produto }: ProdutoModalProps)
       unidade_medida: "UN",
       grupo_id: null,
       ativo: true,
+      ncm: "00000000",
+      cest: "",
+      origem_mercadoria: 0,
+      cst_csosn: "102",
     },
   });
 
@@ -96,6 +142,10 @@ export function ProdutoModal({ open, onOpenChange, produto }: ProdutoModalProps)
         unidade_medida: produto.unidade_medida,
         grupo_id: produto.grupo_id,
         ativo: produto.ativo,
+        ncm: produto.ncm || "00000000",
+        cest: produto.cest || "",
+        origem_mercadoria: produto.origem_mercadoria ?? 0,
+        cst_csosn: produto.cst_csosn || "102",
       });
     } else {
       form.reset({
@@ -107,26 +157,36 @@ export function ProdutoModal({ open, onOpenChange, produto }: ProdutoModalProps)
         unidade_medida: "UN",
         grupo_id: null,
         ativo: true,
+        ncm: "00000000",
+        cest: "",
+        origem_mercadoria: 0,
+        cst_csosn: "102",
       });
     }
   }, [produto, form, open]);
 
   const onSubmit = async (data: FormData) => {
     try {
+      const produtoData = {
+        nome: data.nome,
+        sku: data.sku,
+        preco_venda: data.preco_venda,
+        preco_custo: data.preco_custo,
+        quantidade_estoque: data.quantidade_estoque,
+        unidade_medida: data.unidade_medida,
+        grupo_id: data.grupo_id,
+        ativo: data.ativo,
+        ncm: data.ncm || "00000000",
+        cest: data.cest || null,
+        origem_mercadoria: data.origem_mercadoria,
+        cst_csosn: data.cst_csosn || "102",
+      };
+
       if (produto) {
-        await updateProduto.mutateAsync({ id: produto.id, ...data });
+        await updateProduto.mutateAsync({ id: produto.id, ...produtoData });
         toast.success("Produto atualizado com sucesso");
       } else {
-        await createProduto.mutateAsync({
-          nome: data.nome,
-          sku: data.sku,
-          preco_venda: data.preco_venda,
-          preco_custo: data.preco_custo,
-          quantidade_estoque: data.quantidade_estoque,
-          unidade_medida: data.unidade_medida,
-          grupo_id: data.grupo_id,
-          ativo: data.ativo,
-        });
+        await createProduto.mutateAsync(produtoData);
         toast.success("Produto criado com sucesso");
       }
       onOpenChange(false);
@@ -291,6 +351,112 @@ export function ProdutoModal({ open, onOpenChange, produto }: ProdutoModalProps)
                 </FormItem>
               )}
             />
+
+            <Separator />
+
+            <div className="space-y-4">
+              <h4 className="text-sm font-semibold text-foreground">Dados Fiscais</h4>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="ncm"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>NCM</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="00000000"
+                          maxLength={8}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription className="text-xs">
+                        8 dígitos numéricos
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="cest"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>CEST</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="0000000"
+                          maxLength={7}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription className="text-xs">
+                        Opcional, 7 dígitos
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="origem_mercadoria"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Origem da Mercadoria</FormLabel>
+                    <Select
+                      onValueChange={(value) => field.onChange(Number(value))}
+                      value={String(field.value)}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione a origem" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {ORIGENS_MERCADORIA.map((origem) => (
+                          <SelectItem key={origem.value} value={String(origem.value)}>
+                            {origem.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="cst_csosn"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>CST / CSOSN</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value || "102"}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione CST/CSOSN" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {CST_CSOSN_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription className="text-xs">
+                      CST para Lucro Real/Presumido, CSOSN para Simples Nacional
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <SheetFooter className="pt-4">
               <Button

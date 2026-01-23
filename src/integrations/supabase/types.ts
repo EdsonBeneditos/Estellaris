@@ -266,6 +266,7 @@ export type Database = {
         Row: {
           base_calculo_icms: number | null
           base_calculo_icms_st: number | null
+          cfop_padrao: string | null
           chave_acesso: string | null
           created_at: string
           data_emissao: string | null
@@ -293,6 +294,7 @@ export type Database = {
           numero_nota: number
           observacoes_fisco: string | null
           orcamento_id: string | null
+          serie_nota: string | null
           status: string
           updated_at: string
           valor_cofins: number | null
@@ -311,6 +313,7 @@ export type Database = {
         Insert: {
           base_calculo_icms?: number | null
           base_calculo_icms_st?: number | null
+          cfop_padrao?: string | null
           chave_acesso?: string | null
           created_at?: string
           data_emissao?: string | null
@@ -338,6 +341,7 @@ export type Database = {
           numero_nota?: number
           observacoes_fisco?: string | null
           orcamento_id?: string | null
+          serie_nota?: string | null
           status?: string
           updated_at?: string
           valor_cofins?: number | null
@@ -356,6 +360,7 @@ export type Database = {
         Update: {
           base_calculo_icms?: number | null
           base_calculo_icms_st?: number | null
+          cfop_padrao?: string | null
           chave_acesso?: string | null
           created_at?: string
           data_emissao?: string | null
@@ -383,6 +388,7 @@ export type Database = {
           numero_nota?: number
           observacoes_fisco?: string | null
           orcamento_id?: string | null
+          serie_nota?: string | null
           status?: string
           updated_at?: string
           valor_cofins?: number | null
@@ -563,10 +569,14 @@ export type Database = {
       produtos: {
         Row: {
           ativo: boolean
+          cest: string | null
           created_at: string
+          cst_csosn: string | null
           grupo_id: string | null
           id: string
+          ncm: string | null
           nome: string
+          origem_mercadoria: number | null
           preco_custo: number
           preco_venda: number
           quantidade_estoque: number
@@ -576,10 +586,14 @@ export type Database = {
         }
         Insert: {
           ativo?: boolean
+          cest?: string | null
           created_at?: string
+          cst_csosn?: string | null
           grupo_id?: string | null
           id?: string
+          ncm?: string | null
           nome: string
+          origem_mercadoria?: number | null
           preco_custo?: number
           preco_venda?: number
           quantidade_estoque?: number
@@ -589,10 +603,14 @@ export type Database = {
         }
         Update: {
           ativo?: boolean
+          cest?: string | null
           created_at?: string
+          cst_csosn?: string | null
           grupo_id?: string | null
           id?: string
+          ncm?: string | null
           nome?: string
+          origem_mercadoria?: number | null
           preco_custo?: number
           preco_venda?: number
           quantidade_estoque?: number
