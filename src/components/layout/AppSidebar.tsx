@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, BarChart3, Settings, LogOut, UserPlus, Package, FileText } from "lucide-react";
+import { LayoutDashboard, Users, BarChart3, Settings, LogOut, UserPlus, Package, FileText, Receipt } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -25,6 +25,7 @@ const baseMenuItems = [
   { title: "Futuros Leads", url: "/futuros-leads", icon: UserPlus },
   { title: "Estoque", url: "/estoque", icon: Package },
   { title: "Orçamentos", url: "/orcamentos", icon: FileText },
+  { title: "Notas Fiscais", url: "/notas-fiscais", icon: Receipt },
   { title: "Relatórios", url: "/relatorios", icon: BarChart3 },
 ];
 

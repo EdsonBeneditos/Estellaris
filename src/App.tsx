@@ -13,6 +13,7 @@ import Relatorios from "@/pages/Relatorios";
 import Configuracoes from "@/pages/Configuracoes";
 import Estoque from "@/pages/Estoque";
 import Orcamentos from "@/pages/Orcamentos";
+import NotasFiscais from "@/pages/NotasFiscais";
 import Login from "@/pages/Login";
 import NotFound from "@/pages/NotFound";
 
@@ -83,6 +84,14 @@ const App = () => (
                   <MainLayout>
                     <Orcamentos />
                   </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/notas-fiscais"
+              element={
+                <ProtectedRoute>
+                  <NotasFiscais />
                 </ProtectedRoute>
               }
             />
