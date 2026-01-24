@@ -25,3 +25,13 @@ export function maskPhone(value: string): string {
 export function unmask(value: string): string {
   return value.replace(/\D/g, "");
 }
+
+export function maskCEP(value: string): string {
+  const digits = value.replace(/\D/g, "");
+  return digits.replace(/^(\d{5})(\d)/, "$1-$2").slice(0, 9);
+}
+
+// Aliases for backwards compatibility
+export const applyCNPJMask = maskCNPJ;
+export const applyPhoneMask = maskPhone;
+export const applyCEPMask = maskCEP;

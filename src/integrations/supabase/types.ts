@@ -105,6 +105,147 @@ export type Database = {
           },
         ]
       }
+      clientes: {
+        Row: {
+          ativo: boolean
+          cep: string | null
+          cidade: string | null
+          cnpj: string | null
+          created_at: string
+          email: string | null
+          endereco: string | null
+          frequencia_visita: string | null
+          id: string
+          nome: string
+          observacoes: string | null
+          organization_id: string
+          proxima_visita: string | null
+          rotina_visitas: boolean
+          telefone: string | null
+          uf: string | null
+          ultima_visita: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          cep?: string | null
+          cidade?: string | null
+          cnpj?: string | null
+          created_at?: string
+          email?: string | null
+          endereco?: string | null
+          frequencia_visita?: string | null
+          id?: string
+          nome: string
+          observacoes?: string | null
+          organization_id: string
+          proxima_visita?: string | null
+          rotina_visitas?: boolean
+          telefone?: string | null
+          uf?: string | null
+          ultima_visita?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          cep?: string | null
+          cidade?: string | null
+          cnpj?: string | null
+          created_at?: string
+          email?: string | null
+          endereco?: string | null
+          frequencia_visita?: string | null
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          organization_id?: string
+          proxima_visita?: string | null
+          rotina_visitas?: boolean
+          telefone?: string | null
+          uf?: string | null
+          ultima_visita?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clientes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contratos_historico: {
+        Row: {
+          cliente_id: string
+          contrato_anterior_id: string | null
+          created_at: string
+          data_fim: string | null
+          data_inicio: string
+          id: string
+          organization_id: string
+          recorrente: boolean
+          servico_prestado: string
+          status: string
+          tipo_vinculo: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          cliente_id: string
+          contrato_anterior_id?: string | null
+          created_at?: string
+          data_fim?: string | null
+          data_inicio: string
+          id?: string
+          organization_id: string
+          recorrente?: boolean
+          servico_prestado: string
+          status?: string
+          tipo_vinculo: string
+          updated_at?: string
+          valor?: number
+        }
+        Update: {
+          cliente_id?: string
+          contrato_anterior_id?: string | null
+          created_at?: string
+          data_fim?: string | null
+          data_inicio?: string
+          id?: string
+          organization_id?: string
+          recorrente?: boolean
+          servico_prestado?: string
+          status?: string
+          tipo_vinculo?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contratos_historico_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratos_historico_contrato_anterior_id_fkey"
+            columns: ["contrato_anterior_id"]
+            isOneToOne: false
+            referencedRelation: "contratos_historico"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratos_historico_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fechamentos_caixa: {
         Row: {
           caixa_id: string
@@ -1172,6 +1313,15 @@ export type Database = {
         Returns: boolean
       }
       is_org_admin: { Args: never; Returns: boolean }
+      renovar_contrato: {
+        Args: {
+          p_contrato_id: string
+          p_nova_data_fim: string
+          p_nova_data_inicio: string
+          p_novo_valor?: number
+        }
+        Returns: string
+      }
     }
     Enums: {
       app_role: "admin" | "gerente" | "vendedor"
