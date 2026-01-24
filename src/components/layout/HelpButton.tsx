@@ -155,7 +155,7 @@ const helpContents: Record<string, HelpContent> = {
   },
   "/financeiro": {
     title: "Financeiro / Caixa - Manual Rápido",
-    description: "Controle de caixa, movimentações financeiras e auditoria.",
+    description: "Controle de caixa, movimentações financeiras e auditoria empresarial.",
     sections: [
       {
         title: "🔓 Abertura de Caixa",
@@ -170,24 +170,28 @@ const helpContents: Record<string, HelpContent> = {
         content: "Quando um orçamento é aprovado, uma entrada é criada automaticamente no caixa com os dados da venda e o vendedor responsável é registrado.",
       },
       {
-        title: "🔒 Fechamento de Caixa",
-        content: "No final do dia, clique em 'Fechar Caixa'. Informe o valor conferido fisicamente. O sistema compara com o saldo calculado e mostra eventuais diferenças.",
+        title: "🔒 Fechamento Cego (Contagem)",
+        content: "No final do dia, inicie o Fechamento Cego. O saldo do sistema fica OCULTO enquanto você conta fisicamente cada forma de pagamento (Dinheiro, PIX, Cartão). Só após confirmar, o sistema revela as diferenças - garantindo contagem imparcial.",
       },
       {
-        title: "📊 Totalizadores",
-        content: "Visualize o total de entradas, saídas e saldo líquido. O resumo mostra quanto entrou por cada método de pagamento (Pix, Cartão, Dinheiro, etc.).",
+        title: "📊 Diferenças de Caixa",
+        content: "Após o fechamento, o sistema gera um relatório detalhado por forma de pagamento mostrando: valor contado, valor do sistema e diferença. Sobras ou faltas ficam registradas permanentemente.",
       },
       {
-        title: "🔍 Filtros Avançados",
-        content: "Use os filtros rápidos (Hoje, Semana, Mês) ou personalize o período. Filtre por forma de pagamento e tipo de movimentação.",
+        title: "👤 Auditoria Dupla",
+        content: "Cada movimentação registra DOIS campos: 'Quem Fez' (quem realizou) e 'Quem Autorizou' (quem aprovou). Na tabela de movimentações você vê ambas colunas para total rastreabilidade.",
       },
       {
-        title: "👤 Auditoria de Usuários",
-        content: "Cada movimentação registra o usuário responsável. A coluna 'Responsável' mostra quem realizou a operação, garantindo total rastreabilidade para auditorias.",
+        title: "🔐 Rastro Imutável",
+        content: "IMPORTANTE: O registro de auditoria é automático e imutável. Toda movimentação captura o ID do usuário logado no momento. Esses dados não podem ser alterados, garantindo segurança para auditorias.",
       },
       {
         title: "🏦 Conciliação Bancária",
         content: "Compare o saldo do sistema com seu extrato bancário. Use os filtros por forma de pagamento para reconciliar: filtre 'Pix' e compare com sua conta. Diferenças indicam lançamentos pendentes.",
+      },
+      {
+        title: "📋 Plano de Contas",
+        content: "As categorias são divididas em Entradas (vendas, serviços, etc) e Saídas (despesas, salários, etc). Use categorias apropriadas para relatórios gerenciais precisos.",
       },
     ],
   },

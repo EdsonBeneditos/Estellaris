@@ -21,6 +21,8 @@ export interface MovimentacaoCaixa {
   data_hora: string;
   usuario_email: string | null;
   realizado_por: string | null;
+  autorizado_por: string | null;
+  autorizado_por_email: string | null;
   orcamento_id: string | null;
   caixa_id: string | null;
   created_at: string;
@@ -38,6 +40,30 @@ export interface Caixa {
   usuario_fechamento: string | null;
   observacoes: string | null;
   status: "Aberto" | "Fechado";
+  created_at: string;
+}
+
+export interface FechamentoCaixa {
+  id: string;
+  caixa_id: string;
+  valor_dinheiro_contado: number;
+  valor_pix_contado: number;
+  valor_cartao_contado: number;
+  valor_outros_contado: number;
+  total_contado: number;
+  valor_dinheiro_sistema: number;
+  valor_pix_sistema: number;
+  valor_cartao_sistema: number;
+  valor_outros_sistema: number;
+  total_sistema: number;
+  diferenca_dinheiro: number;
+  diferenca_pix: number;
+  diferenca_cartao: number;
+  diferenca_outros: number;
+  diferenca_total: number;
+  realizado_por: string | null;
+  realizado_por_email: string | null;
+  observacoes: string | null;
   created_at: string;
 }
 
@@ -65,6 +91,7 @@ export function useMovimentacoes(filtros?: {
   dataFim?: string;
   formaPagamento?: string;
   tipo?: string;
+  categoria?: string;
 }) {
   return useQuery({
     queryKey: ["movimentacoes_caixa", filtros],
@@ -85,6 +112,9 @@ export function useMovimentacoes(filtros?: {
       }
       if (filtros?.tipo && filtros.tipo !== "todos") {
         query = query.eq("tipo", filtros.tipo);
+      }
+      if (filtros?.categoria && filtros.categoria !== "todos") {
+        query = query.eq("categoria_id", filtros.categoria);
       }
 
       const { data, error } = await query;
@@ -131,12 +161,49 @@ export function useHistoricoCaixas() {
   });
 }
 
+// Hook para fechamentos de caixa
+export function useFechamentosCaixa(caixaId?: string) {
+  return useQuery({
+    queryKey: ["fechamentos_caixa", caixaId],
+    queryFn: async () => {
+      let query = supabase
+        .from("fechamentos_caixa")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (caixaId) {
+        query = query.eq("caixa_id", caixaId);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+      return data as FechamentoCaixa[];
+    },
+    enabled: !!caixaId || caixaId === undefined,
+  });
+}
+
 // Mutations
 export function useCreateMovimentacao() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (movimentacao: Omit<MovimentacaoCaixa, "id" | "created_at">) => {
+    mutationFn: async (movimentacao: {
+      tipo: "Entrada" | "Saída";
+      valor: number;
+      categoria_id: string | null;
+      categoria_nome: string | null;
+      forma_pagamento: string;
+      descricao: string | null;
+      data_hora: string;
+      caixa_id: string | null;
+      orcamento_id: string | null;
+      realizado_por: string | null;
+      usuario_email: string | null;
+      autorizado_por: string | null;
+      autorizado_por_email: string | null;
+    }) => {
       const { data, error } = await supabase
         .from("movimentacoes_caixa")
         .insert(movimentacao)
@@ -232,6 +299,96 @@ export function useAbrirCaixa() {
   });
 }
 
+export function useFecharCaixaCego() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      caixaId,
+      valoresContados,
+      valoresSistema,
+      usuario_fechamento,
+      usuario_id,
+      observacoes,
+    }: {
+      caixaId: string;
+      valoresContados: {
+        dinheiro: number;
+        pix: number;
+        cartao: number;
+        outros: number;
+      };
+      valoresSistema: {
+        dinheiro: number;
+        pix: number;
+        cartao: number;
+        outros: number;
+      };
+      usuario_fechamento: string;
+      usuario_id: string;
+      observacoes?: string;
+    }) => {
+      const totalContado = valoresContados.dinheiro + valoresContados.pix + valoresContados.cartao + valoresContados.outros;
+      const totalSistema = valoresSistema.dinheiro + valoresSistema.pix + valoresSistema.cartao + valoresSistema.outros;
+
+      // Criar registro de fechamento detalhado
+      const { error: fechamentoError } = await supabase
+        .from("fechamentos_caixa")
+        .insert({
+          caixa_id: caixaId,
+          valor_dinheiro_contado: valoresContados.dinheiro,
+          valor_pix_contado: valoresContados.pix,
+          valor_cartao_contado: valoresContados.cartao,
+          valor_outros_contado: valoresContados.outros,
+          total_contado: totalContado,
+          valor_dinheiro_sistema: valoresSistema.dinheiro,
+          valor_pix_sistema: valoresSistema.pix,
+          valor_cartao_sistema: valoresSistema.cartao,
+          valor_outros_sistema: valoresSistema.outros,
+          total_sistema: totalSistema,
+          diferenca_dinheiro: valoresContados.dinheiro - valoresSistema.dinheiro,
+          diferenca_pix: valoresContados.pix - valoresSistema.pix,
+          diferenca_cartao: valoresContados.cartao - valoresSistema.cartao,
+          diferenca_outros: valoresContados.outros - valoresSistema.outros,
+          diferenca_total: totalContado - totalSistema,
+          realizado_por: usuario_id,
+          realizado_por_email: usuario_fechamento,
+          observacoes,
+        });
+
+      if (fechamentoError) throw fechamentoError;
+
+      // Atualizar caixa como fechado
+      const { data, error } = await supabase
+        .from("caixas")
+        .update({
+          saldo_final: totalContado,
+          saldo_sistema: totalSistema,
+          diferenca: totalContado - totalSistema,
+          usuario_fechamento,
+          observacoes,
+          status: "Fechado",
+          data_fechamento: new Date().toISOString(),
+        })
+        .eq("id", caixaId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["caixa_aberto"] });
+      queryClient.invalidateQueries({ queryKey: ["historico_caixas"] });
+      queryClient.invalidateQueries({ queryKey: ["fechamentos_caixa"] });
+      toast.success("Caixa fechado com sucesso! Confira o relatório de diferenças.");
+    },
+    onError: (error) => {
+      toast.error("Erro ao fechar caixa", { description: error.message });
+    },
+  });
+}
+
 export function useFecharCaixa() {
   const queryClient = useQueryClient();
 
@@ -278,6 +435,71 @@ export function useFecharCaixa() {
       toast.error("Erro ao fechar caixa", { description: error.message });
     },
   });
+}
+
+// Hook para calcular totais por forma de pagamento (para fechamento cego)
+export function useTotaisPorFormaPagamento(movimentacoes: MovimentacaoCaixa[] | undefined) {
+  if (!movimentacoes) {
+    return {
+      dinheiro: 0,
+      pix: 0,
+      cartao: 0,
+      outros: 0,
+      total: 0,
+    };
+  }
+
+  const entradasPorForma = movimentacoes
+    .filter((m) => m.tipo === "Entrada")
+    .reduce(
+      (acc, m) => {
+        const valor = Number(m.valor);
+        const forma = m.forma_pagamento.toLowerCase();
+        
+        if (forma === "dinheiro") {
+          acc.dinheiro += valor;
+        } else if (forma === "pix") {
+          acc.pix += valor;
+        } else if (forma.includes("cartão") || forma.includes("cartao") || forma === "débito" || forma === "crédito") {
+          acc.cartao += valor;
+        } else {
+          acc.outros += valor;
+        }
+        acc.total += valor;
+        return acc;
+      },
+      { dinheiro: 0, pix: 0, cartao: 0, outros: 0, total: 0 }
+    );
+
+  const saidasPorForma = movimentacoes
+    .filter((m) => m.tipo === "Saída")
+    .reduce(
+      (acc, m) => {
+        const valor = Number(m.valor);
+        const forma = m.forma_pagamento.toLowerCase();
+        
+        if (forma === "dinheiro") {
+          acc.dinheiro += valor;
+        } else if (forma === "pix") {
+          acc.pix += valor;
+        } else if (forma.includes("cartão") || forma.includes("cartao") || forma === "débito" || forma === "crédito") {
+          acc.cartao += valor;
+        } else {
+          acc.outros += valor;
+        }
+        acc.total += valor;
+        return acc;
+      },
+      { dinheiro: 0, pix: 0, cartao: 0, outros: 0, total: 0 }
+    );
+
+  return {
+    dinheiro: entradasPorForma.dinheiro - saidasPorForma.dinheiro,
+    pix: entradasPorForma.pix - saidasPorForma.pix,
+    cartao: entradasPorForma.cartao - saidasPorForma.cartao,
+    outros: entradasPorForma.outros - saidasPorForma.outros,
+    total: entradasPorForma.total - saidasPorForma.total,
+  };
 }
 
 // Hook para calcular totais
