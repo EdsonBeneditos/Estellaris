@@ -9,6 +9,7 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import Dashboard from "@/pages/Dashboard";
 import Leads from "@/pages/Leads";
 import FuturosLeads from "@/pages/FuturosLeads";
+import Clientes from "@/pages/Clientes";
 import Relatorios from "@/pages/Relatorios";
 import Configuracoes from "@/pages/Configuracoes";
 import Estoque from "@/pages/Estoque";
@@ -55,6 +56,16 @@ const App = () => (
                 <ProtectedRoute>
                   <MainLayout>
                     <FuturosLeads />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/clientes"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <Clientes />
                   </MainLayout>
                 </ProtectedRoute>
               }
