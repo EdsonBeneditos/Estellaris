@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -12,11 +11,12 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { DoorOpen, DoorClosed, Clock, User } from "lucide-react";
-import { Caixa, useAbrirCaixa, useFecharCaixa, useTotaisMovimentacoes, MovimentacaoCaixa } from "@/hooks/useFinanceiro";
+import { DoorOpen, DoorClosed, Clock, User, Lock } from "lucide-react";
+import { Caixa, useAbrirCaixa, useTotaisMovimentacoes, useTotaisPorFormaPagamento, MovimentacaoCaixa } from "@/hooks/useFinanceiro";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { FechamentoCegoModal } from "./FechamentoCegoModal";
 
 interface CaixaControlProps {
   caixaAberto: Caixa | null;
@@ -33,14 +33,12 @@ const formatCurrency = (value: number) => {
 export function CaixaControl({ caixaAberto, movimentacoes }: CaixaControlProps) {
   const { user } = useAuthContext();
   const abrirCaixa = useAbrirCaixa();
-  const fecharCaixa = useFecharCaixa();
   const { totalEntradas, totalSaidas } = useTotaisMovimentacoes(movimentacoes);
+  const totaisPorForma = useTotaisPorFormaPagamento(movimentacoes);
 
   const [abrirModalOpen, setAbrirModalOpen] = useState(false);
   const [fecharModalOpen, setFecharModalOpen] = useState(false);
   const [saldoInicial, setSaldoInicial] = useState("");
-  const [saldoFinal, setSaldoFinal] = useState("");
-  const [observacoes, setObservacoes] = useState("");
 
   const saldoSistema = caixaAberto
     ? Number(caixaAberto.saldo_inicial) + totalEntradas - totalSaidas
@@ -56,22 +54,6 @@ export function CaixaControl({ caixaAberto, movimentacoes }: CaixaControlProps) 
 
     setSaldoInicial("");
     setAbrirModalOpen(false);
-  };
-
-  const handleFecharCaixa = async () => {
-    if (!caixaAberto || !user?.email) return;
-
-    await fecharCaixa.mutateAsync({
-      id: caixaAberto.id,
-      saldo_final: Number(saldoFinal) || 0,
-      saldo_sistema: saldoSistema,
-      usuario_fechamento: user.email,
-      observacoes: observacoes || undefined,
-    });
-
-    setSaldoFinal("");
-    setObservacoes("");
-    setFecharModalOpen(false);
   };
 
   return (
@@ -121,13 +103,10 @@ export function CaixaControl({ caixaAberto, movimentacoes }: CaixaControlProps) 
               <Button
                 variant="destructive"
                 className="w-full mt-4"
-                onClick={() => {
-                  setSaldoFinal(saldoSistema.toFixed(2));
-                  setFecharModalOpen(true);
-                }}
+                onClick={() => setFecharModalOpen(true)}
               >
-                <DoorClosed className="h-4 w-4 mr-2" />
-                Fechar Caixa
+                <Lock className="h-4 w-4 mr-2" />
+                Fechamento Cego
               </Button>
             </>
           ) : (
@@ -177,69 +156,16 @@ export function CaixaControl({ caixaAberto, movimentacoes }: CaixaControlProps) 
         </DialogContent>
       </Dialog>
 
-      {/* Modal Fechar Caixa */}
-      <Dialog open={fecharModalOpen} onOpenChange={setFecharModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Fechar Caixa</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-4 p-3 bg-muted/50 rounded-lg">
-              <div>
-                <span className="text-xs text-muted-foreground">Saldo Sistema</span>
-                <p className="font-semibold text-primary">{formatCurrency(saldoSistema)}</p>
-              </div>
-              <div>
-                <span className="text-xs text-muted-foreground">Entradas/Saídas</span>
-                <p className="text-sm">
-                  <span className="text-emerald-600">+{formatCurrency(totalEntradas)}</span>
-                  {" / "}
-                  <span className="text-red-600">-{formatCurrency(totalSaidas)}</span>
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="saldo-final">Saldo Final Conferido (R$)</Label>
-              <Input
-                id="saldo-final"
-                type="number"
-                step="0.01"
-                placeholder="0,00"
-                value={saldoFinal}
-                onChange={(e) => setSaldoFinal(e.target.value)}
-              />
-              {saldoFinal && Number(saldoFinal) !== saldoSistema && (
-                <p className="text-xs text-amber-600">
-                  Diferença: {formatCurrency(Number(saldoFinal) - saldoSistema)}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="observacoes">Observações (opcional)</Label>
-              <Textarea
-                id="observacoes"
-                placeholder="Notas sobre o fechamento..."
-                value={observacoes}
-                onChange={(e) => setObservacoes(e.target.value)}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setFecharModalOpen(false)}>
-              Cancelar
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleFecharCaixa}
-              disabled={fecharCaixa.isPending}
-            >
-              {fecharCaixa.isPending ? "Fechando..." : "Confirmar Fechamento"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Modal Fechamento Cego */}
+      {caixaAberto && (
+        <FechamentoCegoModal
+          open={fecharModalOpen}
+          onOpenChange={setFecharModalOpen}
+          caixa={caixaAberto}
+          valoresSistema={totaisPorForma}
+          saldoInicial={Number(caixaAberto.saldo_inicial)}
+        />
+      )}
     </>
   );
 }

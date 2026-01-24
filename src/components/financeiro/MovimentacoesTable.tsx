@@ -31,7 +31,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MoreHorizontal, Pencil, Trash2, ArrowUpCircle, ArrowDownCircle, User } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, ArrowUpCircle, ArrowDownCircle, User, UserCheck, Lock } from "lucide-react";
 import { MovimentacaoCaixa, useDeleteMovimentacao } from "@/hooks/useFinanceiro";
 import { MovimentacaoModal } from "./MovimentacaoModal";
 import { format } from "date-fns";
@@ -48,6 +48,12 @@ const formatCurrency = (value: number) => {
     style: "currency",
     currency: "BRL",
   }).format(value);
+};
+
+const truncateEmail = (email: string | null) => {
+  if (!email) return "—";
+  const [local] = email.split("@");
+  return local.length > 8 ? local.substring(0, 8) + "..." : local;
 };
 
 export function MovimentacoesTable({ movimentacoes, caixaId }: MovimentacoesTableProps) {
@@ -72,84 +78,143 @@ export function MovimentacoesTable({ movimentacoes, caixaId }: MovimentacoesTabl
 
   return (
     <>
+      {/* Aviso de auditoria imutável */}
+      <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/30 px-3 py-2 rounded-lg border border-border/50 mb-3">
+        <Lock className="h-3.5 w-3.5 flex-shrink-0" />
+        <span>Registros de auditoria são automáticos e imutáveis para segurança da empresa.</span>
+      </div>
+
       <div className="rounded-md border border-border/50">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/30">
-              <TableHead className="w-[100px]">Tipo</TableHead>
-              <TableHead>Descrição</TableHead>
-              <TableHead>Categoria</TableHead>
-              <TableHead>Pagamento</TableHead>
-              <TableHead className="text-right">Valor</TableHead>
-              <TableHead>Data/Hora</TableHead>
-              <TableHead>Responsável</TableHead>
-              <TableHead className="w-[60px]"></TableHead>
+              <TableHead className="w-[120px]">Data</TableHead>
+              <TableHead className="text-right w-[110px]">Valor</TableHead>
+              <TableHead className="min-w-[130px]">Categoria</TableHead>
+              <TableHead className="w-[90px]">Pagamento</TableHead>
+              <TableHead className="w-[100px]">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center gap-1 cursor-help">
+                        <User className="h-3.5 w-3.5" />
+                        Quem Fez
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Usuário que realizou a movimentação</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </TableHead>
+              <TableHead className="w-[100px]">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center gap-1 cursor-help">
+                        <UserCheck className="h-3.5 w-3.5" />
+                        Autorizou
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Usuário que autorizou a movimentação</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </TableHead>
+              <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {movimentacoes.map((mov) => (
               <TableRow key={mov.id} className="hover:bg-muted/20">
                 <TableCell>
-                  <Badge
-                    variant="outline"
-                    className={cn(
-                      "gap-1",
-                      mov.tipo === "Entrada"
-                        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-600"
-                        : "border-red-500/30 bg-red-500/10 text-red-600"
-                    )}
-                  >
+                  <div className="flex items-center gap-2">
                     {mov.tipo === "Entrada" ? (
-                      <ArrowUpCircle className="h-3 w-3" />
+                      <ArrowUpCircle className="h-4 w-4 text-emerald-500 flex-shrink-0" />
                     ) : (
-                      <ArrowDownCircle className="h-3 w-3" />
+                      <ArrowDownCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
                     )}
-                    {mov.tipo}
-                  </Badge>
-                </TableCell>
-                <TableCell className="max-w-[250px] truncate">
-                  {mov.descricao || "-"}
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {mov.categoria_nome || "-"}
-                </TableCell>
-                <TableCell>
-                  <Badge variant="secondary" className="font-normal">
-                    {mov.forma_pagamento}
-                  </Badge>
+                    <div>
+                      <div className="text-sm font-medium">
+                        {format(new Date(mov.data_hora), "dd/MM/yy", { locale: ptBR })}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {format(new Date(mov.data_hora), "HH:mm", { locale: ptBR })}
+                      </div>
+                    </div>
+                  </div>
                 </TableCell>
                 <TableCell
                   className={cn(
-                    "text-right font-medium",
+                    "text-right font-semibold",
                     mov.tipo === "Entrada" ? "text-emerald-600" : "text-red-600"
                   )}
                 >
                   {mov.tipo === "Entrada" ? "+" : "-"}
                   {formatCurrency(Number(mov.valor))}
                 </TableCell>
-                <TableCell className="text-muted-foreground text-sm">
-                  {format(new Date(mov.data_hora), "dd/MM/yy HH:mm", { locale: ptBR })}
+                <TableCell>
+                  <div>
+                    <div className="font-medium text-sm">{mov.categoria_nome || "Sem categoria"}</div>
+                    {mov.descricao && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="text-xs text-muted-foreground truncate max-w-[150px] cursor-help">
+                              {mov.descricao}
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom" className="max-w-[300px]">
+                            <p>{mov.descricao}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell>
-                  {mov.usuario_email ? (
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                            <User className="h-3.5 w-3.5" />
-                            <span className="max-w-[100px] truncate">
-                              {mov.usuario_email.split("@")[0]}
-                            </span>
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>{mov.usuario_email}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  ) : (
-                    <span className="text-muted-foreground/50 text-sm">-</span>
-                  )}
+                  <Badge variant="secondary" className="font-normal text-xs">
+                    {mov.forma_pagamento}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center gap-1 text-sm text-muted-foreground cursor-help">
+                          <User className="h-3.5 w-3.5 flex-shrink-0" />
+                          <span className="truncate">{truncateEmail(mov.usuario_email)}</span>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="font-medium">Realizado por:</p>
+                        <p>{mov.usuario_email || "Não identificado"}</p>
+                        {mov.realizado_por && (
+                          <p className="text-xs text-muted-foreground mt-1">ID: {mov.realizado_por}</p>
+                        )}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </TableCell>
+                <TableCell>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center gap-1 text-sm text-muted-foreground cursor-help">
+                          <UserCheck className="h-3.5 w-3.5 flex-shrink-0" />
+                          <span className="truncate">{truncateEmail(mov.autorizado_por_email)}</span>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="font-medium">Autorizado por:</p>
+                        <p>{mov.autorizado_por_email || "Não requer autorização"}</p>
+                        {mov.autorizado_por && (
+                          <p className="text-xs text-muted-foreground mt-1">ID: {mov.autorizado_por}</p>
+                        )}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </TableCell>
                 <TableCell>
                   <DropdownMenu>

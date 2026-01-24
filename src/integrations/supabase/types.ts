@@ -83,6 +83,86 @@ export type Database = {
         }
         Relationships: []
       }
+      fechamentos_caixa: {
+        Row: {
+          caixa_id: string
+          created_at: string
+          diferenca_cartao: number
+          diferenca_dinheiro: number
+          diferenca_outros: number
+          diferenca_pix: number
+          diferenca_total: number
+          id: string
+          observacoes: string | null
+          realizado_por: string | null
+          realizado_por_email: string | null
+          total_contado: number
+          total_sistema: number
+          valor_cartao_contado: number
+          valor_cartao_sistema: number
+          valor_dinheiro_contado: number
+          valor_dinheiro_sistema: number
+          valor_outros_contado: number
+          valor_outros_sistema: number
+          valor_pix_contado: number
+          valor_pix_sistema: number
+        }
+        Insert: {
+          caixa_id: string
+          created_at?: string
+          diferenca_cartao?: number
+          diferenca_dinheiro?: number
+          diferenca_outros?: number
+          diferenca_pix?: number
+          diferenca_total?: number
+          id?: string
+          observacoes?: string | null
+          realizado_por?: string | null
+          realizado_por_email?: string | null
+          total_contado?: number
+          total_sistema?: number
+          valor_cartao_contado?: number
+          valor_cartao_sistema?: number
+          valor_dinheiro_contado?: number
+          valor_dinheiro_sistema?: number
+          valor_outros_contado?: number
+          valor_outros_sistema?: number
+          valor_pix_contado?: number
+          valor_pix_sistema?: number
+        }
+        Update: {
+          caixa_id?: string
+          created_at?: string
+          diferenca_cartao?: number
+          diferenca_dinheiro?: number
+          diferenca_outros?: number
+          diferenca_pix?: number
+          diferenca_total?: number
+          id?: string
+          observacoes?: string | null
+          realizado_por?: string | null
+          realizado_por_email?: string | null
+          total_contado?: number
+          total_sistema?: number
+          valor_cartao_contado?: number
+          valor_cartao_sistema?: number
+          valor_dinheiro_contado?: number
+          valor_dinheiro_sistema?: number
+          valor_outros_contado?: number
+          valor_outros_sistema?: number
+          valor_pix_contado?: number
+          valor_pix_sistema?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fechamentos_caixa_caixa_id_fkey"
+            columns: ["caixa_id"]
+            isOneToOne: false
+            referencedRelation: "caixas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       futuros_leads: {
         Row: {
           cnpj: string | null
@@ -258,6 +338,8 @@ export type Database = {
       }
       movimentacoes_caixa: {
         Row: {
+          autorizado_por: string | null
+          autorizado_por_email: string | null
           caixa_id: string | null
           categoria_id: string | null
           categoria_nome: string | null
@@ -273,6 +355,8 @@ export type Database = {
           valor: number
         }
         Insert: {
+          autorizado_por?: string | null
+          autorizado_por_email?: string | null
           caixa_id?: string | null
           categoria_id?: string | null
           categoria_nome?: string | null
@@ -288,6 +372,8 @@ export type Database = {
           valor?: number
         }
         Update: {
+          autorizado_por?: string | null
+          autorizado_por_email?: string | null
           caixa_id?: string | null
           categoria_id?: string | null
           categoria_nome?: string | null
