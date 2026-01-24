@@ -1,16 +1,18 @@
 import { useState } from "react";
-import { Plus, Search, Users } from "lucide-react";
+import { Plus, Search, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ClienteAccordion } from "@/components/clientes/ClienteAccordion";
 import { ClienteModal } from "@/components/clientes/ClienteModal";
+import { ImportClientesModal } from "@/components/clientes/ImportClientesModal";
 import { useClientesComContratos, ClienteComContratos } from "@/hooks/useClientes";
 
 export default function Clientes() {
   const { data: clientes = [], isLoading } = useClientesComContratos();
   const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
+  const [importModalOpen, setImportModalOpen] = useState(false);
   const [editingCliente, setEditingCliente] = useState<ClienteComContratos | null>(null);
 
   const filteredClientes = clientes.filter(
@@ -58,10 +60,16 @@ export default function Clientes() {
             Gestão de contratos e histórico de relacionamento
           </p>
         </div>
-        <Button onClick={() => setModalOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Novo Cliente
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setImportModalOpen(true)}>
+            <Upload className="h-4 w-4 mr-2" />
+            Importar CSV
+          </Button>
+          <Button onClick={() => setModalOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Novo Cliente
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -124,11 +132,16 @@ export default function Clientes() {
         </CardContent>
       </Card>
 
-      {/* Modal */}
+      {/* Modals */}
       <ClienteModal
         open={modalOpen}
         onOpenChange={handleCloseModal}
         cliente={editingCliente}
+      />
+      
+      <ImportClientesModal
+        open={importModalOpen}
+        onOpenChange={setImportModalOpen}
       />
     </div>
   );
