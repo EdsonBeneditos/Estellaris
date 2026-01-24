@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useCurrentProfile } from "@/hooks/useOrganization";
 
 export interface LeadInteracao {
   id: string;
@@ -29,6 +30,8 @@ export function useLeadInteracoes(leadId: string) {
 
 export function useCreateInteracao() {
   const queryClient = useQueryClient();
+  const { data: profile } = useCurrentProfile();
+  
   return useMutation({
     mutationFn: async (interacao: {
       lead_id: string;
@@ -39,7 +42,7 @@ export function useCreateInteracao() {
     }) => {
       const { data, error } = await supabase
         .from("lead_interacoes")
-        .insert(interacao)
+        .insert({ ...interacao, organization_id: profile?.organization_id })
         .select()
         .single();
       if (error) throw error;

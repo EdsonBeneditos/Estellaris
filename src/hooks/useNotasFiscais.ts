@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useCurrentProfile } from "@/hooks/useOrganization";
 
 export type NotaFiscal = {
   id: string;
@@ -58,6 +59,7 @@ export type NotaFiscal = {
   
   // Status
   status: string;
+  organization_id: string | null;
   
   created_at: string;
   updated_at: string;
@@ -80,11 +82,12 @@ export type NotaFiscalItem = {
   valor_icms: number | null;
   aliquota_ipi: number | null;
   valor_ipi: number | null;
+  organization_id: string | null;
   created_at: string;
 };
 
-export type NotaFiscalInsert = Omit<NotaFiscal, 'id' | 'numero_nota' | 'created_at' | 'updated_at'>;
-export type NotaFiscalItemInsert = Omit<NotaFiscalItem, 'id' | 'created_at'>;
+export type NotaFiscalInsert = Omit<NotaFiscal, 'id' | 'numero_nota' | 'created_at' | 'updated_at' | 'organization_id'>;
+export type NotaFiscalItemInsert = Omit<NotaFiscalItem, 'id' | 'created_at' | 'organization_id'>;
 
 export const useNotasFiscais = () => {
   return useQuery({
@@ -141,12 +144,13 @@ export const useNotaFiscalItens = (notaFiscalId: string | null) => {
 
 export const useCreateNotaFiscal = () => {
   const queryClient = useQueryClient();
+  const { data: profile } = useCurrentProfile();
 
   return useMutation({
     mutationFn: async (data: NotaFiscalInsert) => {
       const { data: nota, error } = await supabase
         .from("notas_fiscais")
-        .insert(data)
+        .insert({ ...data, organization_id: profile?.organization_id })
         .select()
         .single();
 
@@ -213,12 +217,14 @@ export const useDeleteNotaFiscal = () => {
 
 export const useBulkCreateNotaFiscalItens = () => {
   const queryClient = useQueryClient();
+  const { data: profile } = useCurrentProfile();
 
   return useMutation({
     mutationFn: async ({ notaFiscalId, items }: { notaFiscalId: string; items: Omit<NotaFiscalItemInsert, 'nota_fiscal_id'>[] }) => {
       const itemsWithNotaId = items.map(item => ({
         ...item,
         nota_fiscal_id: notaFiscalId,
+        organization_id: profile?.organization_id,
       }));
 
       const { data, error } = await supabase

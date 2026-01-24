@@ -15,6 +15,7 @@ import Estoque from "@/pages/Estoque";
 import Orcamentos from "@/pages/Orcamentos";
 import NotasFiscais from "@/pages/NotasFiscais";
 import Financeiro from "@/pages/Financeiro";
+import Equipe from "@/pages/Equipe";
 import Login from "@/pages/Login";
 import NotFound from "@/pages/NotFound";
 
@@ -103,6 +104,18 @@ const App = () => (
                   <MainLayout>
                     <Financeiro />
                   </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/equipe"
+              element={
+                <ProtectedRoute>
+                  <AdminRoute>
+                    <MainLayout>
+                      <Equipe />
+                    </MainLayout>
+                  </AdminRoute>
                 </ProtectedRoute>
               }
             />

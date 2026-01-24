@@ -116,6 +116,7 @@ export type Database = {
           diferenca_total: number
           id: string
           observacoes: string | null
+          organization_id: string | null
           realizado_por: string | null
           realizado_por_email: string | null
           total_contado: number
@@ -139,6 +140,7 @@ export type Database = {
           diferenca_total?: number
           id?: string
           observacoes?: string | null
+          organization_id?: string | null
           realizado_por?: string | null
           realizado_por_email?: string | null
           total_contado?: number
@@ -162,6 +164,7 @@ export type Database = {
           diferenca_total?: number
           id?: string
           observacoes?: string | null
+          organization_id?: string | null
           realizado_por?: string | null
           realizado_por_email?: string | null
           total_contado?: number
@@ -181,6 +184,13 @@ export type Database = {
             columns: ["caixa_id"]
             isOneToOne: false
             referencedRelation: "caixas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fechamentos_caixa_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -279,6 +289,7 @@ export type Database = {
           descricao: string | null
           id: string
           lead_id: string
+          organization_id: string | null
           status_anterior: string | null
           status_novo: string | null
           tipo: string
@@ -288,6 +299,7 @@ export type Database = {
           descricao?: string | null
           id?: string
           lead_id: string
+          organization_id?: string | null
           status_anterior?: string | null
           status_novo?: string | null
           tipo: string
@@ -297,6 +309,7 @@ export type Database = {
           descricao?: string | null
           id?: string
           lead_id?: string
+          organization_id?: string | null
           status_anterior?: string | null
           status_novo?: string | null
           tipo?: string
@@ -307,6 +320,13 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_interacoes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -489,6 +509,7 @@ export type Database = {
           id: string
           ncm: string | null
           nota_fiscal_id: string
+          organization_id: string | null
           produto_id: string
           quantidade: number
           unidade: string
@@ -508,6 +529,7 @@ export type Database = {
           id?: string
           ncm?: string | null
           nota_fiscal_id: string
+          organization_id?: string | null
           produto_id: string
           quantidade?: number
           unidade?: string
@@ -527,6 +549,7 @@ export type Database = {
           id?: string
           ncm?: string | null
           nota_fiscal_id?: string
+          organization_id?: string | null
           produto_id?: string
           quantidade?: number
           unidade?: string
@@ -541,6 +564,13 @@ export type Database = {
             columns: ["nota_fiscal_id"]
             isOneToOne: false
             referencedRelation: "notas_fiscais"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nota_fiscal_itens_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
           {
@@ -721,6 +751,7 @@ export type Database = {
           desconto_valor: number | null
           id: string
           orcamento_id: string
+          organization_id: string | null
           preco_unitario: number
           produto_id: string
           produto_nome: string
@@ -735,6 +766,7 @@ export type Database = {
           desconto_valor?: number | null
           id?: string
           orcamento_id: string
+          organization_id?: string | null
           preco_unitario: number
           produto_id: string
           produto_nome: string
@@ -749,6 +781,7 @@ export type Database = {
           desconto_valor?: number | null
           id?: string
           orcamento_id?: string
+          organization_id?: string | null
           preco_unitario?: number
           produto_id?: string
           produto_nome?: string
@@ -763,6 +796,13 @@ export type Database = {
             columns: ["orcamento_id"]
             isOneToOne: false
             referencedRelation: "orcamentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orcamento_itens_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
           {

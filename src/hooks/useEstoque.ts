@@ -1,11 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useCurrentProfile } from "@/hooks/useOrganization";
 
 // Types
 export interface GrupoProduto {
   id: string;
   nome: string;
   numero_referencia: string;
+  organization_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -24,6 +26,7 @@ export interface Produto {
   cest: string | null;
   origem_mercadoria: number | null;
   cst_csosn: string | null;
+  organization_id: string | null;
   created_at: string;
   updated_at: string;
   grupo?: GrupoProduto;
@@ -46,11 +49,13 @@ export function useGruposProdutos() {
 
 export function useCreateGrupoProduto() {
   const queryClient = useQueryClient();
+  const { data: profile } = useCurrentProfile();
+  
   return useMutation({
     mutationFn: async ({ nome, numero_referencia }: { nome: string; numero_referencia: string }) => {
       const { data, error } = await supabase
         .from("grupos_produtos")
-        .insert({ nome, numero_referencia })
+        .insert({ nome, numero_referencia, organization_id: profile?.organization_id })
         .select()
         .single();
       if (error) throw error;
@@ -123,11 +128,13 @@ export function useProdutos(grupoId?: string | null) {
 
 export function useCreateProduto() {
   const queryClient = useQueryClient();
+  const { data: profile } = useCurrentProfile();
+  
   return useMutation({
-    mutationFn: async (produto: Omit<Produto, "id" | "created_at" | "updated_at" | "grupo">) => {
+    mutationFn: async (produto: Omit<Produto, "id" | "created_at" | "updated_at" | "grupo" | "organization_id">) => {
       const { data, error } = await supabase
         .from("produtos")
-        .insert(produto)
+        .insert({ ...produto, organization_id: profile?.organization_id })
         .select()
         .single();
       if (error) throw error;

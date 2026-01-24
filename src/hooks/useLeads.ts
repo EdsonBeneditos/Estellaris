@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
+import { useCurrentProfile } from "@/hooks/useOrganization";
 
 export type Lead = Tables<"leads">;
 export type LeadInsert = TablesInsert<"leads">;
@@ -76,12 +77,13 @@ export function useLeadsStats() {
 
 export function useCreateLead() {
   const queryClient = useQueryClient();
+  const { data: profile } = useCurrentProfile();
 
   return useMutation({
     mutationFn: async (lead: LeadInsert) => {
       const { data, error } = await supabase
         .from("leads")
-        .insert(lead)
+        .insert({ ...lead, organization_id: profile?.organization_id })
         .select()
         .single();
 
