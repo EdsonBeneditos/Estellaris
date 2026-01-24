@@ -79,6 +79,54 @@ const helpContents: Record<string, HelpContent> = {
       },
     ],
   },
+  "/clientes": {
+    title: "Clientes - Manual Rápido",
+    description: "Gerencie clientes, contratos e histórico de fidelidade.",
+    sections: [
+      {
+        title: "👤 Cadastro de Clientes",
+        content: "Cadastre novos clientes com dados completos: nome, CNPJ/CPF, telefone, e-mail e endereço. Configure também a rotina de visitas se aplicável.",
+      },
+      {
+        title: "📋 Gestão de Contratos",
+        content: "Cada cliente pode ter múltiplos contratos com serviços, valores e datas de vencimento. O sistema exibe automaticamente um alerta de 'Renovação Próxima' quando faltam menos de 60 dias para o vencimento.",
+      },
+      {
+        title: "🔄 Renovação de Contratos",
+        content: "Ao renovar um contrato, o sistema finaliza o contrato atual e cria um novo automaticamente. Todo o histórico é preservado para cálculo do tempo total de fidelidade do cliente.",
+      },
+      {
+        title: "🏆 Histórico de Fidelidade",
+        content: "O tempo de fidelidade é calculado automaticamente somando todos os períodos de contrato do cliente, incluindo renovações. Essa informação aparece como badge no card do cliente.",
+      },
+      {
+        title: "📥 Importação via CSV",
+        content: "Importe múltiplos clientes de uma planilha CSV. Baixe o modelo, preencha os dados (Nome, Documento, Contato, Serviço, Valor, Vencimento) e faça o upload. O sistema valida CNPJ/CPF e exibe erros específicos por linha antes de importar.",
+      },
+    ],
+  },
+  "/equipe": {
+    title: "Equipe - Manual Rápido",
+    description: "Gerencie os membros da sua organização e controle de acessos.",
+    sections: [
+      {
+        title: "👥 Gestão de Membros",
+        content: "Visualize todos os membros da sua organização. Administradores podem alterar cargos e remover membros. Cada membro possui um cargo que define suas permissões no sistema.",
+      },
+      {
+        title: "🔑 Diferença entre Cargos",
+        content: "Admin: Acesso total, pode gerenciar membros, configurações e excluir dados. Gerente: Acesso a relatórios e gestão de leads/clientes, sem acesso a configurações críticas. Vendedor: Acesso básico para cadastro e acompanhamento de leads e orçamentos.",
+      },
+      {
+        title: "🔐 Segurança e Rastro de Auditoria",
+        content: "Toda ação no sistema é registrada com o login do usuário responsável. O rastro de auditoria é imutável e não pode ser alterado, garantindo total rastreabilidade para fins de compliance e segurança.",
+      },
+      {
+        title: "⚠️ Proteção de Dados",
+        content: "O isolamento multi-tenant garante que cada organização acesse apenas seus próprios dados. Membros removidos perdem acesso imediato ao sistema.",
+      },
+    ],
+  },
   "/estoque": {
     title: "Estoque/Cadastro - Manual Rápido",
     description: "Gerencie produtos e grupos do seu catálogo.",

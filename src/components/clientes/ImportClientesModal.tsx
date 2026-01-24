@@ -37,8 +37,86 @@ interface ParsedCliente {
   servico: string;
   valor: string;
   vencimento: string;
+  lineNumber: number;
   isValid: boolean;
   errors: string[];
+}
+
+// Função de validação de CNPJ
+function validateCNPJ(cnpj: string): boolean {
+  // Remove caracteres não numéricos
+  const cleanCnpj = cnpj.replace(/[^\d]/g, "");
+  
+  // Verifica se tem 14 dígitos
+  if (cleanCnpj.length !== 14) return false;
+  
+  // Verifica se todos os dígitos são iguais
+  if (/^(\d)\1+$/.test(cleanCnpj)) return false;
+  
+  // Cálculo dos dígitos verificadores
+  const calcDigit = (digits: string, weights: number[]): number => {
+    let sum = 0;
+    for (let i = 0; i < weights.length; i++) {
+      sum += parseInt(digits[i]) * weights[i];
+    }
+    const remainder = sum % 11;
+    return remainder < 2 ? 0 : 11 - remainder;
+  };
+  
+  const weights1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+  const weights2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+  
+  const digit1 = calcDigit(cleanCnpj, weights1);
+  const digit2 = calcDigit(cleanCnpj, weights2);
+  
+  return (
+    digit1 === parseInt(cleanCnpj[12]) &&
+    digit2 === parseInt(cleanCnpj[13])
+  );
+}
+
+// Função de validação de CPF
+function validateCPF(cpf: string): boolean {
+  // Remove caracteres não numéricos
+  const cleanCpf = cpf.replace(/[^\d]/g, "");
+  
+  // Verifica se tem 11 dígitos
+  if (cleanCpf.length !== 11) return false;
+  
+  // Verifica se todos os dígitos são iguais
+  if (/^(\d)\1+$/.test(cleanCpf)) return false;
+  
+  // Cálculo dos dígitos verificadores
+  let sum = 0;
+  for (let i = 0; i < 9; i++) {
+    sum += parseInt(cleanCpf[i]) * (10 - i);
+  }
+  let remainder = (sum * 10) % 11;
+  if (remainder === 10 || remainder === 11) remainder = 0;
+  if (remainder !== parseInt(cleanCpf[9])) return false;
+  
+  sum = 0;
+  for (let i = 0; i < 10; i++) {
+    sum += parseInt(cleanCpf[i]) * (11 - i);
+  }
+  remainder = (sum * 10) % 11;
+  if (remainder === 10 || remainder === 11) remainder = 0;
+  if (remainder !== parseInt(cleanCpf[10])) return false;
+  
+  return true;
+}
+
+// Função para validar documento (CNPJ ou CPF)
+function validateDocument(doc: string): { isValid: boolean; type: "cnpj" | "cpf" | "unknown" } {
+  const cleanDoc = doc.replace(/[^\d]/g, "");
+  
+  if (cleanDoc.length === 14) {
+    return { isValid: validateCNPJ(doc), type: "cnpj" };
+  } else if (cleanDoc.length === 11) {
+    return { isValid: validateCPF(doc), type: "cpf" };
+  }
+  
+  return { isValid: false, type: "unknown" };
 }
 
 type ImportStep = "upload" | "preview" | "importing" | "complete";
@@ -75,7 +153,7 @@ export function ImportClientesModal({ open, onOpenChange }: ImportClientesModalP
     URL.revokeObjectURL(link.href);
   };
 
-  const validateRow = (row: Record<string, string>): ParsedCliente => {
+  const validateRow = (row: Record<string, string>, lineNumber: number): ParsedCliente => {
     const errors: string[] = [];
     const nome = row["Nome"]?.trim() || "";
     const documento = row["Documento"]?.trim() || "";
@@ -85,6 +163,21 @@ export function ImportClientesModal({ open, onOpenChange }: ImportClientesModalP
     const vencimento = row["Vencimento"]?.trim() || "";
 
     if (!nome) errors.push("Nome obrigatório");
+    
+    // Validação rigorosa de CNPJ/CPF
+    if (documento) {
+      const docValidation = validateDocument(documento);
+      if (!docValidation.isValid) {
+        if (docValidation.type === "cnpj") {
+          errors.push(`Linha ${lineNumber}: CNPJ inválido. Corrija para continuar.`);
+        } else if (docValidation.type === "cpf") {
+          errors.push(`Linha ${lineNumber}: CPF inválido. Corrija para continuar.`);
+        } else {
+          errors.push(`Linha ${lineNumber}: Documento inválido. Use CNPJ (14 dígitos) ou CPF (11 dígitos).`);
+        }
+      }
+    }
+    
     if (valor && isNaN(parseFloat(valor.replace(",", ".")))) {
       errors.push("Valor inválido");
     }
@@ -102,6 +195,7 @@ export function ImportClientesModal({ open, onOpenChange }: ImportClientesModalP
       servico,
       valor,
       vencimento,
+      lineNumber,
       isValid: errors.length === 0,
       errors,
     };
@@ -115,10 +209,19 @@ export function ImportClientesModal({ open, onOpenChange }: ImportClientesModalP
       header: true,
       skipEmptyLines: true,
       complete: (results) => {
-        const validated = results.data.map((row) =>
-          validateRow(row as Record<string, string>)
+        const validated = results.data.map((row, index) =>
+          validateRow(row as Record<string, string>, index + 2) // +2 porque linha 1 é o cabeçalho
         );
         setParsedData(validated);
+        
+        // Verificar se há erros de documento e mostrar alerta
+        const docErrors = validated.filter(r => 
+          r.errors.some(e => e.includes("CNPJ inválido") || e.includes("CPF inválido") || e.includes("Documento inválido"))
+        );
+        if (docErrors.length > 0) {
+          toast.error(`Encontrados ${docErrors.length} documento(s) inválido(s). Corrija antes de importar.`);
+        }
+        
         setStep("preview");
       },
       error: () => {
@@ -278,6 +381,30 @@ export function ImportClientesModal({ open, onOpenChange }: ImportClientesModalP
                 </Badge>
               )}
             </div>
+            
+            {/* Alerta de erro de documentos */}
+            {parsedData.some(r => r.errors.some(e => e.includes("CNPJ") || e.includes("CPF") || e.includes("Documento"))) && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+                  <div className="space-y-1">
+                    <p className="font-medium text-red-800">Documentos inválidos encontrados</p>
+                    <ul className="text-sm text-red-700 space-y-1">
+                      {parsedData
+                        .filter(r => r.errors.some(e => e.includes("CNPJ") || e.includes("CPF") || e.includes("Documento")))
+                        .map((r, idx) => (
+                          <li key={idx} className="font-mono">
+                            {r.errors.find(e => e.includes("CNPJ") || e.includes("CPF") || e.includes("Documento"))}
+                          </li>
+                        ))}
+                    </ul>
+                    <p className="text-sm text-red-600 mt-2">
+                      Corrija os documentos na planilha e faça o upload novamente.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <ScrollArea className="flex-1 border rounded-lg">
               <Table>
@@ -316,9 +443,21 @@ export function ImportClientesModal({ open, onOpenChange }: ImportClientesModalP
                             OK
                           </Badge>
                         ) : (
-                          <Badge variant="secondary" className="bg-red-100 text-red-800">
-                            {row.errors.join(", ")}
-                          </Badge>
+                          <div className="space-y-1">
+                            {row.errors.map((error, errorIdx) => (
+                              <Badge 
+                                key={errorIdx} 
+                                variant="secondary" 
+                                className={`block w-fit ${
+                                  error.includes("CNPJ") || error.includes("CPF") || error.includes("Documento")
+                                    ? "bg-red-200 text-red-900 border border-red-300"
+                                    : "bg-red-100 text-red-800"
+                                }`}
+                              >
+                                {error}
+                              </Badge>
+                            ))}
+                          </div>
                         )}
                       </TableCell>
                     </TableRow>
