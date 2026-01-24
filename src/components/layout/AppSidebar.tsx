@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, BarChart3, Settings, LogOut, UserPlus, Package, FileText, Receipt, Wallet } from "lucide-react";
+import { LayoutDashboard, Users, BarChart3, Settings, LogOut, UserPlus, Package, FileText, Receipt, Wallet, UsersRound } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -35,14 +35,20 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const location = useLocation();
   const { signOut, user } = useAuthContext();
-  const { canViewSettings } = usePermissions();
+  const { canViewSettings, canManageTeam } = usePermissions();
 
   const isActive = (path: string) => location.pathname === path;
 
   // Build menu items based on permissions
-  const menuItems = canViewSettings
-    ? [...baseMenuItems, { title: "Configurações", url: "/configuracoes", icon: Settings }]
-    : baseMenuItems;
+  let menuItems = [...baseMenuItems];
+  
+  if (canManageTeam) {
+    menuItems.push({ title: "Equipe", url: "/equipe", icon: UsersRound });
+  }
+  
+  if (canViewSettings) {
+    menuItems.push({ title: "Configurações", url: "/configuracoes", icon: Settings });
+  }
 
   const handleLogout = async () => {
     const { error } = await signOut();

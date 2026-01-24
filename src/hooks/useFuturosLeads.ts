@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useCurrentProfile } from "@/hooks/useOrganization";
 
 export interface FuturoLead {
   id: string;
@@ -31,11 +32,13 @@ export function useFuturosLeads() {
 
 export function useCreateFuturoLead() {
   const queryClient = useQueryClient();
+  const { data: profile } = useCurrentProfile();
+  
   return useMutation({
     mutationFn: async (data: Omit<FuturoLead, "id" | "created_at" | "updated_at">) => {
       const { data: result, error } = await supabase
         .from("futuros_leads")
-        .insert(data)
+        .insert({ ...data, organization_id: profile?.organization_id })
         .select()
         .single();
       if (error) throw error;
@@ -82,6 +85,8 @@ export function useDeleteFuturoLead() {
 // Hook to convert a future lead to an active lead
 export function useConvertToActiveLead() {
   const queryClient = useQueryClient();
+  const { data: profile } = useCurrentProfile();
+  
   return useMutation({
     mutationFn: async (futuroLead: FuturoLead) => {
       // Create active lead with all mapped fields including meio_contato
@@ -95,6 +100,7 @@ export function useConvertToActiveLead() {
         status: "Novo",
         // Default meio_contato based on available contact info
         meio_contato: futuroLead.telefone ? "Telefone" : (futuroLead.email ? "E-mail" : null),
+        organization_id: profile?.organization_id,
       });
       
       if (createError) throw createError;

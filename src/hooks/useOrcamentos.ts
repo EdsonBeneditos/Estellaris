@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useCurrentProfile } from "@/hooks/useOrganization";
 
 export type Orcamento = {
   id: string;
@@ -18,6 +19,7 @@ export type Orcamento = {
   observacoes: string | null;
   validade_dias: number | null;
   data_validade: string | null;
+  organization_id: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -34,11 +36,12 @@ export type OrcamentoItem = {
   desconto_percentual: number;
   desconto_valor: number;
   valor_total: number;
+  organization_id: string | null;
   created_at: string;
 };
 
-export type OrcamentoInsert = Omit<Orcamento, 'id' | 'numero_orcamento' | 'created_at' | 'updated_at'>;
-export type OrcamentoItemInsert = Omit<OrcamentoItem, 'id' | 'created_at'>;
+export type OrcamentoInsert = Omit<Orcamento, 'id' | 'numero_orcamento' | 'created_at' | 'updated_at' | 'organization_id'>;
+export type OrcamentoItemInsert = Omit<OrcamentoItem, 'id' | 'created_at' | 'organization_id'>;
 
 export const useOrcamentos = () => {
   return useQuery({
@@ -95,12 +98,13 @@ export const useOrcamentoItens = (orcamentoId: string | null) => {
 
 export const useCreateOrcamento = () => {
   const queryClient = useQueryClient();
+  const { data: profile } = useCurrentProfile();
 
   return useMutation({
     mutationFn: async (data: OrcamentoInsert) => {
       const { data: orcamento, error } = await supabase
         .from("orcamentos")
-        .insert(data)
+        .insert({ ...data, organization_id: profile?.organization_id })
         .select()
         .single();
 
@@ -168,12 +172,13 @@ export const useDeleteOrcamento = () => {
 
 export const useCreateOrcamentoItem = () => {
   const queryClient = useQueryClient();
+  const { data: profile } = useCurrentProfile();
 
   return useMutation({
     mutationFn: async (data: OrcamentoItemInsert) => {
       const { data: item, error } = await supabase
         .from("orcamento_itens")
-        .insert(data)
+        .insert({ ...data, organization_id: profile?.organization_id })
         .select()
         .single();
 
@@ -213,12 +218,14 @@ export const useDeleteOrcamentoItem = () => {
 
 export const useBulkCreateOrcamentoItens = () => {
   const queryClient = useQueryClient();
+  const { data: profile } = useCurrentProfile();
 
   return useMutation({
     mutationFn: async ({ orcamentoId, items }: { orcamentoId: string; items: Omit<OrcamentoItemInsert, 'orcamento_id'>[] }) => {
       const itemsWithOrcamentoId = items.map(item => ({
         ...item,
         orcamento_id: orcamentoId,
+        organization_id: profile?.organization_id,
       }));
 
       const { data, error } = await supabase

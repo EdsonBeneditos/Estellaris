@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useCurrentProfile } from "@/hooks/useOrganization";
 
 // Types
 export interface Vendedor {
@@ -7,6 +8,7 @@ export interface Vendedor {
   nome: string;
   ativo: boolean;
   cor: string | null;
+  organization_id: string | null;
   created_at: string;
 }
 
@@ -15,6 +17,7 @@ export interface TipoServico {
   nome: string;
   ativo: boolean;
   cor: string | null;
+  organization_id: string | null;
   created_at: string;
 }
 
@@ -23,6 +26,7 @@ export interface Origem {
   nome: string;
   ativo: boolean;
   cor: string | null;
+  organization_id: string | null;
   created_at: string;
 }
 
@@ -58,11 +62,13 @@ export function useActiveVendedores() {
 
 export function useCreateVendedor() {
   const queryClient = useQueryClient();
+  const { data: profile } = useCurrentProfile();
+  
   return useMutation({
     mutationFn: async (nome: string) => {
       const { data, error } = await supabase
         .from("vendedores")
-        .insert({ nome })
+        .insert({ nome, organization_id: profile?.organization_id })
         .select()
         .single();
       if (error) throw error;
@@ -151,11 +157,13 @@ export function useActiveTiposServico() {
 
 export function useCreateTipoServico() {
   const queryClient = useQueryClient();
+  const { data: profile } = useCurrentProfile();
+  
   return useMutation({
     mutationFn: async (nome: string) => {
       const { data, error } = await supabase
         .from("tipos_servico")
-        .insert({ nome })
+        .insert({ nome, organization_id: profile?.organization_id })
         .select()
         .single();
       if (error) throw error;
@@ -244,11 +252,13 @@ export function useActiveOrigens() {
 
 export function useCreateOrigem() {
   const queryClient = useQueryClient();
+  const { data: profile } = useCurrentProfile();
+  
   return useMutation({
     mutationFn: async (nome: string) => {
       const { data, error } = await supabase
         .from("origens")
-        .insert({ nome })
+        .insert({ nome, organization_id: profile?.organization_id })
         .select()
         .single();
       if (error) throw error;

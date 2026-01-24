@@ -1,12 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useCurrentProfile } from "@/hooks/useOrganization";
 
 export interface CategoriaFinanceira {
   id: string;
   nome: string;
   tipo: "Entrada" | "Saída";
   ativo: boolean;
+  organization_id: string | null;
   created_at: string;
 }
 
@@ -25,6 +27,7 @@ export interface MovimentacaoCaixa {
   autorizado_por_email: string | null;
   orcamento_id: string | null;
   caixa_id: string | null;
+  organization_id: string | null;
   created_at: string;
 }
 
@@ -40,6 +43,7 @@ export interface Caixa {
   usuario_fechamento: string | null;
   observacoes: string | null;
   status: "Aberto" | "Fechado";
+  organization_id: string | null;
   created_at: string;
 }
 
@@ -64,6 +68,7 @@ export interface FechamentoCaixa {
   realizado_por: string | null;
   realizado_por_email: string | null;
   observacoes: string | null;
+  organization_id: string | null;
   created_at: string;
 }
 
@@ -187,6 +192,7 @@ export function useFechamentosCaixa(caixaId?: string) {
 // Mutations
 export function useCreateMovimentacao() {
   const queryClient = useQueryClient();
+  const { data: profile } = useCurrentProfile();
 
   return useMutation({
     mutationFn: async (movimentacao: {
@@ -206,7 +212,7 @@ export function useCreateMovimentacao() {
     }) => {
       const { data, error } = await supabase
         .from("movimentacoes_caixa")
-        .insert(movimentacao)
+        .insert({ ...movimentacao, organization_id: profile?.organization_id })
         .select()
         .single();
 
@@ -272,6 +278,7 @@ export function useDeleteMovimentacao() {
 
 export function useAbrirCaixa() {
   const queryClient = useQueryClient();
+  const { data: profile } = useCurrentProfile();
 
   return useMutation({
     mutationFn: async ({ saldo_inicial, usuario_abertura }: { saldo_inicial: number; usuario_abertura: string }) => {
@@ -281,6 +288,7 @@ export function useAbrirCaixa() {
           saldo_inicial,
           usuario_abertura,
           status: "Aberto",
+          organization_id: profile?.organization_id,
         })
         .select()
         .single();
@@ -301,6 +309,7 @@ export function useAbrirCaixa() {
 
 export function useFecharCaixaCego() {
   const queryClient = useQueryClient();
+  const { data: profile } = useCurrentProfile();
 
   return useMutation({
     mutationFn: async ({
@@ -354,6 +363,7 @@ export function useFecharCaixaCego() {
           realizado_por: usuario_id,
           realizado_por_email: usuario_fechamento,
           observacoes,
+          organization_id: profile?.organization_id,
         });
 
       if (fechamentoError) throw fechamentoError;
