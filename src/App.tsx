@@ -5,11 +5,13 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import { SimulationProvider } from "@/contexts/SimulationContext";
 import { ProtectedRoute } from "@/components/layout/ProtectedRoute";
 import { AdminRoute } from "@/components/layout/AdminRoute";
 import { SuperAdminRoute } from "@/components/layout/SuperAdminRoute";
 import { AccessControlGuard } from "@/components/layout/AccessControlGuard";
 import { MainLayout } from "@/components/layout/MainLayout";
+import { SimulationBanner } from "@/components/layout/SimulationBanner";
 import Dashboard from "@/pages/Dashboard";
 import Leads from "@/pages/Leads";
 import FuturosLeads from "@/pages/FuturosLeads";
@@ -32,10 +34,12 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
       <LanguageProvider>
-        <TooltipProvider>
-          <Toaster />
-          <BrowserRouter>
-            <AuthProvider>
+        <SimulationProvider>
+          <TooltipProvider>
+            <Toaster />
+            <BrowserRouter>
+              <AuthProvider>
+                <SimulationBanner />
               <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route
@@ -201,9 +205,10 @@ const App = () => (
             </AuthProvider>
           </BrowserRouter>
         </TooltipProvider>
-      </LanguageProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
+      </SimulationProvider>
+    </LanguageProvider>
+  </ThemeProvider>
+</QueryClientProvider>
 );
 
 export default App;
