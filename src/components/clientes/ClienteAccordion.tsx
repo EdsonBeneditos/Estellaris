@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Phone, Mail, MapPin, RefreshCw, FileText, Plus, Pencil, Trash2, History } from "lucide-react";
+import { Phone, Mail, MapPin, RefreshCw, FileText, Plus, Pencil, Trash2, History, CalendarDays } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,8 @@ import { RenovarContratoModal } from "./RenovarContratoModal";
 import { ClienteTimeline } from "./ClienteTimeline";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { getVisitaBadgeConfig } from "@/hooks/useVisitasAlerts";
+import { cn } from "@/lib/utils";
 
 interface ClienteAccordionProps {
   clientes: ClienteComContratos[];
@@ -112,8 +115,23 @@ function ContratoCard({
   );
 }
 
+function VisitaStatusBadge({ dataVisita }: { dataVisita: string | null }) {
+  const config = getVisitaBadgeConfig(dataVisita);
+  if (!config) return null;
+
+  return (
+    <Badge className={cn("text-xs", config.className)}>
+      <CalendarDays className="h-3 w-3 mr-1" />
+      {config.label}
+    </Badge>
+  );
+}
+
 export function ClienteAccordion({ clientes, onEdit }: ClienteAccordionProps) {
   const deleteCliente = useDeleteCliente();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [expandedCliente, setExpandedCliente] = useState<string | undefined>(undefined);
+  
   const [contratoModal, setContratoModal] = useState<{ open: boolean; clienteId: string; contrato: Contrato | null }>({
     open: false,
     clienteId: "",
@@ -123,6 +141,23 @@ export function ClienteAccordion({ clientes, onEdit }: ClienteAccordionProps) {
     open: false,
     contrato: null,
   });
+
+  // Efeito para expandir cliente via URL
+  useEffect(() => {
+    const expandirId = searchParams.get("expandir");
+    if (expandirId) {
+      setExpandedCliente(expandirId);
+      // Scroll para o elemento
+      setTimeout(() => {
+        const element = document.getElementById(`cliente-${expandirId}`);
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }, 100);
+      // Limpar o parâmetro da URL
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const handleNovoContrato = (clienteId: string) => {
     setContratoModal({ open: true, clienteId, contrato: null });
@@ -156,7 +191,13 @@ export function ClienteAccordion({ clientes, onEdit }: ClienteAccordionProps) {
 
   return (
     <>
-      <Accordion type="single" collapsible className="space-y-2">
+      <Accordion 
+        type="single" 
+        collapsible 
+        className="space-y-2"
+        value={expandedCliente}
+        onValueChange={setExpandedCliente}
+      >
         {clientes.map((cliente) => {
           const contratoAtivo = cliente.contratos.find(c => c.status === "Ativo");
           const fidelidade = calcularFidelidade(cliente.contratos);
@@ -164,20 +205,21 @@ export function ClienteAccordion({ clientes, onEdit }: ClienteAccordionProps) {
           return (
             <AccordionItem
               key={cliente.id}
+              id={`cliente-${cliente.id}`}
               value={cliente.id}
               className="border rounded-lg overflow-hidden bg-white"
             >
               <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-50 data-[state=open]:bg-slate-50">
                 <div className="flex items-center justify-between w-full pr-4">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 flex-wrap">
                     <span className="font-semibold text-zinc-950">{cliente.nome}</span>
                     {temRenovacaoProxima(cliente.contratos) && (
                       <Badge variant="secondary" className="bg-amber-100 text-amber-800 text-xs">
                         Renovação Próxima
                       </Badge>
                     )}
-                    {cliente.rotina_visitas && (
-                      <Badge variant="outline" className="text-xs">Visitas</Badge>
+                    {cliente.rotina_visitas && cliente.proxima_visita && (
+                      <VisitaStatusBadge dataVisita={cliente.proxima_visita} />
                     )}
                   </div>
                   {fidelidade > 0 && (
