@@ -99,7 +99,7 @@ export function LeadsTableModern({ leads, isLoading }: LeadsTableModernProps) {
               <div
                 key={lead.id}
                 onClick={() => handleRowClick(lead)}
-                className="group relative cursor-pointer transition-all duration-300 hover:bg-gradient-to-r hover:from-primary/5 hover:to-transparent"
+                className="group relative cursor-pointer transition-all duration-200 hover:bg-gradient-to-r hover:from-primary/5 hover:to-transparent hover:scale-[1.005] hover:shadow-sm"
               >
                 {/* Glassmorphism hover effect */}
                 <div className="absolute inset-0 bg-gradient-to-r from-white/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-xl" />

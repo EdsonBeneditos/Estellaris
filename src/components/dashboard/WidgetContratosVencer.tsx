@@ -53,7 +53,7 @@ export function WidgetContratosVencer({ enabled }: WidgetContratosVencerProps) {
   };
 
   return (
-    <Card className="bg-gradient-to-br from-slate-50 to-zinc-100 dark:from-zinc-900 dark:to-slate-900 border-slate-200 dark:border-zinc-800">
+    <Card className="bg-gradient-to-br from-slate-50 to-zinc-100 dark:from-zinc-900 dark:to-slate-900 border-slate-200 dark:border-zinc-800 transition-all duration-200 hover:scale-[1.02] hover:shadow-md hover:border-primary/30">
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center justify-between text-lg font-semibold text-slate-700 dark:text-zinc-200">
           <div className="flex items-center gap-2">

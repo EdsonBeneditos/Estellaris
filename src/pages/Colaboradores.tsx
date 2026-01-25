@@ -282,10 +282,10 @@ export default function Colaboradores() {
           return (
             <Card
               key={status}
-              className="border-zinc-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950"
+              className="border-zinc-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 transition-all duration-200 hover:scale-[1.02] hover:shadow-md hover:border-primary/30 cursor-pointer"
             >
               <CardContent className="flex items-center gap-4 p-4">
-                <div className={`p-2 rounded-lg ${config.color}`}>
+                <div className={`p-2 rounded-lg ${config.color} transition-transform duration-200 group-hover:scale-110`}>
                   <Icon className="h-5 w-5 text-white" />
                 </div>
                 <div>
@@ -357,7 +357,7 @@ export default function Colaboradores() {
                   <AccordionItem
                     key={colaborador.id}
                     value={colaborador.id}
-                    className="border border-zinc-200 dark:border-zinc-800 rounded-lg px-4 data-[state=open]:bg-zinc-100 dark:data-[state=open]:bg-zinc-900"
+                    className="border border-zinc-200 dark:border-zinc-800 rounded-lg px-4 data-[state=open]:bg-zinc-100 dark:data-[state=open]:bg-zinc-900 transition-all duration-200 hover:scale-[1.01] hover:shadow-md hover:border-primary/30"
                   >
                     <AccordionTrigger className="hover:no-underline py-4">
                       <div className="flex items-center justify-between w-full pr-4">
