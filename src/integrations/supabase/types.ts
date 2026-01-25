@@ -1121,27 +1121,42 @@ export type Database = {
           ativo: boolean
           cnpj: string | null
           created_at: string
+          dias_acesso: string[] | null
+          hora_fim_acesso: string | null
+          hora_inicio_acesso: string | null
           id: string
+          idioma: string | null
           nome: string
           plano: Database["public"]["Enums"]["plano_organizacao"]
+          tema: string | null
           updated_at: string
         }
         Insert: {
           ativo?: boolean
           cnpj?: string | null
           created_at?: string
+          dias_acesso?: string[] | null
+          hora_fim_acesso?: string | null
+          hora_inicio_acesso?: string | null
           id?: string
+          idioma?: string | null
           nome: string
           plano?: Database["public"]["Enums"]["plano_organizacao"]
+          tema?: string | null
           updated_at?: string
         }
         Update: {
           ativo?: boolean
           cnpj?: string | null
           created_at?: string
+          dias_acesso?: string[] | null
+          hora_fim_acesso?: string | null
+          hora_inicio_acesso?: string | null
           id?: string
+          idioma?: string | null
           nome?: string
           plano?: Database["public"]["Enums"]["plano_organizacao"]
+          tema?: string | null
           updated_at?: string
         }
         Relationships: []

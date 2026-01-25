@@ -7,11 +7,13 @@ import {
   Trash2,
   ToggleLeft,
   ToggleRight,
+  Building2,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,6 +43,7 @@ import {
   useUpdateOrigemColor,
 } from "@/hooks/useSettings";
 import { ColorPicker } from "@/components/settings/ColorPicker";
+import { OrganizationSettings } from "@/components/settings/OrganizationSettings";
 import { toast } from "sonner";
 
 interface SettingsListProps {
@@ -267,53 +270,72 @@ export default function Configuracoes() {
       <div>
         <h1 className="text-2xl font-bold text-foreground">Configurações</h1>
         <p className="text-muted-foreground mt-1">
-          Gerencie vendedores, serviços e origens de leads
+          Gerencie a organização, vendedores, serviços e origens de leads
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <SettingsList
-          title="Vendedores"
-          icon={Users}
-          items={vendedores}
-          isLoading={vendedoresLoading}
-          onAdd={(nome) => createVendedor.mutateAsync(nome)}
-          onDelete={(id) => deleteVendedor.mutateAsync(id)}
-          onToggle={(id, ativo) => toggleVendedor.mutateAsync({ id, ativo })}
-          onColorChange={(id, cor) => updateVendedorColor.mutateAsync({ id, cor })}
-          placeholder="Nome do vendedor"
-          description="Equipe comercial cadastrada no sistema"
-          defaultColor="#10B981"
-        />
+      <Tabs defaultValue="organizacao" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 lg:w-auto lg:inline-grid">
+          <TabsTrigger value="organizacao" className="gap-2">
+            <Building2 className="h-4 w-4" />
+            Organização
+          </TabsTrigger>
+          <TabsTrigger value="equipe" className="gap-2">
+            <Settings className="h-4 w-4" />
+            Equipe & Leads
+          </TabsTrigger>
+        </TabsList>
 
-        <SettingsList
-          title="Tipos de Serviço"
-          icon={Briefcase}
-          items={tiposServico}
-          isLoading={tiposLoading}
-          onAdd={(nome) => createTipoServico.mutateAsync(nome)}
-          onDelete={(id) => deleteTipoServico.mutateAsync(id)}
-          onToggle={(id, ativo) => toggleTipoServico.mutateAsync({ id, ativo })}
-          onColorChange={(id, cor) => updateTipoServicoColor.mutateAsync({ id, cor })}
-          placeholder="Nome do serviço"
-          description="Serviços ambientais oferecidos pela Acqua Nobilis"
-          defaultColor="#8B5CF6"
-        />
+        <TabsContent value="organizacao" className="mt-6">
+          <OrganizationSettings />
+        </TabsContent>
 
-        <SettingsList
-          title="Origens de Lead"
-          icon={Settings}
-          items={origens}
-          isLoading={origensLoading}
-          onAdd={(nome) => createOrigem.mutateAsync(nome)}
-          onDelete={(id) => deleteOrigem.mutateAsync(id)}
-          onToggle={(id, ativo) => toggleOrigem.mutateAsync({ id, ativo })}
-          onColorChange={(id, cor) => updateOrigemColor.mutateAsync({ id, cor })}
-          placeholder="Nome da origem"
-          description="Canais de captação de leads configurados"
-          defaultColor="#3B82F6"
-        />
-      </div>
+        <TabsContent value="equipe" className="mt-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <SettingsList
+              title="Vendedores"
+              icon={Users}
+              items={vendedores}
+              isLoading={vendedoresLoading}
+              onAdd={(nome) => createVendedor.mutateAsync(nome)}
+              onDelete={(id) => deleteVendedor.mutateAsync(id)}
+              onToggle={(id, ativo) => toggleVendedor.mutateAsync({ id, ativo })}
+              onColorChange={(id, cor) => updateVendedorColor.mutateAsync({ id, cor })}
+              placeholder="Nome do vendedor"
+              description="Equipe comercial cadastrada no sistema"
+              defaultColor="#10B981"
+            />
+
+            <SettingsList
+              title="Tipos de Serviço"
+              icon={Briefcase}
+              items={tiposServico}
+              isLoading={tiposLoading}
+              onAdd={(nome) => createTipoServico.mutateAsync(nome)}
+              onDelete={(id) => deleteTipoServico.mutateAsync(id)}
+              onToggle={(id, ativo) => toggleTipoServico.mutateAsync({ id, ativo })}
+              onColorChange={(id, cor) => updateTipoServicoColor.mutateAsync({ id, cor })}
+              placeholder="Nome do serviço"
+              description="Serviços oferecidos pela empresa"
+              defaultColor="#8B5CF6"
+            />
+
+            <SettingsList
+              title="Origens de Lead"
+              icon={Settings}
+              items={origens}
+              isLoading={origensLoading}
+              onAdd={(nome) => createOrigem.mutateAsync(nome)}
+              onDelete={(id) => deleteOrigem.mutateAsync(id)}
+              onToggle={(id, ativo) => toggleOrigem.mutateAsync({ id, ativo })}
+              onColorChange={(id, cor) => updateOrigemColor.mutateAsync({ id, cor })}
+              placeholder="Nome da origem"
+              description="Canais de captação de leads configurados"
+              defaultColor="#3B82F6"
+            />
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
