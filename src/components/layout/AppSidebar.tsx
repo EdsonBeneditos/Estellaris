@@ -33,9 +33,11 @@ const moduleMenuItems: Record<ModuleKey, { title: string; url: string; icon: Rea
   orcamentos: { title: "Orçamentos", url: "/orcamentos", icon: FileText },
   notas_fiscais: { title: "Notas Fiscais", url: "/notas-fiscais", icon: Receipt },
   financeiro: { title: "Financeiro", url: "/financeiro", icon: Wallet },
-  relatorios_leads: null, // Tratado separadamente
-  relatorios_financeiro: null, // Tratado separadamente
+  relatorios_leads: null, // Tratado separadamente como "Relatórios"
+  relatorios_financeiro: null, // Tratado separadamente como "Relatórios"
+  equipe: { title: "Equipe", url: "/equipe", icon: UsersRound },
   configuracoes: { title: "Configurações", url: "/configuracoes", icon: Settings },
+  super_admin: { title: "Super Admin", url: "/super-admin", icon: Shield },
 };
 
 export function AppSidebar() {
@@ -54,20 +56,22 @@ export function AppSidebar() {
   // Construir menu baseado nos módulos habilitados
   const menuItems: { title: string; url: string; icon: React.ElementType }[] = [];
 
-  // Adicionar itens baseados nos módulos habilitados
-  (Object.keys(moduleMenuItems) as ModuleKey[]).forEach((moduleKey) => {
+  // Adicionar itens baseados nos módulos habilitados (exceto especiais)
+  const regularModules: ModuleKey[] = [
+    "dashboard",
+    "leads",
+    "futuros_leads",
+    "clientes",
+    "colaboradores",
+    "estoque",
+    "orcamentos",
+    "notas_fiscais",
+    "financeiro",
+  ];
+
+  regularModules.forEach((moduleKey) => {
     const menuItem = moduleMenuItems[moduleKey];
-    if (!menuItem) return; // Pular relatórios (tratados separadamente)
-    
-    // Configurações requer permissão adicional
-    if (moduleKey === "configuracoes") {
-      if (canViewSettings && isModuleEnabled(enabledModules, moduleKey)) {
-        menuItems.push(menuItem);
-      }
-      return;
-    }
-    
-    if (isModuleEnabled(enabledModules, moduleKey)) {
+    if (menuItem && isModuleEnabled(enabledModules, moduleKey)) {
       menuItems.push(menuItem);
     }
   });
@@ -78,14 +82,22 @@ export function AppSidebar() {
     menuItems.push({ title: "Relatórios", url: "/relatorios", icon: BarChart3 });
   }
 
-  // Adicionar Equipe se tiver permissão
-  if (canManageTeam) {
-    menuItems.push({ title: "Equipe", url: "/equipe", icon: UsersRound });
+  // Adicionar Equipe se o módulo estiver habilitado E tiver permissão
+  if (isModuleEnabled(enabledModules, "equipe") && canManageTeam) {
+    const equipeItem = moduleMenuItems.equipe;
+    if (equipeItem) menuItems.push(equipeItem);
   }
 
-  // Adicionar Super Admin se for super admin
+  // Adicionar Configurações se o módulo estiver habilitado E tiver permissão
+  if (isModuleEnabled(enabledModules, "configuracoes") && canViewSettings) {
+    const configItem = moduleMenuItems.configuracoes;
+    if (configItem) menuItems.push(configItem);
+  }
+
+  // Adicionar Super Admin se for super admin (independente de modules_enabled)
   if (isSuperAdmin) {
-    menuItems.push({ title: "Super Admin", url: "/super-admin", icon: Shield });
+    const superAdminItem = moduleMenuItems.super_admin;
+    if (superAdminItem) menuItems.push(superAdminItem);
   }
 
   const handleLogout = async () => {

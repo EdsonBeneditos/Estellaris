@@ -11,7 +11,9 @@ export const AVAILABLE_MODULES = [
   "financeiro",
   "relatorios_leads",
   "relatorios_financeiro",
+  "equipe",
   "configuracoes",
+  "super_admin",
 ] as const;
 
 export type ModuleKey = (typeof AVAILABLE_MODULES)[number];
@@ -92,10 +94,22 @@ export const MODULE_CONFIG: Record<
     route: "/relatorios",
     category: "analytics",
   },
+  equipe: {
+    label: "Equipe",
+    description: "Gestão de membros da organização",
+    route: "/equipe",
+    category: "admin",
+  },
   configuracoes: {
     label: "Configurações",
     description: "Ajustes da organização e sistema",
     route: "/configuracoes",
+    category: "admin",
+  },
+  super_admin: {
+    label: "Super Admin",
+    description: "Gestão central de todas as organizações",
+    route: "/super-admin",
     category: "admin",
   },
 };
