@@ -20,6 +20,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Loader2, Check } from "lucide-react";
 import { useCategorias, useCreateMovimentacao, useUpdateMovimentacao, MovimentacaoCaixa } from "@/hooks/useFinanceiro";
+import { useCentrosCusto } from "@/hooks/useCentrosCusto";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useCurrentProfile } from "@/hooks/useOrganization";
 import { supabase } from "@/integrations/supabase/client";
@@ -51,6 +52,7 @@ export function MovimentacaoModal({
   const { user } = useAuthContext();
   const { data: profile } = useCurrentProfile();
   const { data: categorias } = useCategorias();
+  const { data: centrosCusto = [] } = useCentrosCusto();
   const createMovimentacao = useCreateMovimentacao();
   const updateMovimentacao = useUpdateMovimentacao();
   const queryClient = useQueryClient();
@@ -58,6 +60,7 @@ export function MovimentacaoModal({
   const [tipo, setTipo] = useState<"Entrada" | "Saída">("Entrada");
   const [valor, setValor] = useState("");
   const [categoriaId, setCategoriaId] = useState("");
+  const [centroCustoId, setCentroCustoId] = useState("");
   const [formaPagamento, setFormaPagamento] = useState("Dinheiro");
   const [descricao, setDescricao] = useState("");
 
@@ -66,6 +69,11 @@ export function MovimentacaoModal({
   const [newCategoryName, setNewCategoryName] = useState("");
   const [isCreatingCategory, setIsCreatingCategory] = useState(false);
 
+  // Estados para novo centro de custo
+  const [showNewCentroCustoInput, setShowNewCentroCustoInput] = useState(false);
+  const [newCentroCustoName, setNewCentroCustoName] = useState("");
+  const [isCreatingCentroCusto, setIsCreatingCentroCusto] = useState(false);
+
   const isEditing = !!movimentacao;
 
   useEffect(() => {
@@ -73,18 +81,22 @@ export function MovimentacaoModal({
       setTipo(movimentacao.tipo);
       setValor(String(movimentacao.valor));
       setCategoriaId(movimentacao.categoria_id || "");
+      setCentroCustoId(movimentacao.centro_custo_id || "");
       setFormaPagamento(movimentacao.forma_pagamento);
       setDescricao(movimentacao.descricao || "");
     } else {
       setTipo("Entrada");
       setValor("");
       setCategoriaId("");
+      setCentroCustoId("");
       setFormaPagamento("Dinheiro");
       setDescricao("");
     }
-    // Reset new category state when modal opens/closes
+    // Reset new inputs
     setShowNewCategoryInput(false);
     setNewCategoryName("");
+    setShowNewCentroCustoInput(false);
+    setNewCentroCustoName("");
   }, [movimentacao, open]);
 
   // Reset new category input when tipo changes
@@ -122,7 +134,6 @@ export function MovimentacaoModal({
 
       if (error) throw error;
 
-      // Invalidar cache e selecionar automaticamente a nova categoria
       await queryClient.invalidateQueries({ queryKey: ["categorias_financeiras"] });
       
       setCategoriaId(data.id);
@@ -137,6 +148,45 @@ export function MovimentacaoModal({
     }
   };
 
+  const handleCreateCentroCusto = async () => {
+    if (!newCentroCustoName.trim()) {
+      toast.error("Digite o nome do centro de custo");
+      return;
+    }
+
+    if (!profile?.organization_id) {
+      toast.error("Organização não encontrada");
+      return;
+    }
+
+    setIsCreatingCentroCusto(true);
+
+    try {
+      const { data, error } = await supabase
+        .from("centros_custo")
+        .insert({
+          nome: newCentroCustoName.trim(),
+          organization_id: profile.organization_id,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      await queryClient.invalidateQueries({ queryKey: ["centros_custo"] });
+      
+      setCentroCustoId(data.id);
+      setShowNewCentroCustoInput(false);
+      setNewCentroCustoName("");
+      
+      toast.success(`Centro de custo "${data.nome}" criado!`);
+    } catch (error: any) {
+      toast.error("Erro ao criar centro de custo", { description: error.message });
+    } finally {
+      setIsCreatingCentroCusto(false);
+    }
+  };
+
   const handleSubmit = async () => {
     const categoriaSelecionada = categorias?.find((c) => c.id === categoriaId);
 
@@ -145,6 +195,7 @@ export function MovimentacaoModal({
       valor: Number(valor) || 0,
       categoria_id: categoriaId || null,
       categoria_nome: categoriaSelecionada?.nome || null,
+      centro_custo_id: centroCustoId || null,
       forma_pagamento: formaPagamento,
       descricao: descricao || null,
       usuario_email: user?.email || null,
@@ -278,10 +329,84 @@ export function MovimentacaoModal({
                 </Button>
               </div>
             )}
+          </div>
+
+          {/* Centro de Custo com botão + */}
+          <div className="space-y-2">
+            <Label htmlFor="centro-custo">Centro de Custo</Label>
             
-            <p className="text-xs text-muted-foreground">
-              {tipo === "Entrada" ? "Categorias de entrada" : "Categorias de saída"}
-            </p>
+            {showNewCentroCustoInput ? (
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Novo centro de custo"
+                  value={newCentroCustoName}
+                  onChange={(e) => setNewCentroCustoName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleCreateCentroCusto();
+                    }
+                    if (e.key === "Escape") {
+                      setShowNewCentroCustoInput(false);
+                      setNewCentroCustoName("");
+                    }
+                  }}
+                  autoFocus
+                  disabled={isCreatingCentroCusto}
+                />
+                <Button
+                  type="button"
+                  size="icon"
+                  onClick={handleCreateCentroCusto}
+                  disabled={isCreatingCentroCusto || !newCentroCustoName.trim()}
+                  className="shrink-0"
+                >
+                  {isCreatingCentroCusto ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Check className="h-4 w-4" />
+                  )}
+                </Button>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="outline"
+                  onClick={() => {
+                    setShowNewCentroCustoInput(false);
+                    setNewCentroCustoName("");
+                  }}
+                  disabled={isCreatingCentroCusto}
+                  className="shrink-0"
+                >
+                  ✕
+                </Button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <Select value={centroCustoId} onValueChange={setCentroCustoId}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Selecione um centro de custo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {centrosCusto.map((cc) => (
+                      <SelectItem key={cc.id} value={cc.id}>
+                        {cc.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="outline"
+                  onClick={() => setShowNewCentroCustoInput(true)}
+                  className="shrink-0"
+                  title="Adicionar novo centro de custo"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Forma de Pagamento */}

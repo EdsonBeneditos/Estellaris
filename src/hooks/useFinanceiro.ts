@@ -18,6 +18,7 @@ export interface MovimentacaoCaixa {
   valor: number;
   categoria_id: string | null;
   categoria_nome: string | null;
+  centro_custo_id: string | null;
   forma_pagamento: string;
   descricao: string | null;
   data_hora: string;
@@ -200,6 +201,7 @@ export function useCreateMovimentacao() {
       valor: number;
       categoria_id: string | null;
       categoria_nome: string | null;
+      centro_custo_id: string | null;
       forma_pagamento: string;
       descricao: string | null;
       data_hora: string;

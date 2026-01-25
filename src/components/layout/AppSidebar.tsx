@@ -4,7 +4,9 @@ import { useLocation } from "react-router-dom";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useIsSuperAdmin } from "@/hooks/useSuperAdmin";
+import { useCurrentOrganization } from "@/hooks/useOrganization";
 import { toast } from "sonner";
+import { isModuleEnabled, hasAnyReport, ModuleKey } from "@/lib/modules";
 
 import {
   Sidebar,
@@ -20,18 +22,21 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 
-const baseMenuItems = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Leads", url: "/leads", icon: Users },
-  { title: "Futuros Leads", url: "/futuros-leads", icon: UserPlus },
-  { title: "Clientes", url: "/clientes", icon: Building2 },
-  { title: "Colaboradores", url: "/colaboradores", icon: HardHat },
-  { title: "Estoque", url: "/estoque", icon: Package },
-  { title: "Orçamentos", url: "/orcamentos", icon: FileText },
-  { title: "Notas Fiscais", url: "/notas-fiscais", icon: Receipt },
-  { title: "Financeiro", url: "/financeiro", icon: Wallet },
-  { title: "Relatórios", url: "/relatorios", icon: BarChart3 },
-];
+// Mapeamento de módulo para item de menu
+const moduleMenuItems: Record<ModuleKey, { title: string; url: string; icon: React.ElementType } | null> = {
+  dashboard: { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  leads: { title: "Leads", url: "/leads", icon: Users },
+  futuros_leads: { title: "Futuros Leads", url: "/futuros-leads", icon: UserPlus },
+  clientes: { title: "Clientes", url: "/clientes", icon: Building2 },
+  colaboradores: { title: "Colaboradores", url: "/colaboradores", icon: HardHat },
+  estoque: { title: "Estoque", url: "/estoque", icon: Package },
+  orcamentos: { title: "Orçamentos", url: "/orcamentos", icon: FileText },
+  notas_fiscais: { title: "Notas Fiscais", url: "/notas-fiscais", icon: Receipt },
+  financeiro: { title: "Financeiro", url: "/financeiro", icon: Wallet },
+  relatorios_leads: null, // Tratado separadamente
+  relatorios_financeiro: null, // Tratado separadamente
+  configuracoes: { title: "Configurações", url: "/configuracoes", icon: Settings },
+};
 
 export function AppSidebar() {
   const { state } = useSidebar();
@@ -40,20 +45,45 @@ export function AppSidebar() {
   const { signOut, user } = useAuthContext();
   const { canViewSettings, canManageTeam } = usePermissions();
   const { data: isSuperAdmin } = useIsSuperAdmin();
+  const { data: organization } = useCurrentOrganization();
 
   const isActive = (path: string) => location.pathname === path;
 
-  // Build menu items based on permissions
-  let menuItems = [...baseMenuItems];
-  
+  const enabledModules = organization?.modules_enabled;
+
+  // Construir menu baseado nos módulos habilitados
+  const menuItems: { title: string; url: string; icon: React.ElementType }[] = [];
+
+  // Adicionar itens baseados nos módulos habilitados
+  (Object.keys(moduleMenuItems) as ModuleKey[]).forEach((moduleKey) => {
+    const menuItem = moduleMenuItems[moduleKey];
+    if (!menuItem) return; // Pular relatórios (tratados separadamente)
+    
+    // Configurações requer permissão adicional
+    if (moduleKey === "configuracoes") {
+      if (canViewSettings && isModuleEnabled(enabledModules, moduleKey)) {
+        menuItems.push(menuItem);
+      }
+      return;
+    }
+    
+    if (isModuleEnabled(enabledModules, moduleKey)) {
+      menuItems.push(menuItem);
+    }
+  });
+
+  // Adicionar Relatórios se algum estiver habilitado
+  const reportStatus = hasAnyReport(enabledModules);
+  if (reportStatus.hasAny) {
+    menuItems.push({ title: "Relatórios", url: "/relatorios", icon: BarChart3 });
+  }
+
+  // Adicionar Equipe se tiver permissão
   if (canManageTeam) {
     menuItems.push({ title: "Equipe", url: "/equipe", icon: UsersRound });
   }
-  
-  if (canViewSettings) {
-    menuItems.push({ title: "Configurações", url: "/configuracoes", icon: Settings });
-  }
-  
+
+  // Adicionar Super Admin se for super admin
   if (isSuperAdmin) {
     menuItems.push({ title: "Super Admin", url: "/super-admin", icon: Shield });
   }

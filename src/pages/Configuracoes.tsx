@@ -8,6 +8,7 @@ import {
   ToggleLeft,
   ToggleRight,
   Building2,
+  Landmark,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -44,6 +45,7 @@ import {
 } from "@/hooks/useSettings";
 import { ColorPicker } from "@/components/settings/ColorPicker";
 import { OrganizationSettings } from "@/components/settings/OrganizationSettings";
+import { CentrosCustoManager } from "@/components/settings/CentrosCustoManager";
 import { toast } from "sonner";
 
 interface SettingsListProps {
@@ -124,7 +126,7 @@ function SettingsList({
   };
 
   return (
-    <Card>
+    <Card className="relative overflow-visible transition-all duration-200 hover:shadow-lg hover:border-primary/30">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Icon className="h-5 w-5" />
@@ -166,7 +168,7 @@ function SettingsList({
             items.map((item) => (
               <div
                 key={item.id}
-                className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
+                className={`flex items-center justify-between p-3 rounded-lg border transition-all duration-200 hover:scale-[1.01] hover:shadow-sm ${
                   item.ativo
                     ? "bg-muted/50 border-border"
                     : "bg-muted/20 border-border/50 opacity-60"
@@ -270,12 +272,12 @@ export default function Configuracoes() {
       <div>
         <h1 className="text-2xl font-bold text-foreground">Configurações</h1>
         <p className="text-muted-foreground mt-1">
-          Gerencie a organização, vendedores, serviços e origens de leads
+          Gerencie a organização, vendedores, serviços, origens e centros de custo
         </p>
       </div>
 
       <Tabs defaultValue="organizacao" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 lg:w-auto lg:inline-grid">
+        <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
           <TabsTrigger value="organizacao" className="gap-2">
             <Building2 className="h-4 w-4" />
             Organização
@@ -283,6 +285,10 @@ export default function Configuracoes() {
           <TabsTrigger value="equipe" className="gap-2">
             <Settings className="h-4 w-4" />
             Equipe & Leads
+          </TabsTrigger>
+          <TabsTrigger value="financeiro" className="gap-2">
+            <Landmark className="h-4 w-4" />
+            Financeiro
           </TabsTrigger>
         </TabsList>
 
@@ -333,6 +339,12 @@ export default function Configuracoes() {
               description="Canais de captação de leads configurados"
               defaultColor="#3B82F6"
             />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="financeiro" className="mt-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <CentrosCustoManager />
           </div>
         </TabsContent>
       </Tabs>

@@ -8,6 +8,7 @@ export interface Organization {
   cnpj: string | null;
   plano: "Basico" | "Pro" | "Enterprise";
   ativo: boolean;
+  modules_enabled: string[] | null;
   created_at: string;
   updated_at: string;
 }

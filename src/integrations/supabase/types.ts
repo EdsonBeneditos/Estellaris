@@ -149,6 +149,35 @@ export type Database = {
           },
         ]
       }
+      centros_custo: {
+        Row: {
+          created_at: string | null
+          id: string
+          nome: string
+          organization_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          nome: string
+          organization_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          nome?: string
+          organization_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "centros_custo_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clientes: {
         Row: {
           ativo: boolean
@@ -668,6 +697,7 @@ export type Database = {
           caixa_id: string | null
           categoria_id: string | null
           categoria_nome: string | null
+          centro_custo_id: string | null
           created_at: string
           data_hora: string
           descricao: string | null
@@ -686,6 +716,7 @@ export type Database = {
           caixa_id?: string | null
           categoria_id?: string | null
           categoria_nome?: string | null
+          centro_custo_id?: string | null
           created_at?: string
           data_hora?: string
           descricao?: string | null
@@ -704,6 +735,7 @@ export type Database = {
           caixa_id?: string | null
           categoria_id?: string | null
           categoria_nome?: string | null
+          centro_custo_id?: string | null
           created_at?: string
           data_hora?: string
           descricao?: string | null
@@ -729,6 +761,13 @@ export type Database = {
             columns: ["categoria_id"]
             isOneToOne: false
             referencedRelation: "categorias_financeiras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimentacoes_caixa_centro_custo_id_fkey"
+            columns: ["centro_custo_id"]
+            isOneToOne: false
+            referencedRelation: "centros_custo"
             referencedColumns: ["id"]
           },
           {
@@ -1191,6 +1230,7 @@ export type Database = {
           hora_inicio_acesso: string | null
           id: string
           idioma: string | null
+          modules_enabled: string[] | null
           nome: string
           plano: Database["public"]["Enums"]["plano_organizacao"]
           tema: string | null
@@ -1205,6 +1245,7 @@ export type Database = {
           hora_inicio_acesso?: string | null
           id?: string
           idioma?: string | null
+          modules_enabled?: string[] | null
           nome: string
           plano?: Database["public"]["Enums"]["plano_organizacao"]
           tema?: string | null
@@ -1219,6 +1260,7 @@ export type Database = {
           hora_inicio_acesso?: string | null
           id?: string
           idioma?: string | null
+          modules_enabled?: string[] | null
           nome?: string
           plano?: Database["public"]["Enums"]["plano_organizacao"]
           tema?: string | null
