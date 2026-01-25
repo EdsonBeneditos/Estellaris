@@ -885,6 +885,45 @@ export type Database = {
           },
         ]
       }
+      notificacoes_contratos: {
+        Row: {
+          admin_email: string
+          cliente_id: string
+          contrato_id: string
+          created_at: string
+          data_envio: string
+          data_vencimento: string
+          enviado_em: string
+          id: string
+          organization_id: string
+          tipo_notificacao: string
+        }
+        Insert: {
+          admin_email: string
+          cliente_id: string
+          contrato_id: string
+          created_at?: string
+          data_envio?: string
+          data_vencimento: string
+          enviado_em?: string
+          id?: string
+          organization_id: string
+          tipo_notificacao?: string
+        }
+        Update: {
+          admin_email?: string
+          cliente_id?: string
+          contrato_id?: string
+          created_at?: string
+          data_envio?: string
+          data_vencimento?: string
+          enviado_em?: string
+          id?: string
+          organization_id?: string
+          tipo_notificacao?: string
+        }
+        Relationships: []
+      }
       orcamento_itens: {
         Row: {
           created_at: string
