@@ -220,6 +220,62 @@ export type Database = {
           },
         ]
       }
+      colaboradores: {
+        Row: {
+          codigo_cadastro: string | null
+          created_at: string | null
+          data_admissao: string | null
+          email_pessoal: string | null
+          id: string
+          nome: string
+          organization_id: string | null
+          pcd: boolean | null
+          preferencia_turno: string | null
+          status: string | null
+          telefone: string | null
+          tipo_carteira: string | null
+          troca_turno: boolean | null
+        }
+        Insert: {
+          codigo_cadastro?: string | null
+          created_at?: string | null
+          data_admissao?: string | null
+          email_pessoal?: string | null
+          id?: string
+          nome: string
+          organization_id?: string | null
+          pcd?: boolean | null
+          preferencia_turno?: string | null
+          status?: string | null
+          telefone?: string | null
+          tipo_carteira?: string | null
+          troca_turno?: boolean | null
+        }
+        Update: {
+          codigo_cadastro?: string | null
+          created_at?: string | null
+          data_admissao?: string | null
+          email_pessoal?: string | null
+          id?: string
+          nome?: string
+          organization_id?: string | null
+          pcd?: boolean | null
+          preferencia_turno?: string | null
+          status?: string | null
+          telefone?: string | null
+          tipo_carteira?: string | null
+          troca_turno?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "colaboradores_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contratos_historico: {
         Row: {
           cliente_id: string
@@ -1274,6 +1330,7 @@ export type Database = {
           created_at: string
           email: string
           id: string
+          is_super_admin: boolean | null
           nome: string
           organization_id: string
           updated_at: string
@@ -1283,6 +1340,7 @@ export type Database = {
           created_at?: string
           email: string
           id: string
+          is_super_admin?: boolean | null
           nome: string
           organization_id: string
           updated_at?: string
@@ -1292,6 +1350,7 @@ export type Database = {
           created_at?: string
           email?: string
           id?: string
+          is_super_admin?: boolean | null
           nome?: string
           organization_id?: string
           updated_at?: string

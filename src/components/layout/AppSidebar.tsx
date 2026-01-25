@@ -1,8 +1,9 @@
-import { LayoutDashboard, Users, BarChart3, Settings, LogOut, UserPlus, Package, FileText, Receipt, Wallet, UsersRound, Building2 } from "lucide-react";
+import { LayoutDashboard, Users, BarChart3, Settings, LogOut, UserPlus, Package, FileText, Receipt, Wallet, UsersRound, Building2, Shield, HardHat } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useIsSuperAdmin } from "@/hooks/useSuperAdmin";
 import { toast } from "sonner";
 
 import {
@@ -24,6 +25,7 @@ const baseMenuItems = [
   { title: "Leads", url: "/leads", icon: Users },
   { title: "Futuros Leads", url: "/futuros-leads", icon: UserPlus },
   { title: "Clientes", url: "/clientes", icon: Building2 },
+  { title: "Colaboradores", url: "/colaboradores", icon: HardHat },
   { title: "Estoque", url: "/estoque", icon: Package },
   { title: "Orçamentos", url: "/orcamentos", icon: FileText },
   { title: "Notas Fiscais", url: "/notas-fiscais", icon: Receipt },
@@ -37,6 +39,7 @@ export function AppSidebar() {
   const location = useLocation();
   const { signOut, user } = useAuthContext();
   const { canViewSettings, canManageTeam } = usePermissions();
+  const { data: isSuperAdmin } = useIsSuperAdmin();
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -49,6 +52,10 @@ export function AppSidebar() {
   
   if (canViewSettings) {
     menuItems.push({ title: "Configurações", url: "/configuracoes", icon: Settings });
+  }
+  
+  if (isSuperAdmin) {
+    menuItems.push({ title: "Super Admin", url: "/super-admin", icon: Shield });
   }
 
   const handleLogout = async () => {

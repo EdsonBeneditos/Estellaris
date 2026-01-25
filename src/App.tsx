@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ProtectedRoute } from "@/components/layout/ProtectedRoute";
 import { AdminRoute } from "@/components/layout/AdminRoute";
+import { SuperAdminRoute } from "@/components/layout/SuperAdminRoute";
 import { AccessControlGuard } from "@/components/layout/AccessControlGuard";
 import { MainLayout } from "@/components/layout/MainLayout";
 import Dashboard from "@/pages/Dashboard";
@@ -20,6 +21,8 @@ import Orcamentos from "@/pages/Orcamentos";
 import NotasFiscais from "@/pages/NotasFiscais";
 import Financeiro from "@/pages/Financeiro";
 import Equipe from "@/pages/Equipe";
+import Colaboradores from "@/pages/Colaboradores";
+import SuperAdmin from "@/pages/SuperAdmin";
 import Login from "@/pages/Login";
 import NotFound from "@/pages/NotFound";
 
@@ -166,6 +169,30 @@ const App = () => (
                           </MainLayout>
                         </AccessControlGuard>
                       </AdminRoute>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/colaboradores"
+                  element={
+                    <ProtectedRoute>
+                      <AccessControlGuard>
+                        <MainLayout>
+                          <Colaboradores />
+                        </MainLayout>
+                      </AccessControlGuard>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/super-admin"
+                  element={
+                    <ProtectedRoute>
+                      <SuperAdminRoute>
+                        <MainLayout>
+                          <SuperAdmin />
+                        </MainLayout>
+                      </SuperAdminRoute>
                     </ProtectedRoute>
                   }
                 />

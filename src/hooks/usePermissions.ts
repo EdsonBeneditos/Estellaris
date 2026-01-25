@@ -14,6 +14,9 @@ export function usePermissions() {
   // Verifica se é gerente
   const isGerente = roles.some((r) => r.role === "gerente");
   
+  // Verifica se é super admin
+  const isSuperAdmin = profile?.is_super_admin === true;
+  
   // Verifica se pode acessar o sistema (tem perfil vinculado)
   const canAccessSystem = !!profile;
   
@@ -32,6 +35,7 @@ export function usePermissions() {
   return {
     isAdmin,
     isGerente,
+    isSuperAdmin,
     canAccessSystem,
     canViewSettings,
     canManageTeam,
