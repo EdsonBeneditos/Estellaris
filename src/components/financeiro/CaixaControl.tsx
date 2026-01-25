@@ -89,14 +89,14 @@ export function CaixaControl({ caixaAberto, movimentacoes }: CaixaControlProps) 
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 pt-2">
-                <div className="space-y-1">
-                  <span className="text-xs text-muted-foreground">Saldo Inicial</span>
-                  <p className="font-semibold">{formatCurrency(Number(caixaAberto.saldo_inicial))}</p>
+              <div className="flex flex-col gap-4 pt-2">
+                <div className="space-y-1.5 p-3 rounded-lg bg-muted/50 border border-border/50">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Saldo Inicial</span>
+                  <p className="text-xl font-bold text-foreground">{formatCurrency(Number(caixaAberto.saldo_inicial))}</p>
                 </div>
-                <div className="space-y-1">
-                  <span className="text-xs text-muted-foreground">Saldo Atual (Sistema)</span>
-                  <p className="font-semibold text-primary">{formatCurrency(saldoSistema)}</p>
+                <div className="space-y-1.5 p-3 rounded-lg bg-primary/5 border border-primary/20">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Saldo Atual (Sistema)</span>
+                  <p className="text-xl font-bold text-primary">{formatCurrency(saldoSistema)}</p>
                 </div>
               </div>
 
