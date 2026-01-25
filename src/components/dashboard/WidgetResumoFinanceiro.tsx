@@ -34,64 +34,62 @@ export function WidgetResumoFinanceiro({ enabled }: WidgetResumoFinanceiroProps)
             <Skeleton className="h-12 w-full" />
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 overflow-visible">
+          <div className="flex flex-col gap-3 overflow-visible">
             {/* Entradas */}
-            <div className="flex items-start gap-4 p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
-              <div className="shrink-0 p-2.5 rounded-full bg-emerald-100 dark:bg-emerald-900">
-                <TrendingUp className="h-5 w-5 text-emerald-600" />
+            <div className="flex items-center justify-between p-3 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/50">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-full bg-emerald-100 dark:bg-emerald-900/50">
+                  <TrendingUp className="h-4 w-4 text-emerald-600" />
+                </div>
+                <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">Entradas</span>
               </div>
-              <div className="flex-1">
-                <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 mb-1">Entradas</p>
-                <p className="text-sm sm:text-base lg:text-lg font-bold text-emerald-700 dark:text-emerald-300 break-words leading-tight">
-                  {formatCurrency(data?.entradas || 0)}
-                </p>
-              </div>
+              <span className="text-base font-bold text-emerald-700 dark:text-emerald-300">
+                {formatCurrency(data?.entradas || 0)}
+              </span>
             </div>
 
             {/* Saídas */}
-            <div className="flex items-start gap-4 p-4 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800">
-              <div className="shrink-0 p-2.5 rounded-full bg-rose-100 dark:bg-rose-900">
-                <TrendingDown className="h-5 w-5 text-rose-600" />
+            <div className="flex items-center justify-between p-3 rounded-lg bg-rose-50/50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/50">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-full bg-rose-100 dark:bg-rose-900/50">
+                  <TrendingDown className="h-4 w-4 text-rose-600" />
+                </div>
+                <span className="text-sm font-medium text-rose-700 dark:text-rose-300">Saídas</span>
               </div>
-              <div className="flex-1">
-                <p className="text-xs font-medium text-rose-600 dark:text-rose-400 mb-1">Saídas</p>
-                <p className="text-sm sm:text-base lg:text-lg font-bold text-rose-700 dark:text-rose-300 break-words leading-tight">
-                  {formatCurrency(data?.saidas || 0)}
-                </p>
-              </div>
+              <span className="text-base font-bold text-rose-700 dark:text-rose-300">
+                {formatCurrency(data?.saidas || 0)}
+              </span>
             </div>
 
             {/* Saldo */}
-            <div className={`flex items-start gap-4 p-4 rounded-xl border ${
+            <div className={`flex items-center justify-between p-3 rounded-lg border ${
               (data?.saldo || 0) >= 0 
-                ? "bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800"
-                : "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800"
+                ? "bg-blue-50/50 dark:bg-blue-950/20 border-blue-100 dark:border-blue-900/50"
+                : "bg-amber-50/50 dark:bg-amber-950/20 border-amber-100 dark:border-amber-900/50"
             }`}>
-              <div className={`shrink-0 p-2.5 rounded-full ${
-                (data?.saldo || 0) >= 0 
-                  ? "bg-blue-100 dark:bg-blue-900"
-                  : "bg-amber-100 dark:bg-amber-900"
-              }`}>
-                <DollarSign className={`h-5 w-5 ${
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-full ${
                   (data?.saldo || 0) >= 0 
-                    ? "text-blue-600"
-                    : "text-amber-600"
-                }`} />
-              </div>
-              <div className="flex-1">
-                <p className={`text-xs font-medium mb-1 ${
-                  (data?.saldo || 0) >= 0 
-                    ? "text-blue-600 dark:text-blue-400"
-                    : "text-amber-600 dark:text-amber-400"
-                }`}>Saldo</p>
-                <p className={`text-sm sm:text-base lg:text-lg font-bold break-words leading-tight ${
+                    ? "bg-blue-100 dark:bg-blue-900/50"
+                    : "bg-amber-100 dark:bg-amber-900/50"
+                }`}>
+                  <DollarSign className={`h-4 w-4 ${
+                    (data?.saldo || 0) >= 0 ? "text-blue-600" : "text-amber-600"
+                  }`} />
+                </div>
+                <span className={`text-sm font-medium ${
                   (data?.saldo || 0) >= 0 
                     ? "text-blue-700 dark:text-blue-300"
                     : "text-amber-700 dark:text-amber-300"
-                }`}>
-                  {formatCurrency(data?.saldo || 0)}
-                </p>
+                }`}>Saldo</span>
               </div>
+              <span className={`text-base font-bold ${
+                (data?.saldo || 0) >= 0 
+                  ? "text-blue-700 dark:text-blue-300"
+                  : "text-amber-700 dark:text-amber-300"
+              }`}>
+                {formatCurrency(data?.saldo || 0)}
+              </span>
             </div>
           </div>
         )}
