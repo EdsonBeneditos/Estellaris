@@ -18,17 +18,24 @@ import { NewLeadModal } from "@/components/leads/NewLeadModal";
 import { DateRangePicker } from "@/components/leads/DateRangePicker";
 import { useLeads, useLeadsStats } from "@/hooks/useLeads";
 import { useActiveVendedores, useActiveTiposServico } from "@/hooks/useSettings";
+import { useDashboardPreferences } from "@/hooks/useDashboardPreferences";
+import { DashboardCustomizeModal } from "@/components/dashboard/DashboardCustomizeModal";
+import { WidgetResumoFinanceiro } from "@/components/dashboard/WidgetResumoFinanceiro";
+import { WidgetProximasVisitas } from "@/components/dashboard/WidgetProximasVisitas";
+import { WidgetContratosVencer } from "@/components/dashboard/WidgetContratosVencer";
+import { WidgetEvolucaoLeads } from "@/components/dashboard/WidgetEvolucaoLeads";
+import { WidgetAtalhosRapidos } from "@/components/dashboard/WidgetAtalhosRapidos";
 import { DateRange } from "react-day-picker";
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 // Fixed colors for each salesperson
 const VENDEDOR_COLORS: Record<string, string> = {
-  "Maria Victoria": "hsl(210, 100%, 45%)", // Blue
-  "Francielli": "hsl(142, 71%, 45%)",      // Green
-  "Mikaela": "hsl(280, 70%, 50%)",         // Purple
-  "Cleriston": "hsl(25, 95%, 53%)",        // Orange
-  "Roberto": "hsl(340, 75%, 55%)",         // Pink/Red
+  "Maria Victoria": "hsl(210, 100%, 45%)",
+  "Francielli": "hsl(142, 71%, 45%)",
+  "Mikaela": "hsl(280, 70%, 50%)",
+  "Cleriston": "hsl(25, 95%, 53%)",
+  "Roberto": "hsl(340, 75%, 55%)",
 };
 
 const DEFAULT_VENDEDOR_COLOR = "hsl(215, 20%, 60%)";
@@ -46,6 +53,8 @@ export default function Dashboard() {
   const [servicoFilter, setServicoFilter] = useState<string>("all");
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState("");
+
+  const { widgets, updateWidget, resetToDefaults, activeWidgetCount } = useDashboardPreferences();
   
   const { data: leads = [], isLoading: leadsLoading } = useLeads();
   const { data: stats, isLoading: statsLoading } = useLeadsStats();
@@ -90,7 +99,7 @@ export default function Dashboard() {
       .sort((a, b) => b.count - a.count);
   }, [activeLeads]);
 
-  // Apply filters (using activeLeads which already excludes "Perdido")
+  // Apply filters
   const filteredLeads = useMemo(() => {
     return activeLeads.filter((lead) => {
       const matchVendedor =
@@ -106,7 +115,6 @@ export default function Dashboard() {
         matchDate = isWithinInterval(leadDate, { start: from, end: to });
       }
 
-      // Search filter
       let matchSearch = true;
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase();
@@ -144,13 +152,33 @@ export default function Dashboard() {
         <div className="min-w-0">
           <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
           <p className="text-muted-foreground mt-1 truncate">
-            Gerencie seus leads e acompanhe o progresso
+            Central de gestão e acompanhamento
           </p>
         </div>
-        <Button onClick={() => setIsModalOpen(true)} className="gap-2 w-full sm:w-auto shrink-0">
-          <Plus className="h-4 w-4" />
-          Novo Lead
-        </Button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <DashboardCustomizeModal
+            widgets={widgets}
+            onUpdateWidget={updateWidget}
+            onReset={resetToDefaults}
+            activeCount={activeWidgetCount}
+          />
+          <Button onClick={() => setIsModalOpen(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Novo Lead
+          </Button>
+        </div>
+      </div>
+
+      {/* Widget Grid - Responsive layout */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <WidgetResumoFinanceiro enabled={widgets.resumoFinanceiro} />
+        <WidgetProximasVisitas enabled={widgets.proximasVisitas} />
+        <WidgetContratosVencer enabled={widgets.contratosVencer} />
+        <WidgetEvolucaoLeads enabled={widgets.evolucaoLeads} />
+        <WidgetAtalhosRapidos 
+          enabled={widgets.atalhosRapidos} 
+          onNewLead={() => setIsModalOpen(true)}
+        />
       </div>
 
       {/* Stats Cards - 4 columns grid */}
@@ -277,7 +305,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Desempenho por Vendedor Chart - Vertical with thin bars */}
+      {/* Desempenho por Vendedor Chart */}
       <Card className="overflow-hidden">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
