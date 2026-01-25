@@ -35,36 +35,39 @@ export function WidgetResumoFinanceiro({ enabled }: WidgetResumoFinanceiroProps)
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
-              <div className="p-2 rounded-full bg-emerald-100 dark:bg-emerald-900">
+            {/* Entradas */}
+            <div className="flex items-center gap-4 p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 min-w-0">
+              <div className="shrink-0 p-2.5 rounded-full bg-emerald-100 dark:bg-emerald-900">
                 <TrendingUp className="h-5 w-5 text-emerald-600" />
               </div>
-              <div>
-                <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Entradas</p>
-                <p className="text-lg font-bold text-emerald-700 dark:text-emerald-300">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 mb-0.5">Entradas</p>
+                <p className="text-base sm:text-lg font-bold text-emerald-700 dark:text-emerald-300 truncate">
                   {formatCurrency(data?.entradas || 0)}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800">
-              <div className="p-2 rounded-full bg-rose-100 dark:bg-rose-900">
+            {/* Saídas */}
+            <div className="flex items-center gap-4 p-4 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 min-w-0">
+              <div className="shrink-0 p-2.5 rounded-full bg-rose-100 dark:bg-rose-900">
                 <TrendingDown className="h-5 w-5 text-rose-600" />
               </div>
-              <div>
-                <p className="text-xs font-medium text-rose-600 dark:text-rose-400">Saídas</p>
-                <p className="text-lg font-bold text-rose-700 dark:text-rose-300">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium text-rose-600 dark:text-rose-400 mb-0.5">Saídas</p>
+                <p className="text-base sm:text-lg font-bold text-rose-700 dark:text-rose-300 truncate">
                   {formatCurrency(data?.saidas || 0)}
                 </p>
               </div>
             </div>
 
-            <div className={`flex items-center gap-3 p-3 rounded-lg border ${
+            {/* Saldo */}
+            <div className={`flex items-center gap-4 p-4 rounded-xl border min-w-0 ${
               (data?.saldo || 0) >= 0 
                 ? "bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800"
                 : "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800"
             }`}>
-              <div className={`p-2 rounded-full ${
+              <div className={`shrink-0 p-2.5 rounded-full ${
                 (data?.saldo || 0) >= 0 
                   ? "bg-blue-100 dark:bg-blue-900"
                   : "bg-amber-100 dark:bg-amber-900"
@@ -75,13 +78,13 @@ export function WidgetResumoFinanceiro({ enabled }: WidgetResumoFinanceiroProps)
                     : "text-amber-600"
                 }`} />
               </div>
-              <div>
-                <p className={`text-xs font-medium ${
+              <div className="min-w-0 flex-1">
+                <p className={`text-xs font-medium mb-0.5 ${
                   (data?.saldo || 0) >= 0 
                     ? "text-blue-600 dark:text-blue-400"
                     : "text-amber-600 dark:text-amber-400"
                 }`}>Saldo</p>
-                <p className={`text-lg font-bold ${
+                <p className={`text-base sm:text-lg font-bold truncate ${
                   (data?.saldo || 0) >= 0 
                     ? "text-blue-700 dark:text-blue-300"
                     : "text-amber-700 dark:text-amber-300"
