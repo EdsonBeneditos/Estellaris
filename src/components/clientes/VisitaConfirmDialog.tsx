@@ -26,6 +26,14 @@ export function VisitaConfirmDialog({
   onConfirm,
   onSkip,
 }: VisitaConfirmDialogProps) {
+  // Validate date before formatting
+  const dataValida = dataAnterior ? new Date(dataAnterior) : null;
+  const isValidDate = dataValida && !isNaN(dataValida.getTime());
+
+  const formattedDate = isValidDate
+    ? format(dataValida, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
+    : "data não disponível";
+
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
@@ -36,7 +44,7 @@ export function VisitaConfirmDialog({
           <AlertDialogDescription className="text-muted-foreground">
             A visita anterior estava agendada para{" "}
             <strong className="text-zinc-700">
-              {format(new Date(dataAnterior), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+              {formattedDate}
             </strong>
             . Deseja registrar esta visita como concluída na linha do tempo do cliente?
           </AlertDialogDescription>
