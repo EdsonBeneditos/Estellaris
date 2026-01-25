@@ -207,7 +207,7 @@ export function ClienteAccordion({ clientes, onEdit }: ClienteAccordionProps) {
               key={cliente.id}
               id={`cliente-${cliente.id}`}
               value={cliente.id}
-              className="border rounded-lg overflow-hidden bg-white"
+              className="border rounded-lg overflow-hidden bg-white transition-all duration-200 hover:scale-[1.01] hover:shadow-md hover:border-primary/30"
             >
               <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-50 data-[state=open]:bg-slate-50">
                 <div className="flex items-center justify-between w-full pr-4">

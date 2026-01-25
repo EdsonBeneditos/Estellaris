@@ -29,7 +29,7 @@ export function WidgetColaboradoresFerias({ visible = true }: WidgetColaboradore
   }
 
   return (
-    <Card className="border-amber-500/30 bg-amber-500/5 dark:bg-amber-500/10">
+    <Card className="border-amber-500/30 bg-amber-500/5 dark:bg-amber-500/10 transition-all duration-200 hover:scale-[1.02] hover:shadow-md hover:border-amber-400">
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-base text-amber-700 dark:text-amber-400">
           <Palmtree className="h-5 w-5" />

@@ -68,13 +68,13 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-sidebar-border">
+    <Sidebar collapsible="icon" className="border-r border-sidebar-border transition-all duration-300">
       <SidebarHeader className="p-4 border-b border-sidebar-border">
         <div className="flex items-center justify-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
+          <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center shrink-0 transition-transform duration-200 hover:scale-110">
             <span className="text-sm font-bold text-primary">CRM</span>
           </div>
-          <span className="font-semibold text-foreground group-data-[collapsible=icon]:hidden">
+          <span className="font-semibold text-foreground group-data-[collapsible=icon]:hidden transition-opacity duration-200">
             Meu CRM
           </span>
         </div>
@@ -94,11 +94,11 @@ export function AppSidebar() {
                     <NavLink
                       to={item.url}
                       end={item.url === "/"}
-                      className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors"
+                      className="flex items-center gap-3 px-3 py-2 rounded-md transition-all duration-200 hover:translate-x-1"
                       activeClassName="bg-sidebar-accent text-sidebar-accent-foreground"
                     >
-                      <item.icon className="h-5 w-5 shrink-0" />
-                      <span>{item.title}</span>
+                      <item.icon className="h-5 w-5 shrink-0 transition-transform duration-200" />
+                      <span className="transition-opacity duration-200">{item.title}</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

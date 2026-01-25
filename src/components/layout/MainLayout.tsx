@@ -12,9 +12,9 @@ export function MainLayout({ children }: MainLayoutProps) {
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
         <AppSidebar />
-        <main className="flex-1 flex flex-col">
-          <header className="h-14 flex items-center justify-between border-b border-border px-4 bg-card">
-            <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
+        <main className="flex-1 flex flex-col min-w-0">
+          <header className="h-14 flex items-center justify-between border-b border-border px-4 bg-card/80 backdrop-blur-sm sticky top-0 z-40">
+            <SidebarTrigger className="text-muted-foreground hover:text-foreground transition-colors duration-200 hover:scale-110" />
             <div className="flex items-center gap-2">
               <VisitasAlertPopover />
               <HelpButton />
