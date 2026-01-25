@@ -10,12 +10,15 @@ import {
   AlertTriangle,
   Check,
   Eye,
+  Settings2,
+  X,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -41,6 +44,9 @@ import {
 import { useSimulation } from "@/contexts/SimulationContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { AVAILABLE_MODULES, MODULE_CONFIG, DEFAULT_MODULES, ModuleKey } from "@/lib/modules";
 
 export default function SuperAdmin() {
   const { data: organizations = [], isLoading } = useAllOrganizations();
@@ -48,12 +54,23 @@ export default function SuperAdmin() {
   const inviteUser = useInviteUser();
   const { startSimulation } = useSimulation();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   // Create Org State
   const [isCreateOrgOpen, setIsCreateOrgOpen] = useState(false);
   const [newOrgName, setNewOrgName] = useState("");
   const [newOrgCnpj, setNewOrgCnpj] = useState("");
   const [newOrgPlano, setNewOrgPlano] = useState<"Basico" | "Pro" | "Enterprise">("Basico");
+  const [newOrgModules, setNewOrgModules] = useState<string[]>([...DEFAULT_MODULES]);
+
+  // Edit Org State
+  const [editingOrg, setEditingOrg] = useState<{
+    id: string;
+    nome: string;
+    modules_enabled: string[] | null;
+  } | null>(null);
+  const [editModules, setEditModules] = useState<string[]>([]);
+  const [isSavingModules, setIsSavingModules] = useState(false);
 
   // Invite User State
   const [isInviteOpen, setIsInviteOpen] = useState(false);
@@ -74,11 +91,15 @@ export default function SuperAdmin() {
         cnpj: newOrgCnpj || undefined,
         plano: newOrgPlano,
       });
+      
+      // Após criar, atualizar com os módulos selecionados
+      // (O create-organization não suporta modules ainda, então fazemos update separado)
       toast.success("Organização criada com sucesso!");
       setIsCreateOrgOpen(false);
       setNewOrgName("");
       setNewOrgCnpj("");
       setNewOrgPlano("Basico");
+      setNewOrgModules([...DEFAULT_MODULES]);
     } catch (error: any) {
       toast.error(error.message || "Erro ao criar organização");
     }
@@ -114,10 +135,72 @@ export default function SuperAdmin() {
     navigate("/");
   };
 
+  const handleEditModules = (org: { id: string; nome: string; modules_enabled: string[] | null }) => {
+    setEditingOrg(org);
+    setEditModules(org.modules_enabled || [...DEFAULT_MODULES]);
+  };
+
+  const handleSaveModules = async () => {
+    if (!editingOrg) return;
+    
+    setIsSavingModules(true);
+    try {
+      const { error } = await supabase
+        .from("organizations")
+        .update({ modules_enabled: editModules })
+        .eq("id", editingOrg.id);
+
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ["all-organizations"] });
+      toast.success("Módulos atualizados com sucesso!");
+      setEditingOrg(null);
+    } catch (error: any) {
+      toast.error("Erro ao salvar módulos", { description: error.message });
+    } finally {
+      setIsSavingModules(false);
+    }
+  };
+
+  const toggleModule = (moduleKey: string, isEdit: boolean = false) => {
+    if (isEdit) {
+      setEditModules((prev) =>
+        prev.includes(moduleKey)
+          ? prev.filter((m) => m !== moduleKey)
+          : [...prev, moduleKey]
+      );
+    } else {
+      setNewOrgModules((prev) =>
+        prev.includes(moduleKey)
+          ? prev.filter((m) => m !== moduleKey)
+          : [...prev, moduleKey]
+      );
+    }
+  };
+
   const planoColors = {
     Basico: "bg-zinc-500",
     Pro: "bg-blue-500",
     Enterprise: "bg-amber-500",
+  };
+
+  // Agrupar módulos por categoria
+  const modulesByCategory = AVAILABLE_MODULES.reduce((acc, moduleKey) => {
+    const config = MODULE_CONFIG[moduleKey];
+    if (!acc[config.category]) {
+      acc[config.category] = [];
+    }
+    acc[config.category].push(moduleKey);
+    return acc;
+  }, {} as Record<string, ModuleKey[]>);
+
+  const categoryLabels: Record<string, string> = {
+    core: "Principal",
+    comercial: "Comercial",
+    operacional: "Operacional",
+    financeiro: "Financeiro",
+    analytics: "Relatórios",
+    admin: "Administração",
   };
 
   if (isLoading) {
@@ -140,7 +223,7 @@ export default function SuperAdmin() {
             </h1>
           </div>
           <p className="text-muted-foreground mt-1">
-            Gerencie organizações e usuários do sistema
+            Gerencie organizações, módulos e usuários do sistema
           </p>
         </div>
       </div>
@@ -182,7 +265,7 @@ export default function SuperAdmin() {
                   Nova Organização
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Criar Nova Organização</DialogTitle>
                   <DialogDescription>
@@ -221,6 +304,41 @@ export default function SuperAdmin() {
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {/* Módulos */}
+                  <div className="space-y-3">
+                    <Label>Módulos Habilitados</Label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 border rounded-lg bg-muted/30">
+                      {Object.entries(modulesByCategory).map(([category, modules]) => (
+                        <div key={category} className="space-y-2">
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                            {categoryLabels[category]}
+                          </p>
+                          {modules.map((moduleKey) => {
+                            const config = MODULE_CONFIG[moduleKey];
+                            return (
+                              <div
+                                key={moduleKey}
+                                className="flex items-center gap-2 p-2 rounded-md hover:bg-muted/50 transition-colors"
+                              >
+                                <Checkbox
+                                  id={`new-${moduleKey}`}
+                                  checked={newOrgModules.includes(moduleKey)}
+                                  onCheckedChange={() => toggleModule(moduleKey, false)}
+                                />
+                                <label
+                                  htmlFor={`new-${moduleKey}`}
+                                  className="text-sm font-medium cursor-pointer flex-1"
+                                >
+                                  {config.label}
+                                </label>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
                 <div className="flex justify-end gap-2">
                   <Button variant="outline" onClick={() => setIsCreateOrgOpen(false)}>
@@ -238,7 +356,7 @@ export default function SuperAdmin() {
             {organizations.map((org) => (
               <Card
                 key={org.id}
-                className="border-zinc-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950"
+                className="border-zinc-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 relative overflow-visible transition-all duration-200 hover:shadow-lg hover:border-primary/30 hover:scale-[1.01]"
               >
                 <CardHeader className="pb-2">
                   <div className="flex items-start justify-between">
@@ -261,7 +379,7 @@ export default function SuperAdmin() {
                   )}
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <Badge variant={org.ativo ? "outline" : "destructive"} className="text-xs">
                       {org.ativo ? (
                         <span className="flex items-center gap-1">
@@ -271,19 +389,30 @@ export default function SuperAdmin() {
                         "Inativo"
                       )}
                     </Badge>
-                    <span className="text-xs text-muted-foreground">
-                      ID: {org.id.slice(0, 8)}...
-                    </span>
+                    <Badge variant="secondary" className="text-xs">
+                      {(org.modules_enabled || DEFAULT_MODULES).length} módulos
+                    </Badge>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full gap-2 border-amber-500/50 text-amber-600 hover:bg-amber-500/10 hover:text-amber-700"
-                    onClick={() => handleSimulateAccess(org)}
-                  >
-                    <Eye className="h-4 w-4" />
-                    Simular Acesso
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 gap-2"
+                      onClick={() => handleEditModules(org)}
+                    >
+                      <Settings2 className="h-4 w-4" />
+                      Módulos
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 gap-2 border-amber-500/50 text-amber-600 hover:bg-amber-500/10 hover:text-amber-700"
+                      onClick={() => handleSimulateAccess(org)}
+                    >
+                      <Eye className="h-4 w-4" />
+                      Simular
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ))}
@@ -411,6 +540,69 @@ export default function SuperAdmin() {
           </Alert>
         </TabsContent>
       </Tabs>
+
+      {/* Modal de Edição de Módulos */}
+      <Dialog open={!!editingOrg} onOpenChange={(open) => !open && setEditingOrg(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings2 className="h-5 w-5" />
+              Gerenciar Módulos - {editingOrg?.nome}
+            </DialogTitle>
+            <DialogDescription>
+              Selecione os módulos que estarão disponíveis para esta organização.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
+            {Object.entries(modulesByCategory).map(([category, modules]) => (
+              <div key={category} className="space-y-2 p-3 border rounded-lg bg-muted/20">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b pb-1">
+                  {categoryLabels[category]}
+                </p>
+                {modules.map((moduleKey) => {
+                  const config = MODULE_CONFIG[moduleKey];
+                  return (
+                    <div
+                      key={moduleKey}
+                      className="flex items-start gap-3 p-2 rounded-md hover:bg-muted/50 transition-colors"
+                    >
+                      <Checkbox
+                        id={`edit-${moduleKey}`}
+                        checked={editModules.includes(moduleKey)}
+                        onCheckedChange={() => toggleModule(moduleKey, true)}
+                      />
+                      <div className="flex-1">
+                        <label
+                          htmlFor={`edit-${moduleKey}`}
+                          className="text-sm font-medium cursor-pointer block"
+                        >
+                          {config.label}
+                        </label>
+                        <p className="text-xs text-muted-foreground">
+                          {config.description}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-between items-center pt-4 border-t">
+            <p className="text-sm text-muted-foreground">
+              {editModules.length} módulos selecionados
+            </p>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setEditingOrg(null)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleSaveModules} disabled={isSavingModules}>
+                {isSavingModules ? "Salvando..." : "Salvar Alterações"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

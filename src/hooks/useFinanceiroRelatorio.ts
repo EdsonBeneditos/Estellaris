@@ -180,6 +180,44 @@ export function useMixPagamentosSaidas(movimentacoes: MovimentacaoCaixa[] | unde
   }, [movimentacoes]);
 }
 
+// Gastos por Centro de Custo
+export function useGastosPorCentroCusto(movimentacoes: MovimentacaoCaixa[] | undefined) {
+  return useMemo(() => {
+    if (!movimentacoes) return [];
+
+    const gastosPorCentro: Record<string, { nome: string; valor: number }> = {};
+
+    // Apenas saídas com centro de custo definido
+    movimentacoes
+      .filter((m) => m.tipo === "Saída" && m.centro_custo_id)
+      .forEach((m) => {
+        const centroId = m.centro_custo_id!;
+        if (!gastosPorCentro[centroId]) {
+          gastosPorCentro[centroId] = {
+            nome: "Centro " + centroId.slice(0, 8), // Placeholder, será substituído
+            valor: 0,
+          };
+        }
+        gastosPorCentro[centroId].valor += Number(m.valor);
+      });
+
+    const cores = [
+      "#EF4444", "#F97316", "#F59E0B", "#84CC16",
+      "#10B981", "#14B8A6", "#06B6D4", "#3B82F6",
+      "#6366F1", "#8B5CF6", "#A855F7", "#EC4899",
+    ];
+
+    return Object.entries(gastosPorCentro)
+      .map(([id, data], index) => ({
+        id,
+        nome: data.nome,
+        valor: data.valor,
+        color: cores[index % cores.length],
+      }))
+      .sort((a, b) => b.valor - a.valor);
+  }, [movimentacoes]);
+}
+
 // Projeção para o próximo mês (média líquida dos últimos 3 meses + saldo atual)
 export function useProjecaoProximoMes(movimentacoes: MovimentacaoCaixa[] | undefined) {
   return useMemo(() => {

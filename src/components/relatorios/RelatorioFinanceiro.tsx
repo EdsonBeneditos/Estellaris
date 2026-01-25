@@ -8,6 +8,7 @@ import {
   PieChart,
   Activity,
   Target,
+  Landmark,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -37,7 +38,9 @@ import {
   useMixPagamentosSaidas,
   useProjecaoProximoMes,
   useTotaisGerais,
+  useGastosPorCentroCusto,
 } from "@/hooks/useFinanceiroRelatorio";
+import { useCentrosCusto } from "@/hooks/useCentrosCusto";
 import { cn } from "@/lib/utils";
 
 const formatCurrency = (value: number) => {
@@ -64,6 +67,7 @@ const chartConfig = {
 
 export function RelatorioFinanceiro() {
   const { data: movimentacoes, isLoading } = useAllMovimentacoes();
+  const { data: centrosCusto = [] } = useCentrosCusto();
 
   const entradasVsSaidas = useEntradasVsSaidasMensal(movimentacoes);
   const saldoAcumulado = useSaldoAcumuladoDiario(movimentacoes);
@@ -71,6 +75,18 @@ export function RelatorioFinanceiro() {
   const mixSaidas = useMixPagamentosSaidas(movimentacoes);
   const projecao = useProjecaoProximoMes(movimentacoes);
   const totais = useTotaisGerais(movimentacoes);
+  const gastosPorCentro = useGastosPorCentroCusto(movimentacoes);
+
+  // Enriquecer dados de centro de custo com nomes
+  const gastosCentroEnriquecidos = useMemo(() => {
+    return gastosPorCentro.map((item) => {
+      const centro = centrosCusto.find((c) => c.id === item.id);
+      return {
+        ...item,
+        nome: centro?.nome || "Sem centro",
+      };
+    });
+  }, [gastosPorCentro, centrosCusto]);
 
   if (isLoading) {
     return (
@@ -441,6 +457,69 @@ export function RelatorioFinanceiro() {
                       />
                       <span className="text-sm text-muted-foreground truncate flex-1">
                         {item.forma}
+                      </span>
+                      <span className="text-sm font-medium">
+                        {formatCurrency(item.valor)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        {/* Gráfico de Pizza - Gastos por Centro de Custo */}
+        <Card className="relative overflow-visible transition-all duration-200 hover:shadow-lg hover:border-primary/30">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Landmark className="h-5 w-5 text-primary" />
+              Gastos por Centro de Custo
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {gastosCentroEnriquecidos.length === 0 ? (
+              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                Nenhum gasto com centro de custo atribuído
+              </div>
+            ) : (
+              <div className="h-[300px] flex flex-col sm:flex-row items-center">
+                <ChartContainer
+                  config={chartConfig}
+                  className="h-full w-full sm:w-1/2"
+                >
+                  <RechartsPieChart>
+                    <ChartTooltip
+                      content={
+                        <ChartTooltipContent
+                          formatter={(value) => formatCurrency(Number(value))}
+                        />
+                      }
+                    />
+                    <Pie
+                      data={gastosCentroEnriquecidos}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={50}
+                      outerRadius={80}
+                      paddingAngle={2}
+                      dataKey="valor"
+                      nameKey="nome"
+                    >
+                      {gastosCentroEnriquecidos.map((item, index) => (
+                        <Cell key={`cell-${index}`} fill={item.color} />
+                      ))}
+                    </Pie>
+                  </RechartsPieChart>
+                </ChartContainer>
+                <div className="w-full sm:w-1/2 space-y-2 mt-4 sm:mt-0">
+                  {gastosCentroEnriquecidos.map((item) => (
+                    <div key={item.id} className="flex items-center gap-2">
+                      <div
+                        className="w-3 h-3 rounded-full shrink-0"
+                        style={{ backgroundColor: item.color }}
+                      />
+                      <span className="text-sm text-muted-foreground truncate flex-1">
+                        {item.nome}
                       </span>
                       <span className="text-sm font-medium">
                         {formatCurrency(item.valor)}
