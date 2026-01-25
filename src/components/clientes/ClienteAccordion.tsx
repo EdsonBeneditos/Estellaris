@@ -1,15 +1,16 @@
 import { useState } from "react";
-import { format, differenceInDays } from "date-fns";
+import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ChevronDown, Phone, Mail, MapPin, Calendar, RefreshCw, FileText, Plus, Pencil, Trash2 } from "lucide-react";
+import { Phone, Mail, MapPin, RefreshCw, FileText, Plus, Pencil, Trash2, History } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { ClienteComContratos, Contrato, calcularFidelidade, diasAteVencimento, useDeleteCliente } from "@/hooks/useClientes";
 import { ContratoModal } from "./ContratoModal";
 import { RenovarContratoModal } from "./RenovarContratoModal";
+import { ClienteTimeline } from "./ClienteTimeline";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface ClienteAccordionProps {
   clientes: ClienteComContratos[];
@@ -246,33 +247,52 @@ export function ClienteAccordion({ clientes, onEdit }: ClienteAccordionProps) {
                     </div>
                   )}
 
-                  {/* Contratos */}
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="text-sm font-medium text-zinc-950">Contratos</h4>
-                      <Button size="sm" variant="outline" onClick={() => handleNovoContrato(cliente.id)}>
-                        <Plus className="h-4 w-4 mr-1" />
-                        Novo Contrato
-                      </Button>
-                    </div>
-                    
-                    {cliente.contratos.length > 0 ? (
-                      <div className="space-y-2">
-                        {cliente.contratos.map((contrato) => (
-                          <ContratoCard
-                            key={contrato.id}
-                            contrato={contrato}
-                            onRenovar={handleRenovar}
-                            onEdit={(c) => handleEditContrato(cliente.id, c)}
-                          />
-                        ))}
+                  {/* Tabs: Contratos e Timeline */}
+                  <Tabs defaultValue="contratos" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2 bg-slate-200">
+                      <TabsTrigger value="contratos" className="data-[state=active]:bg-white">
+                        <FileText className="h-4 w-4 mr-2" />
+                        Contratos
+                      </TabsTrigger>
+                      <TabsTrigger value="historico" className="data-[state=active]:bg-white">
+                        <History className="h-4 w-4 mr-2" />
+                        Histórico
+                      </TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="contratos" className="mt-4">
+                      <div>
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="text-sm font-medium text-zinc-950">Contratos</h4>
+                          <Button size="sm" variant="outline" onClick={() => handleNovoContrato(cliente.id)}>
+                            <Plus className="h-4 w-4 mr-1" />
+                            Novo Contrato
+                          </Button>
+                        </div>
+                        
+                        {cliente.contratos.length > 0 ? (
+                          <div className="space-y-2">
+                            {cliente.contratos.map((contrato) => (
+                              <ContratoCard
+                                key={contrato.id}
+                                contrato={contrato}
+                                onRenovar={handleRenovar}
+                                onEdit={(c) => handleEditContrato(cliente.id, c)}
+                              />
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground text-center py-4">
+                            Nenhum contrato cadastrado
+                          </p>
+                        )}
                       </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground text-center py-4">
-                        Nenhum contrato cadastrado
-                      </p>
-                    )}
-                  </div>
+                    </TabsContent>
+
+                    <TabsContent value="historico" className="mt-4">
+                      <ClienteTimeline clienteId={cliente.id} />
+                    </TabsContent>
+                  </Tabs>
 
                   {/* Actions */}
                   <div className="flex justify-end gap-2 pt-4 border-t border-slate-200">
