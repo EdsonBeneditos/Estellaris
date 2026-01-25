@@ -8,6 +8,10 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Cliente, useCreateCliente, useUpdateCliente } from "@/hooks/useClientes";
 import { applyCNPJMask, applyPhoneMask, applyCEPMask } from "@/lib/masks";
+import { VisitaConfirmDialog } from "./VisitaConfirmDialog";
+import { useCreateAtividade } from "@/hooks/useAtividadesCliente";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface ClienteModalProps {
   open: boolean;
@@ -32,6 +36,7 @@ const UFS = [
 export function ClienteModal({ open, onOpenChange, cliente }: ClienteModalProps) {
   const createCliente = useCreateCliente();
   const updateCliente = useUpdateCliente();
+  const createAtividade = useCreateAtividade();
   
   const [formData, setFormData] = useState({
     nome: "",
@@ -45,7 +50,19 @@ export function ClienteModal({ open, onOpenChange, cliente }: ClienteModalProps)
     rotina_visitas: false,
     frequencia_visita: "",
     ultima_visita: "",
+    proxima_visita: "",
     observacoes: "",
+  });
+
+  // Estado para diálogo de confirmação de visita
+  const [visitaConfirmDialog, setVisitaConfirmDialog] = useState<{
+    open: boolean;
+    dataAnterior: string;
+    pendingData: any;
+  }>({
+    open: false,
+    dataAnterior: "",
+    pendingData: null,
   });
 
   useEffect(() => {
@@ -62,6 +79,7 @@ export function ClienteModal({ open, onOpenChange, cliente }: ClienteModalProps)
         rotina_visitas: cliente.rotina_visitas || false,
         frequencia_visita: cliente.frequencia_visita || "",
         ultima_visita: cliente.ultima_visita || "",
+        proxima_visita: cliente.proxima_visita || "",
         observacoes: cliente.observacoes || "",
       });
     } else {
@@ -77,10 +95,31 @@ export function ClienteModal({ open, onOpenChange, cliente }: ClienteModalProps)
         rotina_visitas: false,
         frequencia_visita: "",
         ultima_visita: "",
+        proxima_visita: "",
         observacoes: "",
       });
     }
   }, [cliente, open]);
+
+  const executeSave = async (data: any, registrarVisitaConcluida: boolean) => {
+    if (cliente) {
+      await updateCliente.mutateAsync({ id: cliente.id, data });
+      
+      // Se confirmou registrar visita concluída, inserir na timeline
+      if (registrarVisitaConcluida && visitaConfirmDialog.dataAnterior) {
+        const dataFormatada = format(new Date(visitaConfirmDialog.dataAnterior), "dd/MM/yyyy", { locale: ptBR });
+        await createAtividade.mutateAsync({
+          cliente_id: cliente.id,
+          tipo: "Sistema",
+          descricao: `Visita Técnica Concluída (agendada para ${dataFormatada})`,
+        });
+      }
+    } else {
+      await createCliente.mutateAsync(data);
+    }
+    
+    onOpenChange(false);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,18 +128,34 @@ export function ClienteModal({ open, onOpenChange, cliente }: ClienteModalProps)
       ...formData,
       frequencia_visita: formData.rotina_visitas ? formData.frequencia_visita : null,
       ultima_visita: formData.rotina_visitas && formData.ultima_visita ? formData.ultima_visita : null,
+      proxima_visita: formData.rotina_visitas && formData.proxima_visita ? formData.proxima_visita : null,
     };
 
-    if (cliente) {
-      await updateCliente.mutateAsync({ id: cliente.id, data });
-    } else {
-      await createCliente.mutateAsync(data);
+    // Verificar se estamos editando e se a próxima visita mudou
+    if (cliente && cliente.proxima_visita && formData.proxima_visita !== cliente.proxima_visita) {
+      // Mostrar diálogo de confirmação
+      setVisitaConfirmDialog({
+        open: true,
+        dataAnterior: cliente.proxima_visita,
+        pendingData: data,
+      });
+      return;
     }
-    
-    onOpenChange(false);
+
+    await executeSave(data, false);
   };
 
-  const isLoading = createCliente.isPending || updateCliente.isPending;
+  const handleConfirmVisita = async () => {
+    setVisitaConfirmDialog((prev) => ({ ...prev, open: false }));
+    await executeSave(visitaConfirmDialog.pendingData, true);
+  };
+
+  const handleSkipVisita = async () => {
+    setVisitaConfirmDialog((prev) => ({ ...prev, open: false }));
+    await executeSave(visitaConfirmDialog.pendingData, false);
+  };
+
+  const isLoading = createCliente.isPending || updateCliente.isPending || createAtividade.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -233,7 +288,7 @@ export function ClienteModal({ open, onOpenChange, cliente }: ClienteModalProps)
             </div>
 
             {formData.rotina_visitas && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
                 <div>
                   <Label htmlFor="frequencia_visita">Frequência</Label>
                   <Select
@@ -260,6 +315,16 @@ export function ClienteModal({ open, onOpenChange, cliente }: ClienteModalProps)
                     type="date"
                     value={formData.ultima_visita}
                     onChange={(e) => setFormData({ ...formData, ultima_visita: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="proxima_visita">Próxima Visita</Label>
+                  <Input
+                    id="proxima_visita"
+                    type="date"
+                    value={formData.proxima_visita}
+                    onChange={(e) => setFormData({ ...formData, proxima_visita: e.target.value })}
                   />
                 </div>
               </div>
@@ -289,6 +354,15 @@ export function ClienteModal({ open, onOpenChange, cliente }: ClienteModalProps)
           </div>
         </form>
       </DialogContent>
+
+      {/* Diálogo de confirmação de visita concluída */}
+      <VisitaConfirmDialog
+        open={visitaConfirmDialog.open}
+        onOpenChange={(open) => setVisitaConfirmDialog((prev) => ({ ...prev, open }))}
+        dataAnterior={visitaConfirmDialog.dataAnterior}
+        onConfirm={handleConfirmVisita}
+        onSkip={handleSkipVisita}
+      />
     </Dialog>
   );
 }
