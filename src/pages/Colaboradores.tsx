@@ -10,14 +10,14 @@ import {
   Mail,
   Calendar,
   AlertTriangle,
-  ChevronDown,
-  ChevronUp,
   Edit,
   Trash2,
   UserCheck,
   Palmtree,
   AlertCircle,
   UserX,
+  Briefcase,
+  X,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -79,8 +79,8 @@ const statusConfig: Record<string, { label: string; color: string; icon: React.E
   Inativo: { label: "Inativo", color: "bg-zinc-500", icon: UserX },
 };
 
-const turnoOptions = ["Manhã", "Tarde", "Noite", "Flexível"];
-const carteiraOptions = ["A", "B", "AB", "C", "D", "E", "Não possui"];
+const turnoOptions = ["Manhã", "Tarde", "Noite", "12x36", "Flexível"];
+const cnhCategories = ["A", "B", "C", "D", "E"];
 
 export default function Colaboradores() {
   const { data: profile } = useCurrentProfile();
@@ -95,13 +95,15 @@ export default function Colaboradores() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingColaborador, setEditingColaborador] = useState<Colaborador | null>(null);
 
-  // Form state
+  // Form state with new fields
   const [formData, setFormData] = useState({
     nome: "",
     codigo_cadastro: "",
+    cargo: "",
+    turno: "",
     data_admissao: "",
     status: "Ativo",
-    tipo_carteira: "",
+    cnh_tipos: [] as string[],
     pcd: false,
     troca_turno: false,
     preferencia_turno: "",
@@ -113,9 +115,11 @@ export default function Colaboradores() {
     setFormData({
       nome: "",
       codigo_cadastro: "",
+      cargo: "",
+      turno: "",
       data_admissao: "",
       status: "Ativo",
-      tipo_carteira: "",
+      cnh_tipos: [],
       pcd: false,
       troca_turno: false,
       preferencia_turno: "",
@@ -131,9 +135,11 @@ export default function Colaboradores() {
       setFormData({
         nome: colaborador.nome,
         codigo_cadastro: colaborador.codigo_cadastro || "",
+        cargo: colaborador.cargo || "",
+        turno: colaborador.turno || "",
         data_admissao: colaborador.data_admissao || "",
         status: colaborador.status || "Ativo",
-        tipo_carteira: colaborador.tipo_carteira || "",
+        cnh_tipos: colaborador.cnh_tipos || [],
         pcd: colaborador.pcd || false,
         troca_turno: colaborador.troca_turno || false,
         preferencia_turno: colaborador.preferencia_turno || "",
@@ -156,14 +162,37 @@ export default function Colaboradores() {
       if (editingColaborador) {
         await updateColaborador.mutateAsync({
           id: editingColaborador.id,
-          ...formData,
+          nome: formData.nome,
+          codigo_cadastro: formData.codigo_cadastro || null,
+          cargo: formData.cargo || null,
+          turno: formData.turno || null,
+          data_admissao: formData.data_admissao || null,
+          status: formData.status,
+          cnh_tipos: formData.cnh_tipos.length > 0 ? formData.cnh_tipos : null,
+          pcd: formData.pcd,
+          troca_turno: formData.troca_turno,
+          preferencia_turno: formData.preferencia_turno || null,
+          email_pessoal: formData.email_pessoal || null,
+          telefone: formData.telefone || null,
           organization_id: profile?.organization_id || null,
         });
         toast.success("Colaborador atualizado com sucesso!");
       } else {
         await createColaborador.mutateAsync({
-          ...formData,
+          nome: formData.nome,
+          codigo_cadastro: formData.codigo_cadastro || null,
+          cargo: formData.cargo || null,
+          turno: formData.turno || null,
+          data_admissao: formData.data_admissao || null,
+          status: formData.status,
+          cnh_tipos: formData.cnh_tipos.length > 0 ? formData.cnh_tipos : null,
+          pcd: formData.pcd,
+          troca_turno: formData.troca_turno,
+          preferencia_turno: formData.preferencia_turno || null,
+          email_pessoal: formData.email_pessoal || null,
+          telefone: formData.telefone || null,
           organization_id: profile?.organization_id || null,
+          tipo_carteira: null,
         });
         toast.success("Colaborador cadastrado com sucesso!");
       }
@@ -183,12 +212,22 @@ export default function Colaboradores() {
     }
   };
 
+  const toggleCnhCategory = (category: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      cnh_tipos: prev.cnh_tipos.includes(category)
+        ? prev.cnh_tipos.filter((c) => c !== category)
+        : [...prev.cnh_tipos, category],
+    }));
+  };
+
   // Filter colaboradores
   const filteredColaboradores = colaboradores.filter((c) => {
     const matchesSearch =
       c.nome.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.codigo_cadastro?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.email_pessoal?.toLowerCase().includes(searchQuery.toLowerCase());
+      c.email_pessoal?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.cargo?.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesStatus = statusFilter === "all" || c.status === statusFilter;
 
@@ -236,7 +275,7 @@ export default function Colaboradores() {
       )}
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-5">
         {Object.entries(statusConfig).map(([status, config]) => {
           const count = colaboradores.filter((c) => c.status === status).length;
           const Icon = config.icon;
@@ -266,7 +305,7 @@ export default function Colaboradores() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar por nome, código ou e-mail..."
+            placeholder="Buscar por nome, código, cargo ou e-mail..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10 bg-slate-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800"
@@ -350,18 +389,20 @@ export default function Colaboradores() {
                               )}
                             </div>
                             <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                              {colaborador.cargo && (
+                                <span className="flex items-center gap-1">
+                                  <Briefcase className="h-3 w-3" />
+                                  {colaborador.cargo}
+                                </span>
+                              )}
+                              {colaborador.turno && (
+                                <span className="flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  {colaborador.turno}
+                                </span>
+                              )}
                               {colaborador.codigo_cadastro && (
                                 <span>Cód: {colaborador.codigo_cadastro}</span>
-                              )}
-                              {colaborador.data_admissao && (
-                                <span>
-                                  Admissão:{" "}
-                                  {format(
-                                    parseISO(colaborador.data_admissao),
-                                    "dd/MM/yyyy",
-                                    { locale: ptBR }
-                                  )}
-                                </span>
                               )}
                             </div>
                           </div>
@@ -374,7 +415,7 @@ export default function Colaboradores() {
                       </div>
                     </AccordionTrigger>
                     <AccordionContent className="pb-4">
-                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 pt-2">
+                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 pt-2">
                         {/* Contact Info */}
                         <div className="space-y-2">
                           <h4 className="font-medium text-zinc-900 dark:text-zinc-100 text-sm">
@@ -394,21 +435,39 @@ export default function Colaboradores() {
                           )}
                         </div>
 
-                        {/* Technical Info */}
+                        {/* Technical Info - CNH */}
                         <div className="space-y-2">
                           <h4 className="font-medium text-zinc-900 dark:text-zinc-100 text-sm">
-                            Ficha Técnica
+                            CNH
                           </h4>
-                          {colaborador.tipo_carteira && (
+                          {colaborador.cnh_tipos && colaborador.cnh_tipos.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {colaborador.cnh_tipos.map((cat) => (
+                                <Badge key={cat} variant="outline" className="text-xs">
+                                  <Car className="h-3 w-3 mr-1" />
+                                  {cat}
+                                </Badge>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">Não informado</span>
+                          )}
+                        </div>
+
+                        {/* Turno Info */}
+                        <div className="space-y-2">
+                          <h4 className="font-medium text-zinc-900 dark:text-zinc-100 text-sm">
+                            Turno
+                          </h4>
+                          {colaborador.turno && (
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <Car className="h-4 w-4" />
-                              CNH: {colaborador.tipo_carteira}
+                              <Clock className="h-4 w-4" />
+                              {colaborador.turno}
                             </div>
                           )}
                           {colaborador.preferencia_turno && (
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <Clock className="h-4 w-4" />
-                              Turno: {colaborador.preferencia_turno}
+                            <div className="text-sm text-muted-foreground">
+                              Preferência: {colaborador.preferencia_turno}
                             </div>
                           )}
                           {colaborador.troca_turno && (
@@ -427,6 +486,14 @@ export default function Colaboradores() {
                             <>
                               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                 <Calendar className="h-4 w-4" />
+                                Admissão:{" "}
+                                {format(
+                                  parseISO(colaborador.data_admissao),
+                                  "dd/MM/yyyy",
+                                  { locale: ptBR }
+                                )}
+                              </div>
+                              <div className="text-sm text-muted-foreground">
                                 {mesesAdmissao} meses de empresa
                               </div>
                               {isNearVacation && (
@@ -539,6 +606,38 @@ export default function Colaboradores() {
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
+                  <Label htmlFor="cargo">Cargo</Label>
+                  <Input
+                    id="cargo"
+                    value={formData.cargo}
+                    onChange={(e) =>
+                      setFormData({ ...formData, cargo: e.target.value })
+                    }
+                    placeholder="Ex: Operador, Motorista, Supervisor"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="turno">Turno</Label>
+                  <Select
+                    value={formData.turno}
+                    onValueChange={(v) => setFormData({ ...formData, turno: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o turno" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {turnoOptions.map((opt) => (
+                        <SelectItem key={opt} value={opt}>
+                          {opt}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
                   <Label htmlFor="admissao">Data de Admissão</Label>
                   <Input
                     id="admissao"
@@ -605,47 +704,59 @@ export default function Colaboradores() {
               <h3 className="font-medium text-zinc-900 dark:text-zinc-100">
                 Ficha Técnica
               </h3>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="cnh">Categoria CNH</Label>
-                  <Select
-                    value={formData.tipo_carteira}
-                    onValueChange={(v) =>
-                      setFormData({ ...formData, tipo_carteira: v })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {carteiraOptions.map((opt) => (
-                        <SelectItem key={opt} value={opt}>
-                          {opt}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              
+              {/* CNH Multi-select Tags */}
+              <div className="space-y-2">
+                <Label>Categorias de CNH</Label>
+                <div className="flex flex-wrap gap-2">
+                  {cnhCategories.map((cat) => {
+                    const isSelected = formData.cnh_tipos.includes(cat);
+                    return (
+                      <Badge
+                        key={cat}
+                        variant={isSelected ? "default" : "outline"}
+                        className={`cursor-pointer transition-all ${
+                          isSelected
+                            ? "bg-primary text-primary-foreground"
+                            : "hover:bg-muted"
+                        }`}
+                        onClick={() => toggleCnhCategory(cat)}
+                      >
+                        <Car className="h-3 w-3 mr-1" />
+                        {cat}
+                        {isSelected && (
+                          <X className="h-3 w-3 ml-1" />
+                        )}
+                      </Badge>
+                    );
+                  })}
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="turno">Preferência de Turno</Label>
-                  <Select
-                    value={formData.preferencia_turno}
-                    onValueChange={(v) =>
-                      setFormData({ ...formData, preferencia_turno: v })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {turnoOptions.map((opt) => (
-                        <SelectItem key={opt} value={opt}>
-                          {opt}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                {formData.cnh_tipos.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Selecionadas: {formData.cnh_tipos.join(", ")}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="prefTurno">Preferência de Turno</Label>
+                <Select
+                  value={formData.preferencia_turno}
+                  onValueChange={(v) =>
+                    setFormData({ ...formData, preferencia_turno: v })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {turnoOptions.map((opt) => (
+                      <SelectItem key={opt} value={opt}>
+                        {opt}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="flex flex-wrap gap-6">

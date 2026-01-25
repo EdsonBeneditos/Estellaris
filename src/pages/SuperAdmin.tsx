@@ -9,6 +9,7 @@ import {
   User,
   AlertTriangle,
   Check,
+  Eye,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -37,12 +38,16 @@ import {
   useCreateOrganization,
   useInviteUser,
 } from "@/hooks/useSuperAdmin";
+import { useSimulation } from "@/contexts/SimulationContext";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 export default function SuperAdmin() {
   const { data: organizations = [], isLoading } = useAllOrganizations();
   const createOrg = useCreateOrganization();
   const inviteUser = useInviteUser();
+  const { startSimulation } = useSimulation();
+  const navigate = useNavigate();
 
   // Create Org State
   const [isCreateOrgOpen, setIsCreateOrgOpen] = useState(false);
@@ -101,6 +106,12 @@ export default function SuperAdmin() {
     } catch (error: any) {
       toast.error(error.message || "Erro ao enviar convite");
     }
+  };
+
+  const handleSimulateAccess = (org: { id: string; nome: string }) => {
+    startSimulation({ id: org.id, nome: org.nome });
+    toast.success(`Simulando acesso: ${org.nome}`);
+    navigate("/");
   };
 
   const planoColors = {
@@ -249,7 +260,7 @@ export default function SuperAdmin() {
                     </CardDescription>
                   )}
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-3">
                   <div className="flex items-center gap-2">
                     <Badge variant={org.ativo ? "outline" : "destructive"} className="text-xs">
                       {org.ativo ? (
@@ -264,6 +275,15 @@ export default function SuperAdmin() {
                       ID: {org.id.slice(0, 8)}...
                     </span>
                   </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full gap-2 border-amber-500/50 text-amber-600 hover:bg-amber-500/10 hover:text-amber-700"
+                    onClick={() => handleSimulateAccess(org)}
+                  >
+                    <Eye className="h-4 w-4" />
+                    Simular Acesso
+                  </Button>
                 </CardContent>
               </Card>
             ))}

@@ -222,6 +222,8 @@ export type Database = {
       }
       colaboradores: {
         Row: {
+          cargo: string | null
+          cnh_tipos: string[] | null
           codigo_cadastro: string | null
           created_at: string | null
           data_admissao: string | null
@@ -235,8 +237,11 @@ export type Database = {
           telefone: string | null
           tipo_carteira: string | null
           troca_turno: boolean | null
+          turno: string | null
         }
         Insert: {
+          cargo?: string | null
+          cnh_tipos?: string[] | null
           codigo_cadastro?: string | null
           created_at?: string | null
           data_admissao?: string | null
@@ -250,8 +255,11 @@ export type Database = {
           telefone?: string | null
           tipo_carteira?: string | null
           troca_turno?: boolean | null
+          turno?: string | null
         }
         Update: {
+          cargo?: string | null
+          cnh_tipos?: string[] | null
           codigo_cadastro?: string | null
           created_at?: string | null
           data_admissao?: string | null
@@ -265,6 +273,7 @@ export type Database = {
           telefone?: string | null
           tipo_carteira?: string | null
           troca_turno?: boolean | null
+          turno?: string | null
         }
         Relationships: [
           {
@@ -1333,6 +1342,7 @@ export type Database = {
           is_super_admin: boolean | null
           nome: string
           organization_id: string
+          simulation_mode: boolean | null
           updated_at: string
         }
         Insert: {
@@ -1343,6 +1353,7 @@ export type Database = {
           is_super_admin?: boolean | null
           nome: string
           organization_id: string
+          simulation_mode?: boolean | null
           updated_at?: string
         }
         Update: {
@@ -1353,6 +1364,7 @@ export type Database = {
           is_super_admin?: boolean | null
           nome?: string
           organization_id?: string
+          simulation_mode?: boolean | null
           updated_at?: string
         }
         Relationships: [

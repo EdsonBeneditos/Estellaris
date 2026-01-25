@@ -39,6 +39,58 @@ const helpContents: Record<string, HelpContent> = {
       },
     ],
   },
+  "/super-admin": {
+    title: "Central Super Admin - Manual Rápido",
+    description: "Painel exclusivo para gestão global do sistema.",
+    sections: [
+      {
+        title: "🏢 Gestão de Empresas",
+        content: "Visualize todas as organizações cadastradas no sistema. Crie novas empresas definindo nome, CNPJ e plano (Básico, Pro ou Enterprise). Cada empresa opera de forma totalmente isolada com seus próprios dados.",
+      },
+      {
+        title: "👤 Criação de Usuários Mestres",
+        content: "Convide usuários por e-mail e vincule-os automaticamente a uma organização com cargo definido (Admin, Gerente, Vendedor). O usuário receberá um link para definir sua senha e acessar o sistema.",
+      },
+      {
+        title: "🔍 Simular Acesso (Suporte)",
+        content: "Use o botão 'Simular Acesso' ao lado de cada empresa para visualizar o sistema exatamente como o cliente vê. Uma barra amarela no topo indica que você está em modo de simulação. Clique em 'Sair da Simulação' para retornar ao painel Super Admin.",
+      },
+      {
+        title: "⚠️ Segurança",
+        content: "O acesso a esta área é restrito exclusivamente a Super Administradores autorizados. Todas as ações são registradas para auditoria.",
+      },
+    ],
+  },
+  "/colaboradores": {
+    title: "Colaboradores - Manual Rápido",
+    description: "Gestão completa de RH e ficha funcional dos colaboradores.",
+    sections: [
+      {
+        title: "📋 Cadastro de Ficha Funcional",
+        content: "Cadastre colaboradores com informações completas: nome, código de cadastro, cargo, data de admissão, telefone e e-mail pessoal. Todos os campos são editáveis através do botão 'Editar' no card.",
+      },
+      {
+        title: "🚗 Categorias de CNH",
+        content: "Selecione múltiplas categorias de CNH (A, B, C, D, E) usando as tags. Isso permite registrar motoristas habilitados para diferentes tipos de veículos.",
+      },
+      {
+        title: "⏰ Gestão de Turnos",
+        content: "Defina o turno de trabalho (Manhã, Tarde, Noite, 12x36) e a preferência de turno do colaborador. Marque se ele aceita troca de turno para facilitar escalas.",
+      },
+      {
+        title: "♿ Indicador PCD",
+        content: "Marque colaboradores como PCD (Pessoa com Deficiência) para controle de cotas legais e adaptações necessárias.",
+      },
+      {
+        title: "🏝️ Alerta Automático de Férias",
+        content: "O sistema calcula automaticamente o tempo desde a admissão. Quando um colaborador atinge 11 meses de empresa, uma badge 'Próximo a Férias' aparece no card e um alerta é exibido no topo da página.",
+      },
+      {
+        title: "🎨 Status com Cores",
+        content: "Status visual por cores: Ativo (Verde), Férias (Azul), Afastado (Amarelo) e Demitido (Vermelho). Facilita a identificação rápida da situação de cada colaborador.",
+      },
+    ],
+  },
   "/leads": {
     title: "Leads - Manual Rápido",
     description: "Gerencie todos os seus leads e oportunidades de negócio.",

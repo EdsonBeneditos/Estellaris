@@ -6,9 +6,12 @@ export interface Colaborador {
   organization_id: string | null;
   codigo_cadastro: string | null;
   nome: string;
+  cargo: string | null;
+  turno: string | null;
   data_admissao: string | null;
   status: string | null;
   tipo_carteira: string | null;
+  cnh_tipos: string[] | null;
   pcd: boolean | null;
   troca_turno: boolean | null;
   preferencia_turno: string | null;
