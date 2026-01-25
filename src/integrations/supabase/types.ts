@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      atividades_cliente: {
+        Row: {
+          cliente_id: string
+          created_at: string
+          data_hora: string
+          descricao: string
+          id: string
+          organization_id: string
+          realizado_por: string | null
+          realizado_por_email: string | null
+          tipo: string
+        }
+        Insert: {
+          cliente_id: string
+          created_at?: string
+          data_hora?: string
+          descricao: string
+          id?: string
+          organization_id: string
+          realizado_por?: string | null
+          realizado_por_email?: string | null
+          tipo: string
+        }
+        Update: {
+          cliente_id?: string
+          created_at?: string
+          data_hora?: string
+          descricao?: string
+          id?: string
+          organization_id?: string
+          realizado_por?: string | null
+          realizado_por_email?: string | null
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "atividades_cliente_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       caixas: {
         Row: {
           created_at: string

@@ -24,6 +24,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCurrentProfile } from "@/hooks/useOrganization";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { registrarAtividadeSistema } from "@/hooks/useAtividadesCliente";
 
 interface ImportClientesModalProps {
   open: boolean;
@@ -276,6 +277,15 @@ export function ImportClientesModal({ open, onOpenChange }: ImportClientesModalP
           .single();
 
         if (clienteError) throw clienteError;
+
+        // Registrar atividade de importação
+        if (cliente) {
+          await registrarAtividadeSistema(
+            profile.organization_id,
+            cliente.id,
+            "Cliente importado via CSV"
+          );
+        }
 
         // Se tiver serviço, criar contrato
         if (row.servico && cliente) {
