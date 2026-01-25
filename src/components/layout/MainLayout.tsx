@@ -20,8 +20,10 @@ export function MainLayout({ children }: MainLayoutProps) {
               <HelpButton />
             </div>
           </header>
-          <div className="flex-1 p-6 overflow-auto bg-background">
-            {children}
+          <div className="flex-1 p-8 overflow-visible bg-background">
+            <div className="overflow-visible">
+              {children}
+            </div>
           </div>
         </main>
       </div>

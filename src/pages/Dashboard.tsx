@@ -147,7 +147,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="space-y-6 max-w-full overflow-x-hidden">
+    <div className="space-y-8 max-w-full overflow-visible">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="min-w-0">
@@ -170,46 +170,50 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Widget Grid - Responsive layout with extra padding for hover effects */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-4 -m-4">
-        <WidgetResumoFinanceiro enabled={widgets.resumoFinanceiro} />
-        <WidgetProximasVisitas enabled={widgets.proximasVisitas} />
-        <WidgetContratosVencer enabled={widgets.contratosVencer} />
-        <WidgetEvolucaoLeads enabled={widgets.evolucaoLeads} />
-        <WidgetAtalhosRapidos 
-          enabled={widgets.atalhosRapidos} 
-          onNewLead={() => setIsModalOpen(true)}
-        />
-        <WidgetColaboradoresFerias />
+      {/* Widget Grid - Large padding with negative margin for hover breathing room */}
+      <div className="overflow-visible">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6 -m-6 overflow-visible">
+          <WidgetResumoFinanceiro enabled={widgets.resumoFinanceiro} />
+          <WidgetProximasVisitas enabled={widgets.proximasVisitas} />
+          <WidgetContratosVencer enabled={widgets.contratosVencer} />
+          <WidgetEvolucaoLeads enabled={widgets.evolucaoLeads} />
+          <WidgetAtalhosRapidos 
+            enabled={widgets.atalhosRapidos} 
+            onNewLead={() => setIsModalOpen(true)}
+          />
+          <WidgetColaboradoresFerias />
+        </div>
       </div>
 
-      {/* Stats Cards - 4 columns grid with extra padding for hover effects */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 p-4 -m-4">
-        <StatsCard
-          title="Total de Leads (Mês)"
-          value={statsLoading ? "..." : stats?.totalMonth || 0}
-          icon={Users}
-          description="Leads captados este mês"
-        />
-        <StatsCard
-          title="Retornos para Hoje"
-          value={statsLoading ? "..." : stats?.todayReturns || 0}
-          icon={CalendarClock}
-          description="Leads com retorno programado"
-        />
-        <StatsCard
-          title="Leads em Aberto"
-          value={statsLoading ? "..." : stats?.openLeads || 0}
-          icon={FolderOpen}
-          description="Leads ativos aguardando fechamento"
-        />
-        <StatsCard
-          title="Leads em Atraso"
-          value={statsLoading ? "..." : stats?.overdueLeads || 0}
-          icon={AlertTriangle}
-          description="Retornos não realizados"
-          variant="danger"
-        />
+      {/* Stats Cards - 4 columns grid with overflow visible for hover effects */}
+      <div className="overflow-visible">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 p-6 -m-6 overflow-visible">
+          <StatsCard
+            title="Total de Leads (Mês)"
+            value={statsLoading ? "..." : stats?.totalMonth || 0}
+            icon={Users}
+            description="Leads captados este mês"
+          />
+          <StatsCard
+            title="Retornos para Hoje"
+            value={statsLoading ? "..." : stats?.todayReturns || 0}
+            icon={CalendarClock}
+            description="Leads com retorno programado"
+          />
+          <StatsCard
+            title="Leads em Aberto"
+            value={statsLoading ? "..." : stats?.openLeads || 0}
+            icon={FolderOpen}
+            description="Leads ativos aguardando fechamento"
+          />
+          <StatsCard
+            title="Leads em Atraso"
+            value={statsLoading ? "..." : stats?.overdueLeads || 0}
+            icon={AlertTriangle}
+            description="Retornos não realizados"
+            variant="danger"
+          />
+        </div>
       </div>
 
       {/* Global Search Bar */}
