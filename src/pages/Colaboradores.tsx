@@ -274,15 +274,15 @@ export default function Colaboradores() {
         </Alert>
       )}
 
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-5">
+      {/* Stats Cards - Grid with padding for hover effects */}
+      <div className="grid gap-4 md:grid-cols-5 p-1 -m-1">
         {Object.entries(statusConfig).map(([status, config]) => {
           const count = colaboradores.filter((c) => c.status === status).length;
           const Icon = config.icon;
           return (
             <Card
               key={status}
-              className="border-zinc-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 transition-all duration-200 hover:scale-[1.02] hover:shadow-md hover:border-primary/30 cursor-pointer"
+              className="relative border-zinc-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:border-primary/30 hover:z-10 cursor-pointer"
             >
               <CardContent className="flex items-center gap-4 p-4">
                 <div className={`p-2 rounded-lg ${config.color} transition-transform duration-200 group-hover:scale-110`}>

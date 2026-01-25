@@ -32,9 +32,9 @@ export function TotalizadoresCard({
   porFormaPagamento,
 }: TotalizadoresCardProps) {
   return (
-    <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
+    <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4 p-1 -m-1">
       {/* Total Entradas */}
-      <Card className="border-border/50 bg-card">
+      <Card className="relative border-border/50 bg-card transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:border-primary/30 hover:z-10">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">
             Total Entradas
@@ -49,7 +49,7 @@ export function TotalizadoresCard({
       </Card>
 
       {/* Total Saídas */}
-      <Card className="border-border/50 bg-card">
+      <Card className="relative border-border/50 bg-card transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:border-primary/30 hover:z-10">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">
             Total Saídas
@@ -64,7 +64,7 @@ export function TotalizadoresCard({
       </Card>
 
       {/* Saldo Líquido */}
-      <Card className="border-border/50 bg-card">
+      <Card className="relative border-border/50 bg-card transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:border-primary/30 hover:z-10">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">
             Saldo Líquido
@@ -84,7 +84,7 @@ export function TotalizadoresCard({
       </Card>
 
       {/* Resumo por Forma de Pagamento */}
-      <Card className="border-border/50 bg-card md:col-span-3 lg:col-span-1">
+      <Card className="relative border-border/50 bg-card md:col-span-3 lg:col-span-1 transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:border-primary/30 hover:z-10">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">
             Entradas por Método

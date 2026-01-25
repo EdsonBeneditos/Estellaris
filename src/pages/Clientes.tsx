@@ -72,27 +72,27 @@ export default function Clientes() {
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="transition-all duration-200 hover:scale-[1.02] hover:shadow-md hover:border-primary/30 cursor-pointer">
+      {/* Stats - Grid with padding for hover effects */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-1 -m-1">
+        <Card className="relative transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:border-primary/30 hover:z-10 cursor-pointer">
           <CardContent className="pt-4">
             <div className="text-2xl font-bold text-zinc-950">{totalClientes}</div>
             <p className="text-xs text-muted-foreground">Total de Clientes</p>
           </CardContent>
         </Card>
-        <Card className="transition-all duration-200 hover:scale-[1.02] hover:shadow-md hover:border-primary/30 cursor-pointer">
+        <Card className="relative transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:border-primary/30 hover:z-10 cursor-pointer">
           <CardContent className="pt-4">
             <div className="text-2xl font-bold text-zinc-950">{clientesComContrato}</div>
             <p className="text-xs text-muted-foreground">Com Contrato Ativo</p>
           </CardContent>
         </Card>
-        <Card className="transition-all duration-200 hover:scale-[1.02] hover:shadow-md hover:border-primary/30 cursor-pointer">
+        <Card className="relative transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:border-primary/30 hover:z-10 cursor-pointer">
           <CardContent className="pt-4">
             <div className="text-2xl font-bold text-amber-600">{renovacoesProximas}</div>
             <p className="text-xs text-muted-foreground">Renovações Próximas</p>
           </CardContent>
         </Card>
-        <Card className="transition-all duration-200 hover:scale-[1.02] hover:shadow-md hover:border-primary/30 cursor-pointer">
+        <Card className="relative transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:border-primary/30 hover:z-10 cursor-pointer">
           <CardContent className="pt-4">
             <div className="text-2xl font-bold text-green-600">{clientesAtivos}</div>
             <p className="text-xs text-muted-foreground">Clientes Ativos</p>

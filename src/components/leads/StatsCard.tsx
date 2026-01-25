@@ -15,7 +15,7 @@ export function StatsCard({ title, value, icon: Icon, description, variant = "de
   
   return (
     <Card className={cn(
-      "bg-card/80 backdrop-blur-sm border transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/10 hover:border-primary/30 cursor-pointer",
+      "relative bg-card/80 backdrop-blur-sm border transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/10 hover:border-primary/30 hover:z-10 cursor-pointer",
       isDanger 
         ? "border-destructive/30 bg-destructive/5" 
         : "border-border/50"

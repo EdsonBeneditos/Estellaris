@@ -170,8 +170,8 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Widget Grid - Responsive layout */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* Widget Grid - Responsive layout with padding for hover effects */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-1 -m-1">
         <WidgetResumoFinanceiro enabled={widgets.resumoFinanceiro} />
         <WidgetProximasVisitas enabled={widgets.proximasVisitas} />
         <WidgetContratosVencer enabled={widgets.contratosVencer} />
@@ -183,8 +183,8 @@ export default function Dashboard() {
         <WidgetColaboradoresFerias />
       </div>
 
-      {/* Stats Cards - 4 columns grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Stats Cards - 4 columns grid with padding for hover effects */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-1 -m-1">
         <StatsCard
           title="Total de Leads (Mês)"
           value={statsLoading ? "..." : stats?.totalMonth || 0}
