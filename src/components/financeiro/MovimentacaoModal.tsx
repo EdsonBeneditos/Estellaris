@@ -18,8 +18,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, Loader2, Check } from "lucide-react";
 import { useCategorias, useCreateMovimentacao, useUpdateMovimentacao, MovimentacaoCaixa } from "@/hooks/useFinanceiro";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { useCurrentProfile } from "@/hooks/useOrganization";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface MovimentacaoModalProps {
   open: boolean;
@@ -44,15 +49,22 @@ export function MovimentacaoModal({
   caixaId,
 }: MovimentacaoModalProps) {
   const { user } = useAuthContext();
+  const { data: profile } = useCurrentProfile();
   const { data: categorias } = useCategorias();
   const createMovimentacao = useCreateMovimentacao();
   const updateMovimentacao = useUpdateMovimentacao();
+  const queryClient = useQueryClient();
 
   const [tipo, setTipo] = useState<"Entrada" | "Saída">("Entrada");
   const [valor, setValor] = useState("");
   const [categoriaId, setCategoriaId] = useState("");
   const [formaPagamento, setFormaPagamento] = useState("Dinheiro");
   const [descricao, setDescricao] = useState("");
+
+  // Estados para nova categoria
+  const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
 
   const isEditing = !!movimentacao;
 
@@ -70,9 +82,60 @@ export function MovimentacaoModal({
       setFormaPagamento("Dinheiro");
       setDescricao("");
     }
+    // Reset new category state when modal opens/closes
+    setShowNewCategoryInput(false);
+    setNewCategoryName("");
   }, [movimentacao, open]);
 
+  // Reset new category input when tipo changes
+  useEffect(() => {
+    setShowNewCategoryInput(false);
+    setNewCategoryName("");
+  }, [tipo]);
+
   const categoriasFiltradas = categorias?.filter((c) => c.tipo === tipo) || [];
+
+  const handleCreateCategory = async () => {
+    if (!newCategoryName.trim()) {
+      toast.error("Digite o nome da categoria");
+      return;
+    }
+
+    if (!profile?.organization_id) {
+      toast.error("Organização não encontrada");
+      return;
+    }
+
+    setIsCreatingCategory(true);
+
+    try {
+      const { data, error } = await supabase
+        .from("categorias_financeiras")
+        .insert({
+          nome: newCategoryName.trim(),
+          tipo,
+          organization_id: profile.organization_id,
+          ativo: true,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Invalidar cache e selecionar automaticamente a nova categoria
+      await queryClient.invalidateQueries({ queryKey: ["categorias_financeiras"] });
+      
+      setCategoriaId(data.id);
+      setShowNewCategoryInput(false);
+      setNewCategoryName("");
+      
+      toast.success(`Categoria "${data.nome}" criada com sucesso!`);
+    } catch (error: any) {
+      toast.error("Erro ao criar categoria", { description: error.message });
+    } finally {
+      setIsCreatingCategory(false);
+    }
+  };
 
   const handleSubmit = async () => {
     const categoriaSelecionada = categorias?.find((c) => c.id === categoriaId);
@@ -139,21 +202,86 @@ export function MovimentacaoModal({
             />
           </div>
 
-          {/* Categoria */}
+          {/* Categoria com botão + */}
           <div className="space-y-2">
             <Label htmlFor="categoria">Categoria</Label>
-            <Select value={categoriaId} onValueChange={setCategoriaId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione uma categoria" />
-              </SelectTrigger>
-              <SelectContent>
-                {categoriasFiltradas.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.id}>
-                    {cat.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            
+            {showNewCategoryInput ? (
+              <div className="flex gap-2">
+                <Input
+                  placeholder={`Nova categoria de ${tipo === "Entrada" ? "entrada" : "saída"}`}
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleCreateCategory();
+                    }
+                    if (e.key === "Escape") {
+                      setShowNewCategoryInput(false);
+                      setNewCategoryName("");
+                    }
+                  }}
+                  autoFocus
+                  disabled={isCreatingCategory}
+                />
+                <Button
+                  type="button"
+                  size="icon"
+                  onClick={handleCreateCategory}
+                  disabled={isCreatingCategory || !newCategoryName.trim()}
+                  className="shrink-0"
+                >
+                  {isCreatingCategory ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Check className="h-4 w-4" />
+                  )}
+                </Button>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="outline"
+                  onClick={() => {
+                    setShowNewCategoryInput(false);
+                    setNewCategoryName("");
+                  }}
+                  disabled={isCreatingCategory}
+                  className="shrink-0"
+                >
+                  ✕
+                </Button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <Select value={categoriaId} onValueChange={setCategoriaId}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Selecione uma categoria" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categoriasFiltradas.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        {cat.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="outline"
+                  onClick={() => setShowNewCategoryInput(true)}
+                  className="shrink-0"
+                  title={`Adicionar nova categoria de ${tipo === "Entrada" ? "entrada" : "saída"}`}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+            
+            <p className="text-xs text-muted-foreground">
+              {tipo === "Entrada" ? "Categorias de entrada" : "Categorias de saída"}
+            </p>
           </div>
 
           {/* Forma de Pagamento */}
