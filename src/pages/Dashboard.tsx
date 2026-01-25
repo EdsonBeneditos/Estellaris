@@ -25,6 +25,7 @@ import { WidgetProximasVisitas } from "@/components/dashboard/WidgetProximasVisi
 import { WidgetContratosVencer } from "@/components/dashboard/WidgetContratosVencer";
 import { WidgetEvolucaoLeads } from "@/components/dashboard/WidgetEvolucaoLeads";
 import { WidgetAtalhosRapidos } from "@/components/dashboard/WidgetAtalhosRapidos";
+import { WidgetColaboradoresFerias } from "@/components/dashboard/WidgetColaboradoresFerias";
 import { DateRange } from "react-day-picker";
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -179,6 +180,7 @@ export default function Dashboard() {
           enabled={widgets.atalhosRapidos} 
           onNewLead={() => setIsModalOpen(true)}
         />
+        <WidgetColaboradoresFerias />
       </div>
 
       {/* Stats Cards - 4 columns grid */}
