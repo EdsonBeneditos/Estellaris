@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, BarChart3, Settings, LogOut, UserPlus, Package, FileText, Receipt, Wallet, UsersRound, Building2, Shield, HardHat } from "lucide-react";
+import { LayoutDashboard, Users, BarChart3, Settings, LogOut, UserPlus, Package, FileText, Receipt, Wallet, UsersRound, Building2, Shield, HardHat, Crown } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -6,7 +6,9 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useIsSuperAdmin } from "@/hooks/useSuperAdmin";
 import { useCurrentOrganization } from "@/hooks/useOrganization";
 import { toast } from "sonner";
-import { isModuleEnabled, hasAnyReport, ModuleKey } from "@/lib/modules";
+import { isModuleEnabled, hasAnyReport, ModuleKey, AVAILABLE_MODULES } from "@/lib/modules";
+import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import {
   Sidebar,
@@ -53,10 +55,13 @@ export function AppSidebar() {
 
   const enabledModules = organization?.modules_enabled;
 
-  // Construir menu baseado nos módulos habilitados
+  // GOD MODE: Se for Super Admin, exibe TODOS os módulos incondicionalmente
+  const isGodMode = isSuperAdmin === true;
+
+  // Construir menu baseado nos módulos habilitados (ou todos se God Mode)
   const menuItems: { title: string; url: string; icon: React.ElementType }[] = [];
 
-  // Adicionar itens baseados nos módulos habilitados (exceto especiais)
+  // Módulos regulares (ordem de exibição)
   const regularModules: ModuleKey[] = [
     "dashboard",
     "leads",
@@ -69,35 +74,55 @@ export function AppSidebar() {
     "financeiro",
   ];
 
-  regularModules.forEach((moduleKey) => {
-    const menuItem = moduleMenuItems[moduleKey];
-    if (menuItem && isModuleEnabled(enabledModules, moduleKey)) {
-      menuItems.push(menuItem);
-    }
-  });
+  if (isGodMode) {
+    // GOD MODE: Adiciona TODOS os módulos regulares sem verificação
+    regularModules.forEach((moduleKey) => {
+      const menuItem = moduleMenuItems[moduleKey];
+      if (menuItem) {
+        menuItems.push(menuItem);
+      }
+    });
 
-  // Adicionar Relatórios se algum estiver habilitado
-  const reportStatus = hasAnyReport(enabledModules);
-  if (reportStatus.hasAny) {
+    // Sempre adiciona Relatórios no God Mode
     menuItems.push({ title: "Relatórios", url: "/relatorios", icon: BarChart3 });
-  }
 
-  // Adicionar Equipe se o módulo estiver habilitado E tiver permissão
-  if (isModuleEnabled(enabledModules, "equipe") && canManageTeam) {
+    // Sempre adiciona Equipe no God Mode
     const equipeItem = moduleMenuItems.equipe;
     if (equipeItem) menuItems.push(equipeItem);
-  }
 
-  // Adicionar Configurações se o módulo estiver habilitado E tiver permissão
-  if (isModuleEnabled(enabledModules, "configuracoes") && canViewSettings) {
+    // Sempre adiciona Configurações no God Mode
     const configItem = moduleMenuItems.configuracoes;
     if (configItem) menuItems.push(configItem);
-  }
 
-  // Adicionar Super Admin se for super admin (independente de modules_enabled)
-  if (isSuperAdmin) {
+    // Sempre adiciona Super Admin no God Mode
     const superAdminItem = moduleMenuItems.super_admin;
     if (superAdminItem) menuItems.push(superAdminItem);
+  } else {
+    // Modo normal: respeita modules_enabled e permissões
+    regularModules.forEach((moduleKey) => {
+      const menuItem = moduleMenuItems[moduleKey];
+      if (menuItem && isModuleEnabled(enabledModules, moduleKey)) {
+        menuItems.push(menuItem);
+      }
+    });
+
+    // Adicionar Relatórios se algum estiver habilitado
+    const reportStatus = hasAnyReport(enabledModules);
+    if (reportStatus.hasAny) {
+      menuItems.push({ title: "Relatórios", url: "/relatorios", icon: BarChart3 });
+    }
+
+    // Adicionar Equipe se o módulo estiver habilitado E tiver permissão
+    if (isModuleEnabled(enabledModules, "equipe") && canManageTeam) {
+      const equipeItem = moduleMenuItems.equipe;
+      if (equipeItem) menuItems.push(equipeItem);
+    }
+
+    // Adicionar Configurações se o módulo estiver habilitado E tiver permissão
+    if (isModuleEnabled(enabledModules, "configuracoes") && canViewSettings) {
+      const configItem = moduleMenuItems.configuracoes;
+      if (configItem) menuItems.push(configItem);
+    }
   }
 
   const handleLogout = async () => {
@@ -152,9 +177,29 @@ export function AppSidebar() {
 
       <SidebarFooter className="p-2 border-t border-sidebar-border">
         <div className="flex flex-col gap-2">
+          {/* God Mode Indicator */}
+          {isGodMode && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-amber-500/10 border border-amber-500/30">
+                  <Crown className="h-4 w-4 text-amber-500 shrink-0" />
+                  {!collapsed && (
+                    <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
+                      God Mode
+                    </span>
+                  )}
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                <p>Acesso Total - Todos os módulos liberados</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
+
           {!collapsed && user && (
-            <div className="px-3 py-2 text-xs text-muted-foreground truncate">
-              {user.email}
+            <div className="px-3 py-2 text-xs text-muted-foreground truncate flex items-center gap-2">
+              {isGodMode && <Shield className="h-3 w-3 text-amber-500 shrink-0" />}
+              <span className="truncate">{user.email}</span>
             </div>
           )}
           <Button
