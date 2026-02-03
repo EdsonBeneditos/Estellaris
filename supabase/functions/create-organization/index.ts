@@ -55,7 +55,14 @@ serve(async (req) => {
       });
     }
 
-    const { nome, cnpj, plano } = await req.json();
+    const { 
+      nome, 
+      cnpj, 
+      plano, 
+      modules_enabled,
+      responsavel_nome,
+      responsavel_email 
+    } = await req.json();
 
     if (!nome) {
       return new Response(JSON.stringify({ error: "Nome da organização é obrigatório" }), {
@@ -64,7 +71,9 @@ serve(async (req) => {
       });
     }
 
-    // Create organization
+    console.log("Creating organization:", { nome, plano, modules_enabled, responsavel_email });
+
+    // 1. Create organization
     const { data: newOrg, error: orgError } = await adminClient
       .from("organizations")
       .insert({
@@ -72,6 +81,7 @@ serve(async (req) => {
         cnpj: cnpj || null,
         plano: plano || "Basico",
         ativo: true,
+        modules_enabled: modules_enabled || null,
       })
       .select()
       .single();
@@ -84,10 +94,93 @@ serve(async (req) => {
       });
     }
 
+    console.log("Organization created:", newOrg.id);
+
+    // 2. Create default cost centers for this organization
+    const costCenters = [
+      { nome: "Administrativo", organization_id: newOrg.id },
+      { nome: "Operacional", organization_id: newOrg.id },
+    ];
+
+    const { error: ccError } = await adminClient
+      .from("centros_custo")
+      .insert(costCenters);
+
+    if (ccError) {
+      console.error("Error creating cost centers:", ccError);
+      // Don't fail the whole operation, just log
+    } else {
+      console.log("Cost centers created for organization:", newOrg.id);
+    }
+
+    // 3. If responsible email provided, create admin user
+    let adminCreated = false;
+    let adminUserId = null;
+
+    if (responsavel_email) {
+      console.log("Creating admin user for:", responsavel_email);
+      
+      try {
+        // Invite user via Admin API
+        const { data: inviteData, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(
+          responsavel_email, 
+          {
+            data: {
+              organization_id: newOrg.id,
+              role: "admin",
+              nome: responsavel_nome || responsavel_email.split("@")[0],
+            },
+            redirectTo: `${req.headers.get("origin") || supabaseUrl}/login`,
+          }
+        );
+
+        if (inviteError) {
+          console.error("Error inviting user:", inviteError);
+        } else if (inviteData.user) {
+          adminUserId = inviteData.user.id;
+          console.log("User invited:", adminUserId);
+
+          // Create profile for the admin user
+          const { error: profileError } = await adminClient.from("profiles").insert({
+            id: inviteData.user.id,
+            email: responsavel_email,
+            nome: responsavel_nome || responsavel_email.split("@")[0],
+            organization_id: newOrg.id,
+            is_super_admin: false,
+          });
+
+          if (profileError) {
+            console.error("Error creating profile:", profileError);
+          } else {
+            console.log("Profile created for user:", adminUserId);
+          }
+
+          // Create admin role
+          const { error: roleError } = await adminClient.from("user_roles").insert({
+            user_id: inviteData.user.id,
+            role: "admin",
+          });
+
+          if (roleError) {
+            console.error("Error creating role:", roleError);
+          } else {
+            console.log("Admin role assigned to user:", adminUserId);
+            adminCreated = true;
+          }
+        }
+      } catch (inviteErr) {
+        console.error("Exception during user invite:", inviteErr);
+      }
+    }
+
     return new Response(JSON.stringify({ 
       success: true, 
       organization: newOrg,
-      message: `Organização "${nome}" criada com sucesso!`
+      adminCreated,
+      adminUserId,
+      message: adminCreated 
+        ? `Organização "${nome}" criada com sucesso! Convite enviado para ${responsavel_email}.`
+        : `Organização "${nome}" criada com sucesso!`
     }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

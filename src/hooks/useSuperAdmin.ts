@@ -47,7 +47,14 @@ export function useCreateOrganization() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: { nome: string; cnpj?: string; plano?: string }) => {
+    mutationFn: async (data: { 
+      nome: string; 
+      cnpj?: string; 
+      plano?: string;
+      modules_enabled?: string[];
+      responsavel_nome?: string;
+      responsavel_email?: string;
+    }) => {
       const { data: result, error } = await supabase.functions.invoke("create-organization", {
         body: data,
       });
