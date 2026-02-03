@@ -125,6 +125,28 @@ export const DEFAULT_MODULES: ModuleKey[] = [
   "configuracoes",
 ];
 
+// Templates de Planos com módulos pré-definidos
+export const PLAN_TEMPLATES = {
+  Bronze: [
+    "dashboard",
+    "leads",
+    "financeiro",
+    "configuracoes",
+  ] as ModuleKey[],
+  Prata: [
+    "dashboard",
+    "leads",
+    "financeiro",
+    "configuracoes",
+    "relatorios_leads",
+    "relatorios_financeiro",
+    "clientes",
+  ] as ModuleKey[],
+  Ouro: [...AVAILABLE_MODULES].filter(m => m !== "super_admin") as ModuleKey[],
+} as const;
+
+export type PlanType = keyof typeof PLAN_TEMPLATES;
+
 // Helper para verificar se um módulo está habilitado
 export function isModuleEnabled(
   enabledModules: string[] | null | undefined,

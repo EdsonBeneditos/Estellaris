@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Building2,
   UserPlus,
@@ -11,7 +11,10 @@ import {
   Check,
   Eye,
   Settings2,
-  X,
+  Sparkles,
+  Medal,
+  Award,
+  Trophy,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -46,7 +49,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { AVAILABLE_MODULES, MODULE_CONFIG, DEFAULT_MODULES, ModuleKey } from "@/lib/modules";
+import { AVAILABLE_MODULES, MODULE_CONFIG, DEFAULT_MODULES, PLAN_TEMPLATES, ModuleKey, PlanType } from "@/lib/modules";
 
 export default function SuperAdmin() {
   const { data: organizations = [], isLoading } = useAllOrganizations();
@@ -62,6 +65,11 @@ export default function SuperAdmin() {
   const [newOrgCnpj, setNewOrgCnpj] = useState("");
   const [newOrgPlano, setNewOrgPlano] = useState<"Basico" | "Pro" | "Enterprise">("Basico");
   const [newOrgModules, setNewOrgModules] = useState<string[]>([...DEFAULT_MODULES]);
+  const [selectedPlanTemplate, setSelectedPlanTemplate] = useState<PlanType | "custom">("Bronze");
+  
+  // Responsible person fields
+  const [responsavelNome, setResponsavelNome] = useState("");
+  const [responsavelEmail, setResponsavelEmail] = useState("");
 
   // Edit Org State
   const [editingOrg, setEditingOrg] = useState<{
@@ -70,6 +78,7 @@ export default function SuperAdmin() {
     modules_enabled: string[] | null;
   } | null>(null);
   const [editModules, setEditModules] = useState<string[]>([]);
+  const [editPlanTemplate, setEditPlanTemplate] = useState<PlanType | "custom">("custom");
   const [isSavingModules, setIsSavingModules] = useState(false);
 
   // Invite User State
@@ -79,27 +88,61 @@ export default function SuperAdmin() {
   const [inviteOrgId, setInviteOrgId] = useState("");
   const [inviteRole, setInviteRole] = useState<"admin" | "gerente" | "vendedor">("vendedor");
 
+  // Success animation state
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+
+  // Apply plan template when selected
+  useEffect(() => {
+    if (selectedPlanTemplate !== "custom") {
+      setNewOrgModules([...PLAN_TEMPLATES[selectedPlanTemplate]]);
+    }
+  }, [selectedPlanTemplate]);
+
+  // Apply edit plan template when selected
+  useEffect(() => {
+    if (editPlanTemplate !== "custom") {
+      setEditModules([...PLAN_TEMPLATES[editPlanTemplate]]);
+    }
+  }, [editPlanTemplate]);
+
   const handleCreateOrg = async () => {
     if (!newOrgName.trim()) {
       toast.error("Nome da organização é obrigatório");
       return;
     }
 
+    if (responsavelEmail && !responsavelEmail.includes("@")) {
+      toast.error("E-mail do responsável inválido");
+      return;
+    }
+
     try {
-      await createOrg.mutateAsync({
+      const result = await createOrg.mutateAsync({
         nome: newOrgName,
         cnpj: newOrgCnpj || undefined,
         plano: newOrgPlano,
+        modules_enabled: newOrgModules,
+        responsavel_nome: responsavelNome || undefined,
+        responsavel_email: responsavelEmail || undefined,
       });
       
-      // Após criar, atualizar com os módulos selecionados
-      // (O create-organization não suporta modules ainda, então fazemos update separado)
-      toast.success("Organização criada com sucesso!");
+      // Show success animation
+      setSuccessMessage(result.message || `Organização "${newOrgName}" criada com sucesso!`);
+      setShowSuccess(true);
+      
+      // Reset form
       setIsCreateOrgOpen(false);
       setNewOrgName("");
       setNewOrgCnpj("");
       setNewOrgPlano("Basico");
       setNewOrgModules([...DEFAULT_MODULES]);
+      setSelectedPlanTemplate("Bronze");
+      setResponsavelNome("");
+      setResponsavelEmail("");
+
+      // Hide success after animation
+      setTimeout(() => setShowSuccess(false), 4000);
     } catch (error: any) {
       toast.error(error.message || "Erro ao criar organização");
     }
@@ -138,6 +181,7 @@ export default function SuperAdmin() {
   const handleEditModules = (org: { id: string; nome: string; modules_enabled: string[] | null }) => {
     setEditingOrg(org);
     setEditModules(org.modules_enabled || [...DEFAULT_MODULES]);
+    setEditPlanTemplate("custom");
   };
 
   const handleSaveModules = async () => {
@@ -164,12 +208,14 @@ export default function SuperAdmin() {
 
   const toggleModule = (moduleKey: string, isEdit: boolean = false) => {
     if (isEdit) {
+      setEditPlanTemplate("custom");
       setEditModules((prev) =>
         prev.includes(moduleKey)
           ? prev.filter((m) => m !== moduleKey)
           : [...prev, moduleKey]
       );
     } else {
+      setSelectedPlanTemplate("custom");
       setNewOrgModules((prev) =>
         prev.includes(moduleKey)
           ? prev.filter((m) => m !== moduleKey)
@@ -182,6 +228,12 @@ export default function SuperAdmin() {
     Basico: "bg-zinc-500",
     Pro: "bg-blue-500",
     Enterprise: "bg-amber-500",
+  };
+
+  const planTemplateIcons = {
+    Bronze: <Medal className="h-4 w-4 text-amber-700" />,
+    Prata: <Award className="h-4 w-4 text-slate-400" />,
+    Ouro: <Trophy className="h-4 w-4 text-yellow-500" />,
   };
 
   // Agrupar módulos por categoria
@@ -212,7 +264,33 @@ export default function SuperAdmin() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
+      {/* Success Overlay Animation */}
+      {showSuccess && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white rounded-2xl p-8 shadow-2xl max-w-md mx-4 animate-in zoom-in-95 duration-300">
+            <div className="flex flex-col items-center gap-4 text-center">
+              <div className="relative">
+                <div className="absolute inset-0 animate-ping">
+                  <Sparkles className="h-16 w-16 text-white/30" />
+                </div>
+                <Check className="h-16 w-16" />
+              </div>
+              <h3 className="text-2xl font-bold">Organização Criada!</h3>
+              <p className="text-emerald-100">{successMessage}</p>
+              <div className="flex gap-2 mt-2">
+                <Badge className="bg-white/20 text-white border-white/30">
+                  Centros de Custo ✓
+                </Badge>
+                <Badge className="bg-white/20 text-white border-white/30">
+                  Módulos ✓
+                </Badge>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -267,47 +345,145 @@ export default function SuperAdmin() {
               </DialogTrigger>
               <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle>Criar Nova Organização</DialogTitle>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Building2 className="h-5 w-5" />
+                    Criar Nova Organização
+                  </DialogTitle>
                   <DialogDescription>
-                    Preencha os dados para criar uma nova empresa no sistema.
+                    Preencha os dados para criar uma nova empresa no sistema. O administrador receberá um convite por e-mail.
                   </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="orgName">Nome da Empresa *</Label>
-                    <Input
-                      id="orgName"
-                      placeholder="Ex: Empresa ABC Ltda"
-                      value={newOrgName}
-                      onChange={(e) => setNewOrgName(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="orgCnpj">CNPJ</Label>
-                    <Input
-                      id="orgCnpj"
-                      placeholder="00.000.000/0001-00"
-                      value={newOrgCnpj}
-                      onChange={(e) => setNewOrgCnpj(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="orgPlano">Plano</Label>
-                    <Select value={newOrgPlano} onValueChange={(v) => setNewOrgPlano(v as any)}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Basico">Básico</SelectItem>
-                        <SelectItem value="Pro">Pro</SelectItem>
-                        <SelectItem value="Enterprise">Enterprise</SelectItem>
-                      </SelectContent>
-                    </Select>
+                <div className="space-y-6 py-4">
+                  {/* Dados da Empresa */}
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide border-b pb-2">
+                      Dados da Empresa
+                    </h4>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="orgName">Nome da Empresa *</Label>
+                        <Input
+                          id="orgName"
+                          placeholder="Ex: Empresa ABC Ltda"
+                          value={newOrgName}
+                          onChange={(e) => setNewOrgName(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="orgCnpj">CNPJ</Label>
+                        <Input
+                          id="orgCnpj"
+                          placeholder="00.000.000/0001-00"
+                          value={newOrgCnpj}
+                          onChange={(e) => setNewOrgCnpj(e.target.value)}
+                        />
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Módulos */}
-                  <div className="space-y-3">
-                    <Label>Módulos Habilitados</Label>
+                  {/* Dados do Responsável */}
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide border-b pb-2">
+                      Responsável / Administrador
+                    </h4>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="responsavelNome">Nome do Responsável</Label>
+                        <Input
+                          id="responsavelNome"
+                          placeholder="Ex: João Silva"
+                          value={responsavelNome}
+                          onChange={(e) => setResponsavelNome(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="responsavelEmail">E-mail do Responsável</Label>
+                        <Input
+                          id="responsavelEmail"
+                          type="email"
+                          placeholder="admin@empresa.com"
+                          value={responsavelEmail}
+                          onChange={(e) => setResponsavelEmail(e.target.value)}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Um convite será enviado automaticamente para este e-mail.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Plano e Template */}
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide border-b pb-2">
+                      Plano e Módulos
+                    </h4>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="orgPlano">Plano Comercial</Label>
+                        <Select value={newOrgPlano} onValueChange={(v) => setNewOrgPlano(v as any)}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Basico">Básico</SelectItem>
+                            <SelectItem value="Pro">Pro</SelectItem>
+                            <SelectItem value="Enterprise">Enterprise</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Template de Módulos</Label>
+                        <Select 
+                          value={selectedPlanTemplate} 
+                          onValueChange={(v) => setSelectedPlanTemplate(v as PlanType | "custom")}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Bronze">
+                              <div className="flex items-center gap-2">
+                                <Medal className="h-4 w-4 text-amber-700" />
+                                Bronze (4 módulos)
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="Prata">
+                              <div className="flex items-center gap-2">
+                                <Award className="h-4 w-4 text-slate-400" />
+                                Prata (7 módulos)
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="Ouro">
+                              <div className="flex items-center gap-2">
+                                <Trophy className="h-4 w-4 text-yellow-500" />
+                                Ouro (Todos)
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="custom">
+                              <div className="flex items-center gap-2">
+                                <Settings2 className="h-4 w-4" />
+                                Personalizado
+                              </div>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    {/* Template Preview */}
+                    {selectedPlanTemplate !== "custom" && (
+                      <Alert className="bg-muted/50 border-primary/20">
+                        <div className="flex items-center gap-2">
+                          {planTemplateIcons[selectedPlanTemplate]}
+                          <AlertDescription className="text-sm">
+                            <strong>Plano {selectedPlanTemplate}:</strong>{" "}
+                            {PLAN_TEMPLATES[selectedPlanTemplate].map(m => MODULE_CONFIG[m].label).join(", ")}
+                          </AlertDescription>
+                        </div>
+                      </Alert>
+                    )}
+
+                    {/* Módulos */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 border rounded-lg bg-muted/30">
                       {Object.entries(modulesByCategory).map(([category, modules]) => (
                         <div key={category} className="space-y-2">
@@ -340,13 +516,25 @@ export default function SuperAdmin() {
                     </div>
                   </div>
                 </div>
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setIsCreateOrgOpen(false)}>
-                    Cancelar
-                  </Button>
-                  <Button onClick={handleCreateOrg} disabled={createOrg.isPending}>
-                    {createOrg.isPending ? "Criando..." : "Criar Organização"}
-                  </Button>
+                <div className="flex justify-between items-center pt-4 border-t">
+                  <p className="text-sm text-muted-foreground">
+                    {newOrgModules.length} módulos selecionados
+                  </p>
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => setIsCreateOrgOpen(false)}>
+                      Cancelar
+                    </Button>
+                    <Button onClick={handleCreateOrg} disabled={createOrg.isPending} className="gap-2">
+                      {createOrg.isPending ? (
+                        "Criando..."
+                      ) : (
+                        <>
+                          <Sparkles className="h-4 w-4" />
+                          Criar Organização
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </DialogContent>
             </Dialog>
@@ -553,6 +741,46 @@ export default function SuperAdmin() {
               Selecione os módulos que estarão disponíveis para esta organização.
             </DialogDescription>
           </DialogHeader>
+          
+          {/* Plan Template Selector for Edit */}
+          <div className="space-y-2 py-2">
+            <Label>Aplicar Template de Plano</Label>
+            <Select 
+              value={editPlanTemplate} 
+              onValueChange={(v) => setEditPlanTemplate(v as PlanType | "custom")}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Bronze">
+                  <div className="flex items-center gap-2">
+                    <Medal className="h-4 w-4 text-amber-700" />
+                    Bronze (4 módulos)
+                  </div>
+                </SelectItem>
+                <SelectItem value="Prata">
+                  <div className="flex items-center gap-2">
+                    <Award className="h-4 w-4 text-slate-400" />
+                    Prata (7 módulos)
+                  </div>
+                </SelectItem>
+                <SelectItem value="Ouro">
+                  <div className="flex items-center gap-2">
+                    <Trophy className="h-4 w-4 text-yellow-500" />
+                    Ouro (Todos)
+                  </div>
+                </SelectItem>
+                <SelectItem value="custom">
+                  <div className="flex items-center gap-2">
+                    <Settings2 className="h-4 w-4" />
+                    Personalizado
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
             {Object.entries(modulesByCategory).map(([category, modules]) => (
               <div key={category} className="space-y-2 p-3 border rounded-lg bg-muted/20">
