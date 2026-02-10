@@ -7,10 +7,17 @@ import logo from "@/assets/logo.png";
 interface OrcamentoPreviewProps {
   orcamento: Orcamento;
   items: OrcamentoItem[];
+  orgData?: {
+    nome?: string;
+    cnpj?: string;
+    logo_url?: string;
+    orcamento_cabecalho?: string;
+    orcamento_rodape?: string;
+  } | null;
 }
 
 export const OrcamentoPreview = forwardRef<HTMLDivElement, OrcamentoPreviewProps>(
-  ({ orcamento, items }, ref) => {
+  ({ orcamento, items, orgData }, ref) => {
     const formatCurrency = (value: number) => {
       return new Intl.NumberFormat("pt-BR", {
         style: "currency",
@@ -30,13 +37,20 @@ export const OrcamentoPreview = forwardRef<HTMLDivElement, OrcamentoPreviewProps
         className="mx-auto w-full max-w-[210mm] bg-white p-8 text-slate-900 print:p-12"
         style={{ minHeight: "297mm" }}
       >
+        {/* Custom Header Text */}
+        {orgData?.orcamento_cabecalho && (
+          <div className="mb-4 text-center text-sm text-slate-600 whitespace-pre-wrap">
+            {orgData.orcamento_cabecalho}
+          </div>
+        )}
+
         {/* Header */}
         <div className="mb-8 flex items-start justify-between border-b border-slate-200 pb-6">
           <div className="flex items-center gap-4">
-            <img src={logo} alt="Logo" className="h-16 w-auto object-contain" />
+            <img src={orgData?.logo_url || logo} alt="Logo" className="h-16 w-auto object-contain" />
             <div>
-              <h1 className="text-xl font-bold text-slate-900">Acqua Nobilis</h1>
-              <p className="text-sm text-slate-600">Soluções em Tratamento de Água</p>
+              <h1 className="text-xl font-bold text-slate-900">{orgData?.nome || "Acqua Nobilis"}</h1>
+              {orgData?.cnpj && <p className="text-sm text-slate-600">CNPJ: {orgData.cnpj}</p>}
             </div>
           </div>
           <div className="text-right">
@@ -178,10 +192,14 @@ export const OrcamentoPreview = forwardRef<HTMLDivElement, OrcamentoPreviewProps
 
         {/* Footer */}
         <div className="mt-auto border-t border-slate-200 pt-6 text-center text-xs text-slate-500">
-          <p>Este documento não possui valor fiscal. Documento gerado eletronicamente.</p>
-          <p className="mt-1">
-            Acqua Nobilis • contato@acquanobilis.com.br • (11) 0000-0000
-          </p>
+          {orgData?.orcamento_rodape ? (
+            <p className="whitespace-pre-wrap">{orgData.orcamento_rodape}</p>
+          ) : (
+            <>
+              <p>Este documento não possui valor fiscal. Documento gerado eletronicamente.</p>
+              <p className="mt-1">{orgData?.nome || "Acqua Nobilis"}</p>
+            </>
+          )}
         </div>
       </div>
     );
