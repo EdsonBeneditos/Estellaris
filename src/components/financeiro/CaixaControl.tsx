@@ -30,6 +30,14 @@ const formatCurrency = (value: number) => {
   }).format(value);
 };
 
+const getDynamicFontClass = (value: number) => {
+  const abs = Math.abs(value);
+  if (abs >= 10_000_000) return "text-sm";
+  if (abs >= 1_000_000) return "text-base";
+  if (abs >= 100_000) return "text-lg";
+  return "text-xl";
+};
+
 export function CaixaControl({ caixaAberto, movimentacoes }: CaixaControlProps) {
   const { user } = useAuthContext();
   const abrirCaixa = useAbrirCaixa();
@@ -92,11 +100,11 @@ export function CaixaControl({ caixaAberto, movimentacoes }: CaixaControlProps) 
               <div className="flex flex-col gap-4 pt-2">
                 <div className="space-y-1.5 p-3 rounded-lg bg-muted/50 border border-border/50">
                   <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Saldo Inicial</span>
-                  <p className="text-xl font-bold text-foreground">{formatCurrency(Number(caixaAberto.saldo_inicial))}</p>
+                  <p className={`${getDynamicFontClass(Number(caixaAberto.saldo_inicial))} font-bold text-foreground break-all leading-tight`}>{formatCurrency(Number(caixaAberto.saldo_inicial))}</p>
                 </div>
                 <div className="space-y-1.5 p-3 rounded-lg bg-primary/5 border border-primary/20">
                   <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Saldo Atual (Sistema)</span>
-                  <p className="text-xl font-bold text-primary">{formatCurrency(saldoSistema)}</p>
+                  <p className={`${getDynamicFontClass(saldoSistema)} font-bold text-primary break-all leading-tight`}>{formatCurrency(saldoSistema)}</p>
                 </div>
               </div>
 
