@@ -45,13 +45,18 @@ export function EmitirNFModal({ open, onOpenChange, movimentacao }: EmitirNFModa
 
     setIsEmitting(true);
     try {
+      const ref = `nfe-${movimentacao.id.substring(0, 8)}-${Date.now()}`;
+
       const { data, error } = await supabase.functions.invoke("focus-nfe", {
         body: {
-          action: "emit-nfe",
+          action: "create_nfe",
           movimentacao_id: movimentacao.id,
           organization_id: profile?.organization_id,
+          ref,
           destinatario_nome: destinatarioNome,
           destinatario_cnpj: destinatarioCnpj || null,
+          valor: Number(movimentacao.valor),
+          descricao: movimentacao.descricao || `Movimentação #${movimentacao.id.substring(0, 8)}`,
           observacoes: observacoes || null,
         },
       });
@@ -59,22 +64,24 @@ export function EmitirNFModal({ open, onOpenChange, movimentacao }: EmitirNFModa
       if (error) throw error;
 
       if (data?.success) {
-        const msg = data.pdf_url
-          ? `NF #${data.numero_nota} autorizada!`
-          : `NF #${data.numero_nota} criada com sucesso!`;
-
-        toast.success(msg, {
-          description: data.pdf_url ? "PDF disponível para download." : data.message,
+        toast.success(`NF #${data.numero_nota} autorizada com sucesso!`, {
+          description: data.pdf_url
+            ? "PDF disponível para download."
+            : data.message || "Nota registrada.",
           action: data.pdf_url
             ? {
                 label: "Ver PDF",
                 onClick: () => window.open(data.pdf_url, "_blank"),
               }
             : undefined,
+          duration: 8000,
+          className: "border-emerald-500/30 bg-emerald-500/10",
         });
       } else {
         toast.error("Erro ao emitir nota fiscal", {
-          description: data?.error || "Erro desconhecido",
+          description: data?.error || "Erro desconhecido da Focus NFe",
+          duration: 10000,
+          className: "border-red-500/30 bg-red-500/10",
         });
       }
 
@@ -84,7 +91,10 @@ export function EmitirNFModal({ open, onOpenChange, movimentacao }: EmitirNFModa
       setObservacoes("");
     } catch (error: any) {
       console.error("Erro ao emitir NF:", error);
-      toast.error("Erro ao emitir nota fiscal", { description: error.message });
+      toast.error("Erro ao emitir nota fiscal", {
+        description: error.message,
+        duration: 10000,
+      });
     } finally {
       setIsEmitting(false);
     }

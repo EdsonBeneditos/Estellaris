@@ -24,38 +24,50 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Client with user's token for RLS
     const supabaseUser = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: authHeader } },
     });
-
-    // Service client for admin operations
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
     const { action, ...payload } = await req.json();
 
-    // ── ACTION: emit-nfe ──
-    if (action === "emit-nfe") {
-      const { movimentacao_id, organization_id, destinatario_nome, destinatario_cnpj, observacoes } = payload;
+    // ── ACTION: create_company ──
+    if (action === "create_company") {
+      const { organization_id, cnpj, inscricao_municipal, regime_tributario, ambiente_nfe } = payload;
+
+      if (!organization_id) {
+        return new Response(
+          JSON.stringify({ error: "organization_id é obrigatório" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const { error } = await supabaseAdmin
+        .from("organizations")
+        .update({ cnpj, inscricao_municipal, regime_tributario, ambiente_nfe })
+        .eq("id", organization_id);
+
+      if (error) {
+        return new Response(
+          JSON.stringify({ error: "Erro ao salvar dados fiscais", details: error.message }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, message: "Dados fiscais salvos com sucesso" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ── ACTION: create_nfe ──
+    if (action === "create_nfe") {
+      const { movimentacao_id, organization_id, ref, destinatario_nome, destinatario_cnpj, valor, descricao, observacoes } = payload;
 
       if (!movimentacao_id || !organization_id || !destinatario_nome) {
         return new Response(
           JSON.stringify({ error: "Campos obrigatórios: movimentacao_id, organization_id, destinatario_nome" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      // Fetch movimentacao
-      const { data: mov, error: movErr } = await supabaseUser
-        .from("movimentacoes_caixa")
-        .select("*")
-        .eq("id", movimentacao_id)
-        .single();
-
-      if (movErr || !mov) {
-        return new Response(
-          JSON.stringify({ error: "Movimentação não encontrada", details: movErr?.message }),
-          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
@@ -76,11 +88,7 @@ Deno.serve(async (req) => {
       // Create pending log
       const { data: logEntry, error: logErr } = await supabaseAdmin
         .from("notas_fiscais_logs")
-        .insert({
-          movimentacao_id,
-          organization_id,
-          status: "Pendente",
-        })
+        .insert({ movimentacao_id, organization_id, status: "Pendente" })
         .select()
         .single();
 
@@ -97,8 +105,8 @@ Deno.serve(async (req) => {
         .insert({
           destinatario_nome,
           destinatario_cnpj: destinatario_cnpj || null,
-          valor_produtos: Number(mov.valor),
-          valor_total: Number(mov.valor),
+          valor_produtos: Number(valor),
+          valor_total: Number(valor),
           status: "Pendente",
           informacoes_adicionais: observacoes || null,
           organization_id,
@@ -120,14 +128,13 @@ Deno.serve(async (req) => {
         );
       }
 
-      // ── Call Focus NFe API (if token is configured) ──
+      // ── Call Focus NFe API (if token configured) ──
       if (focusNfeToken) {
         try {
           const ambiente = org.ambiente_nfe === "producao" ? "production" : "homologation";
-          const focusBaseUrl =
-            ambiente === "production"
-              ? "https://api.focusnfe.com.br"
-              : "https://homologacao.focusnfe.com.br";
+          const focusBaseUrl = ambiente === "production"
+            ? "https://api.focusnfe.com.br"
+            : "https://homologacao.focusnfe.com.br";
 
           const nfePayload = {
             natureza_operacao: "Venda de produtos",
@@ -138,24 +145,22 @@ Deno.serve(async (req) => {
             inscricao_municipal_emitente: org.inscricao_municipal || "",
             regime_tributario: org.regime_tributario === "simples_nacional" ? "1" :
                                org.regime_tributario === "lucro_presumido" ? "2" : "3",
-            items: [
-              {
-                numero_item: "1",
-                codigo_produto: movimentacao_id.substring(0, 8),
-                descricao: mov.descricao || `Movimentação #${movimentacao_id.substring(0, 8)}`,
-                quantidade: "1.00",
-                unidade_comercial: "UN",
-                valor_unitario_comercial: Number(mov.valor).toFixed(2),
-                valor_bruto: Number(mov.valor).toFixed(2),
-              },
-            ],
+            items: [{
+              numero_item: "1",
+              codigo_produto: movimentacao_id.substring(0, 8),
+              descricao: descricao || `Movimentação #${movimentacao_id.substring(0, 8)}`,
+              quantidade: "1.00",
+              unidade_comercial: "UN",
+              valor_unitario_comercial: Number(valor).toFixed(2),
+              valor_bruto: Number(valor).toFixed(2),
+            }],
             nome_destinatario: destinatario_nome,
             cnpj_destinatario: (destinatario_cnpj || "").replace(/\D/g, "") || undefined,
             informacoes_adicionais_contribuinte: observacoes || "",
           };
 
-          const ref = `nfe-${nota.id.substring(0, 8)}`;
-          const focusRes = await fetch(`${focusBaseUrl}/v2/nfe?ref=${ref}`, {
+          const nfeRef = ref || `nfe-${nota.id.substring(0, 8)}`;
+          const focusRes = await fetch(`${focusBaseUrl}/v2/nfe?ref=${nfeRef}`, {
             method: "POST",
             headers: {
               Authorization: `Token token=${focusNfeToken}`,
@@ -167,12 +172,11 @@ Deno.serve(async (req) => {
           const focusData = await focusRes.json();
 
           if (focusRes.ok && !focusData.erros) {
-            // Success
             await supabaseAdmin
               .from("notas_fiscais_logs")
               .update({
                 status: "Autorizada",
-                protocolo: focusData.protocolo || focusData.ref || ref,
+                protocolo: focusData.protocolo || focusData.ref || nfeRef,
                 pdf_url: focusData.caminho_danfe || null,
                 xml_url: focusData.caminho_xml_nota_fiscal || null,
               })
@@ -189,17 +193,13 @@ Deno.serve(async (req) => {
 
             return new Response(
               JSON.stringify({
-                success: true,
-                nota_id: nota.id,
-                numero_nota: nota.numero_nota,
-                status: "Autorizada",
-                protocolo: focusData.protocolo || null,
+                success: true, nota_id: nota.id, numero_nota: nota.numero_nota,
+                status: "Autorizada", protocolo: focusData.protocolo || null,
                 pdf_url: focusData.caminho_danfe || null,
               }),
               { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
             );
           } else {
-            // Focus NFe returned errors
             const errorMsg = focusData.erros
               ? focusData.erros.map((e: any) => e.mensagem || JSON.stringify(e)).join("; ")
               : focusData.mensagem || "Erro desconhecido da Focus NFe";
@@ -216,11 +216,8 @@ Deno.serve(async (req) => {
 
             return new Response(
               JSON.stringify({
-                success: false,
-                nota_id: nota.id,
-                numero_nota: nota.numero_nota,
-                status: "Erro",
-                error: errorMsg,
+                success: false, nota_id: nota.id, numero_nota: nota.numero_nota,
+                status: "Erro", error: errorMsg,
               }),
               { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
             );
@@ -234,18 +231,15 @@ Deno.serve(async (req) => {
 
           return new Response(
             JSON.stringify({
-              success: false,
-              nota_id: nota.id,
-              numero_nota: nota.numero_nota,
-              status: "Erro",
-              error: errMsg,
+              success: false, nota_id: nota.id, numero_nota: nota.numero_nota,
+              status: "Erro", error: errMsg,
             }),
             { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
       }
 
-      // No Focus NFe token configured – just return the created nota
+      // No Focus NFe token – local only
       await supabaseAdmin
         .from("notas_fiscais_logs")
         .update({ status: "Autorizada" })
@@ -253,46 +247,9 @@ Deno.serve(async (req) => {
 
       return new Response(
         JSON.stringify({
-          success: true,
-          nota_id: nota.id,
-          numero_nota: nota.numero_nota,
-          status: "Autorizada",
-          message: "Nota criada localmente (Focus NFe não configurada)",
+          success: true, nota_id: nota.id, numero_nota: nota.numero_nota,
+          status: "Autorizada", message: "Nota criada localmente (Focus NFe não configurada)",
         }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // ── ACTION: save-fiscal-config ──
-    if (action === "save-fiscal-config") {
-      const { organization_id, cnpj, inscricao_municipal, regime_tributario, ambiente_nfe } = payload;
-
-      if (!organization_id) {
-        return new Response(
-          JSON.stringify({ error: "organization_id é obrigatório" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      const { error } = await supabaseAdmin
-        .from("organizations")
-        .update({
-          cnpj,
-          inscricao_municipal,
-          regime_tributario,
-          ambiente_nfe,
-        })
-        .eq("id", organization_id);
-
-      if (error) {
-        return new Response(
-          JSON.stringify({ error: "Erro ao salvar dados fiscais", details: error.message }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      return new Response(
-        JSON.stringify({ success: true, message: "Dados fiscais salvos com sucesso" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
