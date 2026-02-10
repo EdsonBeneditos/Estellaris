@@ -34,49 +34,50 @@ export function TotalizadoresCard({
   return (
     <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4 p-1 -m-1">
       {/* Total Entradas */}
-      <Card className="relative border-border/50 bg-card transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:border-primary/30 hover:z-10">
+      <Card className="relative border-border/50 bg-card transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:border-primary/30 hover:z-10 overflow-hidden">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">
             Total Entradas
           </CardTitle>
-          <ArrowUpCircle className="h-5 w-5 text-emerald-500" />
+          <ArrowUpCircle className="h-5 w-5 text-emerald-500 flex-shrink-0" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-emerald-600">
+          <div className="text-lg sm:text-xl lg:text-2xl font-bold text-emerald-600 truncate" title={formatCurrency(totalEntradas)}>
             {formatCurrency(totalEntradas)}
           </div>
         </CardContent>
       </Card>
 
       {/* Total Saídas */}
-      <Card className="relative border-border/50 bg-card transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:border-primary/30 hover:z-10">
+      <Card className="relative border-border/50 bg-card transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:border-primary/30 hover:z-10 overflow-hidden">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">
             Total Saídas
           </CardTitle>
-          <ArrowDownCircle className="h-5 w-5 text-red-500" />
+          <ArrowDownCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-red-600">
+          <div className="text-lg sm:text-xl lg:text-2xl font-bold text-red-600 truncate" title={formatCurrency(totalSaidas)}>
             {formatCurrency(totalSaidas)}
           </div>
         </CardContent>
       </Card>
 
       {/* Saldo Líquido */}
-      <Card className="relative border-border/50 bg-card transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:border-primary/30 hover:z-10">
+      <Card className="relative border-border/50 bg-card transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:border-primary/30 hover:z-10 overflow-hidden">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">
             Saldo Líquido
           </CardTitle>
-          <Wallet className="h-5 w-5 text-primary" />
+          <Wallet className="h-5 w-5 text-primary flex-shrink-0" />
         </CardHeader>
         <CardContent>
           <div
             className={cn(
-              "text-2xl font-bold",
+              "text-lg sm:text-xl lg:text-2xl font-bold truncate",
               saldoLiquido >= 0 ? "text-emerald-600" : "text-red-600"
             )}
+            title={formatCurrency(saldoLiquido)}
           >
             {formatCurrency(saldoLiquido)}
           </div>
