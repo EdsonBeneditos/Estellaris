@@ -31,9 +31,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MoreHorizontal, Pencil, Trash2, ArrowUpCircle, ArrowDownCircle, User, UserCheck, Lock } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, ArrowUpCircle, ArrowDownCircle, User, UserCheck, Lock, FileText } from "lucide-react";
 import { MovimentacaoCaixa, useDeleteMovimentacao } from "@/hooks/useFinanceiro";
 import { MovimentacaoModal } from "./MovimentacaoModal";
+import { EmitirNFModal } from "./EmitirNFModal";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -60,6 +61,7 @@ export function MovimentacoesTable({ movimentacoes, caixaId }: MovimentacoesTabl
   const deleteMovimentacao = useDeleteMovimentacao();
   const [editMovimentacao, setEditMovimentacao] = useState<MovimentacaoCaixa | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [emitirNFMov, setEmitirNFMov] = useState<MovimentacaoCaixa | null>(null);
 
   const handleDelete = async () => {
     if (deleteId) {
@@ -228,6 +230,10 @@ export function MovimentacoesTable({ movimentacoes, caixaId }: MovimentacoesTabl
                         <Pencil className="h-4 w-4 mr-2" />
                         Editar
                       </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setEmitirNFMov(mov)}>
+                        <FileText className="h-4 w-4 mr-2" />
+                        Emitir NF
+                      </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={() => setDeleteId(mov.id)}
                         className="text-destructive focus:text-destructive"
@@ -250,6 +256,13 @@ export function MovimentacoesTable({ movimentacoes, caixaId }: MovimentacoesTabl
         onOpenChange={(open) => !open && setEditMovimentacao(null)}
         movimentacao={editMovimentacao}
         caixaId={caixaId}
+      />
+
+      {/* Modal Emitir NF */}
+      <EmitirNFModal
+        open={!!emitirNFMov}
+        onOpenChange={(open) => !open && setEmitirNFMov(null)}
+        movimentacao={emitirNFMov}
       />
 
       {/* Dialog Confirmar Exclusão */}

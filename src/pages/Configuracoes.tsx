@@ -9,6 +9,7 @@ import {
   ToggleRight,
   Building2,
   Landmark,
+  FileText,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -46,6 +47,7 @@ import {
 import { ColorPicker } from "@/components/settings/ColorPicker";
 import { OrganizationSettings } from "@/components/settings/OrganizationSettings";
 import { CentrosCustoManager } from "@/components/settings/CentrosCustoManager";
+import { ConfiguracaoFiscal } from "@/components/settings/ConfiguracaoFiscal";
 import { toast } from "sonner";
 
 interface SettingsListProps {
@@ -277,7 +279,7 @@ export default function Configuracoes() {
       </div>
 
       <Tabs defaultValue="organizacao" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
+        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
           <TabsTrigger value="organizacao" className="gap-2">
             <Building2 className="h-4 w-4" />
             Organização
@@ -289,6 +291,10 @@ export default function Configuracoes() {
           <TabsTrigger value="financeiro" className="gap-2">
             <Landmark className="h-4 w-4" />
             Financeiro
+          </TabsTrigger>
+          <TabsTrigger value="fiscal" className="gap-2">
+            <FileText className="h-4 w-4" />
+            Fiscal / NF-e
           </TabsTrigger>
         </TabsList>
 
@@ -346,6 +352,10 @@ export default function Configuracoes() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <CentrosCustoManager />
           </div>
+        </TabsContent>
+
+        <TabsContent value="fiscal" className="mt-6">
+          <ConfiguracaoFiscal />
         </TabsContent>
       </Tabs>
     </div>
