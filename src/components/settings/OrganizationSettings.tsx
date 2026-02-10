@@ -114,24 +114,6 @@ export function OrganizationSettings() {
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Theme Selector */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <Palette className="h-4 w-4" />
-                {t.settings.theme}
-              </Label>
-              <Select value={theme} onValueChange={(v) => setTheme(v as any)}>
-                <SelectTrigger className="bg-background">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="default">{t.settings.themeDefault}</SelectItem>
-                  <SelectItem value="light">{t.settings.themeLight}</SelectItem>
-                  <SelectItem value="dark">{t.settings.themeDark}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
             {/* Language Selector */}
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
