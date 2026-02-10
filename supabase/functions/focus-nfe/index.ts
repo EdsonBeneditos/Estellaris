@@ -254,6 +254,94 @@ Deno.serve(async (req) => {
       );
     }
 
+    // ── ACTION: cancel_nfe ──
+    if (action === "cancel_nfe") {
+      const { nota_id, organization_id, justificativa } = payload;
+
+      if (!nota_id || !organization_id || !justificativa) {
+        return new Response(
+          JSON.stringify({ error: "Campos obrigatórios: nota_id, organization_id, justificativa" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      if (justificativa.length < 15) {
+        return new Response(
+          JSON.stringify({ error: "A justificativa deve ter pelo menos 15 caracteres" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Get the nota fiscal
+      const { data: nota, error: notaErr } = await supabaseAdmin
+        .from("notas_fiscais")
+        .select("*")
+        .eq("id", nota_id)
+        .eq("organization_id", organization_id)
+        .single();
+
+      if (notaErr || !nota) {
+        return new Response(
+          JSON.stringify({ error: "Nota fiscal não encontrada" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      if (nota.status !== "Autorizada") {
+        return new Response(
+          JSON.stringify({ error: "Apenas notas autorizadas podem ser canceladas" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Update nota status
+      await supabaseAdmin
+        .from("notas_fiscais")
+        .update({ status: "Cancelada", informacoes_adicionais: justificativa })
+        .eq("id", nota_id);
+
+      // Log the cancellation
+      await supabaseAdmin
+        .from("notas_fiscais_logs")
+        .insert({
+          organization_id,
+          status: "Cancelada",
+          mensagem_erro: `Cancelamento: ${justificativa}`,
+        });
+
+      // Call Focus NFe cancellation if token available
+      if (focusNfeToken && nota.chave_acesso) {
+        try {
+          const { data: org } = await supabaseAdmin
+            .from("organizations")
+            .select("ambiente_nfe")
+            .eq("id", organization_id)
+            .single();
+
+          const ambiente = org?.ambiente_nfe === "producao" ? "production" : "homologation";
+          const focusBaseUrl = ambiente === "production"
+            ? "https://api.focusnfe.com.br"
+            : "https://homologacao.focusnfe.com.br";
+
+          await fetch(`${focusBaseUrl}/v2/nfe/${nota.chave_acesso}`, {
+            method: "DELETE",
+            headers: {
+              Authorization: `Token token=${focusNfeToken}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ justificativa }),
+          });
+        } catch (e) {
+          console.error("Focus NFe cancel error:", e);
+        }
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, message: "Nota fiscal cancelada com sucesso" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     return new Response(
       JSON.stringify({ error: `Ação desconhecida: ${action}` }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }

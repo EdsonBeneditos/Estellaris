@@ -1330,6 +1330,9 @@ export type Database = {
           inscricao_municipal: string | null
           modules_enabled: string[] | null
           nome: string
+          orcamento_cabecalho: string | null
+          orcamento_logo_url: string | null
+          orcamento_rodape: string | null
           plano: Database["public"]["Enums"]["plano_organizacao"]
           regime_tributario: string | null
           tema: string | null
@@ -1351,6 +1354,9 @@ export type Database = {
           inscricao_municipal?: string | null
           modules_enabled?: string[] | null
           nome: string
+          orcamento_cabecalho?: string | null
+          orcamento_logo_url?: string | null
+          orcamento_rodape?: string | null
           plano?: Database["public"]["Enums"]["plano_organizacao"]
           regime_tributario?: string | null
           tema?: string | null
@@ -1372,6 +1378,9 @@ export type Database = {
           inscricao_municipal?: string | null
           modules_enabled?: string[] | null
           nome?: string
+          orcamento_cabecalho?: string | null
+          orcamento_logo_url?: string | null
+          orcamento_rodape?: string | null
           plano?: Database["public"]["Enums"]["plano_organizacao"]
           regime_tributario?: string | null
           tema?: string | null

@@ -9,6 +9,8 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Tooltip,
   TooltipContent,
@@ -31,13 +33,24 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MoreHorizontal, Pencil, Trash2, ArrowUpCircle, ArrowDownCircle, User, UserCheck, Lock, FileText } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { MoreHorizontal, Pencil, Trash2, ArrowUpCircle, ArrowDownCircle, User, UserCheck, Lock, FileText, XCircle, Loader2 } from "lucide-react";
 import { MovimentacaoCaixa, useDeleteMovimentacao } from "@/hooks/useFinanceiro";
 import { MovimentacaoModal } from "./MovimentacaoModal";
 import { EmitirNFModal } from "./EmitirNFModal";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { useCurrentProfile } from "@/hooks/useOrganization";
+import { toast } from "sonner";
 
 interface MovimentacoesTableProps {
   movimentacoes: MovimentacaoCaixa[];
@@ -62,6 +75,67 @@ export function MovimentacoesTable({ movimentacoes, caixaId }: MovimentacoesTabl
   const [editMovimentacao, setEditMovimentacao] = useState<MovimentacaoCaixa | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [emitirNFMov, setEmitirNFMov] = useState<MovimentacaoCaixa | null>(null);
+  const [cancelNFMov, setCancelNFMov] = useState<MovimentacaoCaixa | null>(null);
+  const [cancelJustificativa, setCancelJustificativa] = useState("");
+  const [isCancelling, setIsCancelling] = useState(false);
+  const { data: profile } = useCurrentProfile();
+
+  const handleCancelNF = async () => {
+    if (!cancelNFMov || !cancelJustificativa.trim() || !profile) return;
+    if (cancelJustificativa.length < 15) {
+      toast.error("A justificativa deve ter pelo menos 15 caracteres.");
+      return;
+    }
+    setIsCancelling(true);
+    try {
+      // Find the nota_id from logs
+      const { data: logs } = await supabase
+        .from("notas_fiscais_logs")
+        .select("id")
+        .eq("movimentacao_id", cancelNFMov.id)
+        .eq("status", "Autorizada")
+        .limit(1);
+
+      // Find the actual nota fiscal
+      const { data: notas } = await supabase
+        .from("notas_fiscais")
+        .select("id")
+        .eq("status", "Autorizada")
+        .eq("organization_id", profile.organization_id)
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      const notaId = notas?.[0]?.id;
+      if (!notaId) {
+        toast.error("Nota fiscal autorizada não encontrada para esta movimentação.");
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke("focus-nfe", {
+        body: {
+          action: "cancel_nfe",
+          nota_id: notaId,
+          organization_id: profile.organization_id,
+          justificativa: cancelJustificativa,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast.success("Nota fiscal cancelada com sucesso!");
+      } else {
+        toast.error("Erro ao cancelar nota", { description: data?.error });
+      }
+
+      setCancelNFMov(null);
+      setCancelJustificativa("");
+    } catch (error: any) {
+      toast.error("Erro ao cancelar NF", { description: error.message });
+    } finally {
+      setIsCancelling(false);
+    }
+  };
 
   const handleDelete = async () => {
     if (deleteId) {
@@ -93,7 +167,19 @@ export function MovimentacoesTable({ movimentacoes, caixaId }: MovimentacoesTabl
               <TableHead className="w-[120px]">Data</TableHead>
               <TableHead className="text-right w-[110px]">Valor</TableHead>
               <TableHead className="min-w-[130px]">Categoria</TableHead>
-              <TableHead className="w-[90px]">Pagamento</TableHead>
+              <TableHead className="w-[90px]">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="cursor-help">Pagamento</span>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-[250px]">
+                      <p className="font-medium">Forma de Pagamento</p>
+                      <p className="text-xs mt-1">Método utilizado na transação. Movimentações <strong>Conciliadas</strong> foram confirmadas no extrato bancário. <strong>Pendentes</strong> ainda aguardam confirmação.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </TableHead>
               <TableHead className="w-[100px]">
                 <TooltipProvider>
                   <Tooltip>
@@ -234,6 +320,12 @@ export function MovimentacoesTable({ movimentacoes, caixaId }: MovimentacoesTabl
                         <FileText className="h-4 w-4 mr-2" />
                         Emitir NF
                       </DropdownMenuItem>
+                      {mov.tipo === "Entrada" && (
+                        <DropdownMenuItem onClick={() => setCancelNFMov(mov)}>
+                          <XCircle className="h-4 w-4 mr-2 text-amber-500" />
+                          Cancelar NF
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuItem
                         onClick={() => setDeleteId(mov.id)}
                         className="text-destructive focus:text-destructive"
@@ -285,6 +377,54 @@ export function MovimentacoesTable({ movimentacoes, caixaId }: MovimentacoesTabl
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Dialog Cancelar NF */}
+      <Dialog open={!!cancelNFMov} onOpenChange={(open) => { if (!open) { setCancelNFMov(null); setCancelJustificativa(""); } }}>
+        <DialogContent className="sm:max-w-[450px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <XCircle className="h-5 w-5 text-amber-500" />
+              Cancelar Nota Fiscal
+            </DialogTitle>
+            <DialogDescription>
+              Informe a justificativa para o cancelamento. Mínimo de 15 caracteres.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Justificativa *</Label>
+              <Textarea
+                placeholder="Motivo do cancelamento da nota fiscal..."
+                value={cancelJustificativa}
+                onChange={(e) => setCancelJustificativa(e.target.value)}
+                disabled={isCancelling}
+                className="bg-background resize-none"
+                rows={4}
+              />
+              <p className="text-xs text-muted-foreground">
+                {cancelJustificativa.length}/15 caracteres mínimos
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setCancelNFMov(null); setCancelJustificativa(""); }} disabled={isCancelling}>
+              Voltar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleCancelNF}
+              disabled={isCancelling || cancelJustificativa.length < 15}
+              className="gap-2"
+            >
+              {isCancelling ? (
+                <><Loader2 className="h-4 w-4 animate-spin" /> Cancelando...</>
+              ) : (
+                <><XCircle className="h-4 w-4" /> Confirmar Cancelamento</>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
