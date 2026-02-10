@@ -53,14 +53,20 @@ export function ConfiguracaoFiscal() {
     if (!organization) return;
     setIsSaving(true);
     try {
+      const org = organization as any;
+      const certificadoPath = org.certificado_arquivo_path || null;
+
       const { data, error } = await supabase.functions.invoke("focus-nfe", {
         body: {
-          action: "save-fiscal-config",
+          action: "create_company",
           organization_id: organization.id,
           cnpj,
+          razao_social: organization.nome,
+          nome_fantasia: organization.nome,
           inscricao_municipal: inscricaoMunicipal,
           regime_tributario: regimeTributario,
           ambiente_nfe: ambienteNfe,
+          certificado_path: certificadoPath,
         },
       });
 
