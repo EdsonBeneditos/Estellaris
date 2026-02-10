@@ -15,7 +15,9 @@ import {
   Medal,
   Award,
   Trophy,
+  FileText,
 } from "lucide-react";
+import { GestaoFiscal } from "@/components/super-admin/GestaoFiscal";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -324,6 +326,10 @@ export default function SuperAdmin() {
             <Building2 className="h-4 w-4" />
             Organizações
           </TabsTrigger>
+          <TabsTrigger value="fiscal" className="gap-2">
+            <FileText className="h-4 w-4" />
+            Gestão Fiscal
+          </TabsTrigger>
           <TabsTrigger value="users" className="gap-2">
             <UserPlus className="h-4 w-4" />
             Convidar Usuários
@@ -616,6 +622,11 @@ export default function SuperAdmin() {
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+
+        {/* Fiscal Tab */}
+        <TabsContent value="fiscal">
+          <GestaoFiscal organizations={organizations as any} />
         </TabsContent>
 
         {/* Invite Users Tab */}
