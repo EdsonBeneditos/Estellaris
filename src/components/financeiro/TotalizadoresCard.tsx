@@ -16,6 +16,14 @@ const formatCurrency = (value: number) => {
   }).format(value);
 };
 
+const getDynamicFontClass = (value: number) => {
+  const abs = Math.abs(value);
+  if (abs >= 10_000_000) return "text-sm sm:text-base lg:text-lg";
+  if (abs >= 1_000_000) return "text-base sm:text-lg lg:text-xl";
+  if (abs >= 100_000) return "text-lg sm:text-xl lg:text-2xl";
+  return "text-xl sm:text-2xl lg:text-3xl";
+};
+
 const formasPagamentoIcons: Record<string, React.ReactNode> = {
   Pix: <Smartphone className="h-4 w-4" />,
   "Cartão Débito": <CreditCard className="h-4 w-4" />,
@@ -42,7 +50,7 @@ export function TotalizadoresCard({
           <ArrowUpCircle className="h-5 w-5 text-emerald-500 flex-shrink-0" />
         </CardHeader>
         <CardContent>
-          <div className="text-lg sm:text-xl lg:text-2xl font-bold text-emerald-600 truncate" title={formatCurrency(totalEntradas)}>
+          <div className={cn(getDynamicFontClass(totalEntradas), "font-bold text-emerald-600 break-all leading-tight")} title={formatCurrency(totalEntradas)}>
             {formatCurrency(totalEntradas)}
           </div>
         </CardContent>
@@ -57,7 +65,7 @@ export function TotalizadoresCard({
           <ArrowDownCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
         </CardHeader>
         <CardContent>
-          <div className="text-lg sm:text-xl lg:text-2xl font-bold text-red-600 truncate" title={formatCurrency(totalSaidas)}>
+          <div className={cn(getDynamicFontClass(totalSaidas), "font-bold text-red-600 break-all leading-tight")} title={formatCurrency(totalSaidas)}>
             {formatCurrency(totalSaidas)}
           </div>
         </CardContent>
@@ -74,7 +82,8 @@ export function TotalizadoresCard({
         <CardContent>
           <div
             className={cn(
-              "text-lg sm:text-xl lg:text-2xl font-bold truncate",
+              getDynamicFontClass(saldoLiquido),
+              "font-bold break-all leading-tight",
               saldoLiquido >= 0 ? "text-emerald-600" : "text-red-600"
             )}
             title={formatCurrency(saldoLiquido)}
