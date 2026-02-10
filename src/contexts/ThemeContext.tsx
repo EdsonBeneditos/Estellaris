@@ -10,32 +10,16 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    const stored = localStorage.getItem("app-theme") as Theme;
-    return stored || "default";
-  });
+  const [theme] = useState<Theme>("dark");
 
   useEffect(() => {
     const root = window.document.documentElement;
-    
-    // Remove all theme classes
-    root.classList.remove("theme-default", "theme-light", "theme-dark");
-    
-    // Add current theme class
-    root.classList.add(`theme-${theme}`);
-    
-    // Also handle dark mode class for Tailwind
-    if (theme === "dark") {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
-    }
-    
-    localStorage.setItem("app-theme", theme);
-  }, [theme]);
+    root.classList.remove("theme-default", "theme-light");
+    root.classList.add("theme-dark", "dark");
+  }, []);
 
-  const setTheme = (newTheme: Theme) => {
-    setThemeState(newTheme);
+  const setTheme = (_newTheme: Theme) => {
+    // Dark mode is fixed — no-op
   };
 
   return (

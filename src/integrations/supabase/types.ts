@@ -58,6 +58,48 @@ export type Database = {
           },
         ]
       }
+      audit_logs: {
+        Row: {
+          acao: string | null
+          created_at: string | null
+          detalhes: Json | null
+          id: string
+          organization_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          acao?: string | null
+          created_at?: string | null
+          detalhes?: Json | null
+          id?: string
+          organization_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          acao?: string | null
+          created_at?: string | null
+          detalhes?: Json | null
+          id?: string
+          organization_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       caixas: {
         Row: {
           created_at: string
@@ -1033,6 +1075,57 @@ export type Database = {
           },
         ]
       }
+      notas_fiscais_logs: {
+        Row: {
+          created_at: string | null
+          id: string
+          mensagem_erro: string | null
+          movimentacao_id: string | null
+          organization_id: string | null
+          pdf_url: string | null
+          protocolo: string | null
+          status: string | null
+          xml_url: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          mensagem_erro?: string | null
+          movimentacao_id?: string | null
+          organization_id?: string | null
+          pdf_url?: string | null
+          protocolo?: string | null
+          status?: string | null
+          xml_url?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          mensagem_erro?: string | null
+          movimentacao_id?: string | null
+          organization_id?: string | null
+          pdf_url?: string | null
+          protocolo?: string | null
+          status?: string | null
+          xml_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notas_fiscais_logs_movimentacao_id_fkey"
+            columns: ["movimentacao_id"]
+            isOneToOne: false
+            referencedRelation: "movimentacoes_caixa"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notas_fiscais_logs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notificacoes_contratos: {
         Row: {
           admin_email: string
@@ -1222,14 +1315,18 @@ export type Database = {
       }
       organizations: {
         Row: {
+          ambiente_nfe: string | null
           ativo: boolean
+          certificado_status: string | null
           cnpj: string | null
           created_at: string
           dias_acesso: string[] | null
+          focus_nfe_token: string | null
           hora_fim_acesso: string | null
           hora_inicio_acesso: string | null
           id: string
           idioma: string | null
+          inscricao_municipal: string | null
           modules_enabled: string[] | null
           nome: string
           plano: Database["public"]["Enums"]["plano_organizacao"]
@@ -1237,14 +1334,18 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ambiente_nfe?: string | null
           ativo?: boolean
+          certificado_status?: string | null
           cnpj?: string | null
           created_at?: string
           dias_acesso?: string[] | null
+          focus_nfe_token?: string | null
           hora_fim_acesso?: string | null
           hora_inicio_acesso?: string | null
           id?: string
           idioma?: string | null
+          inscricao_municipal?: string | null
           modules_enabled?: string[] | null
           nome: string
           plano?: Database["public"]["Enums"]["plano_organizacao"]
@@ -1252,14 +1353,18 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ambiente_nfe?: string | null
           ativo?: boolean
+          certificado_status?: string | null
           cnpj?: string | null
           created_at?: string
           dias_acesso?: string[] | null
+          focus_nfe_token?: string | null
           hora_fim_acesso?: string | null
           hora_inicio_acesso?: string | null
           id?: string
           idioma?: string | null
+          inscricao_municipal?: string | null
           modules_enabled?: string[] | null
           nome?: string
           plano?: Database["public"]["Enums"]["plano_organizacao"]

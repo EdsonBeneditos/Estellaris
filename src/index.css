@@ -172,6 +172,29 @@
   }
 }
 
+/* Dark scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(220 30% 8%);
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(220 25% 22%);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(220 25% 30%);
+}
+
+html {
+  scrollbar-color: hsl(220 25% 22%) hsl(220 30% 8%);
+}
+
 /* Print styles for document preview */
 @media print {
   body {
