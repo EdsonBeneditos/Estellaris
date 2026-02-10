@@ -13,10 +13,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { FileText, Loader2, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
+import { FileText, Loader2, ArrowUpCircle, ArrowDownCircle, ExternalLink } from "lucide-react";
 import { MovimentacaoCaixa } from "@/hooks/useFinanceiro";
 import { supabase } from "@/integrations/supabase/client";
-import { useCurrentProfile, useCurrentOrganization } from "@/hooks/useOrganization";
+import { useCurrentProfile } from "@/hooks/useOrganization";
 import { toast } from "sonner";
 
 interface EmitirNFModalProps {
@@ -30,7 +30,6 @@ const formatCurrency = (value: number) =>
 
 export function EmitirNFModal({ open, onOpenChange, movimentacao }: EmitirNFModalProps) {
   const { data: profile } = useCurrentProfile();
-  const { data: organization } = useCurrentOrganization();
   const [isEmitting, setIsEmitting] = useState(false);
   const [destinatarioNome, setDestinatarioNome] = useState("");
   const [destinatarioCnpj, setDestinatarioCnpj] = useState("");
@@ -46,58 +45,45 @@ export function EmitirNFModal({ open, onOpenChange, movimentacao }: EmitirNFModa
 
     setIsEmitting(true);
     try {
-      // Registrar log de tentativa
-      const { error: logError } = await supabase
-        .from("notas_fiscais_logs")
-        .insert({
+      const { data, error } = await supabase.functions.invoke("focus-nfe", {
+        body: {
+          action: "emit-nfe",
           movimentacao_id: movimentacao.id,
-          status: "Pendente",
           organization_id: profile?.organization_id,
-        });
-
-      if (logError) throw logError;
-
-      // Criar nota fiscal
-      const { data: nota, error: nfError } = await supabase
-        .from("notas_fiscais")
-        .insert({
           destinatario_nome: destinatarioNome,
           destinatario_cnpj: destinatarioCnpj || null,
-          valor_produtos: Number(movimentacao.valor),
-          valor_total: Number(movimentacao.valor),
-          status: "Pendente",
-          informacoes_adicionais: observacoes || null,
-          organization_id: profile?.organization_id,
-          emitente_razao_social: (organization as any)?.nome || null,
-          emitente_cnpj: (organization as any)?.cnpj || null,
-        })
-        .select()
-        .single();
+          observacoes: observacoes || null,
+        },
+      });
 
-      if (nfError) throw nfError;
+      if (error) throw error;
 
-      // Atualizar log com sucesso
-      await supabase
-        .from("notas_fiscais_logs")
-        .update({ status: "Autorizada" })
-        .eq("movimentacao_id", movimentacao.id)
-        .eq("status", "Pendente");
+      if (data?.success) {
+        const msg = data.pdf_url
+          ? `NF #${data.numero_nota} autorizada!`
+          : `NF #${data.numero_nota} criada com sucesso!`;
 
-      toast.success(`NF #${nota.numero_nota} criada com sucesso!`);
+        toast.success(msg, {
+          description: data.pdf_url ? "PDF disponível para download." : data.message,
+          action: data.pdf_url
+            ? {
+                label: "Ver PDF",
+                onClick: () => window.open(data.pdf_url, "_blank"),
+              }
+            : undefined,
+        });
+      } else {
+        toast.error("Erro ao emitir nota fiscal", {
+          description: data?.error || "Erro desconhecido",
+        });
+      }
+
       onOpenChange(false);
       setDestinatarioNome("");
       setDestinatarioCnpj("");
       setObservacoes("");
     } catch (error: any) {
       console.error("Erro ao emitir NF:", error);
-
-      // Registrar log de erro
-      await supabase
-        .from("notas_fiscais_logs")
-        .update({ status: "Erro", mensagem_erro: error.message })
-        .eq("movimentacao_id", movimentacao.id)
-        .eq("status", "Pendente");
-
       toast.error("Erro ao emitir nota fiscal", { description: error.message });
     } finally {
       setIsEmitting(false);
@@ -118,7 +104,6 @@ export function EmitirNFModal({ open, onOpenChange, movimentacao }: EmitirNFModa
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Dados da movimentação */}
           <div className="rounded-lg border border-border/50 p-4 bg-muted/20 space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Tipo:</span>
@@ -149,7 +134,6 @@ export function EmitirNFModal({ open, onOpenChange, movimentacao }: EmitirNFModa
 
           <Separator />
 
-          {/* Dados do destinatário */}
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Nome do Destinatário *</Label>
@@ -157,6 +141,7 @@ export function EmitirNFModal({ open, onOpenChange, movimentacao }: EmitirNFModa
                 placeholder="Razão social ou nome"
                 value={destinatarioNome}
                 onChange={(e) => setDestinatarioNome(e.target.value)}
+                disabled={isEmitting}
                 className="bg-background"
               />
             </div>
@@ -166,6 +151,7 @@ export function EmitirNFModal({ open, onOpenChange, movimentacao }: EmitirNFModa
                 placeholder="00.000.000/0001-00"
                 value={destinatarioCnpj}
                 onChange={(e) => setDestinatarioCnpj(e.target.value)}
+                disabled={isEmitting}
                 className="bg-background"
               />
             </div>
@@ -175,6 +161,7 @@ export function EmitirNFModal({ open, onOpenChange, movimentacao }: EmitirNFModa
                 placeholder="Informações adicionais da nota..."
                 value={observacoes}
                 onChange={(e) => setObservacoes(e.target.value)}
+                disabled={isEmitting}
                 className="bg-background resize-none"
                 rows={3}
               />

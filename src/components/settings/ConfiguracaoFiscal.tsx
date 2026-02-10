@@ -53,22 +53,25 @@ export function ConfiguracaoFiscal() {
     if (!organization) return;
     setIsSaving(true);
     try {
-      const { error } = await supabase
-        .from("organizations")
-        .update({
+      const { data, error } = await supabase.functions.invoke("focus-nfe", {
+        body: {
+          action: "save-fiscal-config",
+          organization_id: organization.id,
           cnpj,
           inscricao_municipal: inscricaoMunicipal,
           regime_tributario: regimeTributario,
           ambiente_nfe: ambienteNfe,
-        } as any)
-        .eq("id", organization.id);
+        },
+      });
 
       if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || "Erro desconhecido");
+
       await queryClient.invalidateQueries({ queryKey: ["current-organization"] });
       toast.success("Dados fiscais salvos com sucesso!");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving fiscal data:", error);
-      toast.error("Erro ao salvar dados fiscais");
+      toast.error("Erro ao salvar dados fiscais", { description: error.message });
     } finally {
       setIsSaving(false);
     }
@@ -90,7 +93,7 @@ export function ConfiguracaoFiscal() {
 
     setIsUploading(true);
     try {
-      const filePath = `${organization.id}/certificado.pfx`;
+      const filePath = `certificates/${organization.id}/certificado.pfx`;
 
       const { error: uploadError } = await supabase.storage
         .from("certificados")
@@ -155,6 +158,7 @@ export function ConfiguracaoFiscal() {
                 placeholder="00.000.000/0001-00"
                 value={cnpj}
                 onChange={(e) => setCnpj(e.target.value)}
+                disabled={isSaving}
                 className="bg-background"
               />
             </div>
@@ -164,12 +168,13 @@ export function ConfiguracaoFiscal() {
                 placeholder="Número da inscrição"
                 value={inscricaoMunicipal}
                 onChange={(e) => setInscricaoMunicipal(e.target.value)}
+                disabled={isSaving}
                 className="bg-background"
               />
             </div>
             <div className="space-y-2">
               <Label>Regime Tributário</Label>
-              <Select value={regimeTributario} onValueChange={setRegimeTributario}>
+              <Select value={regimeTributario} onValueChange={setRegimeTributario} disabled={isSaving}>
                 <SelectTrigger className="bg-background">
                   <SelectValue />
                 </SelectTrigger>
@@ -184,7 +189,7 @@ export function ConfiguracaoFiscal() {
             </div>
             <div className="space-y-2">
               <Label>Ambiente de Emissão</Label>
-              <Select value={ambienteNfe} onValueChange={setAmbienteNfe}>
+              <Select value={ambienteNfe} onValueChange={setAmbienteNfe} disabled={isSaving}>
                 <SelectTrigger className="bg-background">
                   <SelectValue />
                 </SelectTrigger>
@@ -207,8 +212,11 @@ export function ConfiguracaoFiscal() {
 
           <div className="flex justify-end pt-2">
             <Button onClick={handleSaveFiscal} disabled={isSaving} className="gap-2">
-              <Save className="h-4 w-4" />
-              {isSaving ? "Salvando..." : "Salvar Dados Fiscais"}
+              {isSaving ? (
+                <><Loader2 className="h-4 w-4 animate-spin" /> Salvando...</>
+              ) : (
+                <><Save className="h-4 w-4" /> Salvar Dados Fiscais</>
+              )}
             </Button>
           </div>
         </CardContent>
@@ -254,6 +262,7 @@ export function ConfiguracaoFiscal() {
                 placeholder="Senha do arquivo .pfx"
                 value={senhaCertificado}
                 onChange={(e) => setSenhaCertificado(e.target.value)}
+                disabled={isUploading}
                 className="bg-background"
               />
               <p className="text-xs text-muted-foreground">
