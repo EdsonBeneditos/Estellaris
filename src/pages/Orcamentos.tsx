@@ -7,6 +7,7 @@ import { OrcamentoForm } from "@/components/orcamentos/OrcamentoForm";
 import { OrcamentoViewModal } from "@/components/orcamentos/OrcamentoViewModal";
 import { OrcamentoPreview } from "@/components/orcamentos/OrcamentoPreview";
 import { Orcamento, useOrcamentoItens } from "@/hooks/useOrcamentos";
+import { useCurrentOrganization } from "@/hooks/useOrganization";
 
 type View = "list" | "form";
 
@@ -18,6 +19,7 @@ export default function Orcamentos() {
   
   const pdfRef = useRef<HTMLDivElement>(null);
   const { data: pdfItems = [] } = useOrcamentoItens(pdfOrcamento?.id || null);
+  const { data: organization } = useCurrentOrganization();
 
   const handleNewOrcamento = () => {
     setSelectedOrcamento(null);
@@ -114,7 +116,18 @@ export default function Orcamentos() {
         {/* Hidden PDF preview for generation */}
         {pdfOrcamento && (
           <div className="fixed left-[-9999px] top-0">
-            <OrcamentoPreview ref={pdfRef} orcamento={pdfOrcamento} items={pdfItems} />
+            <OrcamentoPreview
+              ref={pdfRef}
+              orcamento={pdfOrcamento}
+              items={pdfItems}
+              orgData={organization ? {
+                nome: organization.nome,
+                cnpj: organization.cnpj || undefined,
+                logo_url: (organization as any).orcamento_logo_url || undefined,
+                orcamento_cabecalho: (organization as any).orcamento_cabecalho || undefined,
+                orcamento_rodape: (organization as any).orcamento_rodape || undefined,
+              } : null}
+            />
           </div>
         )}
       </div>

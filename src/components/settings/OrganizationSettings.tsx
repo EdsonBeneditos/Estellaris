@@ -1,11 +1,12 @@
-import { useState, useEffect } from "react";
-import { Save, Clock, Calendar, Palette, Globe, Shield } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Save, Clock, Calendar, Palette, Globe, Shield, Upload, Image, Loader2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { useCurrentOrganization, useUpdateOrganization } from "@/hooks/useOrganization";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -34,6 +35,12 @@ export function OrganizationSettings() {
   const [horaInicio, setHoraInicio] = useState("08:00");
   const [horaFim, setHoraFim] = useState("18:00");
   const [diasAcesso, setDiasAcesso] = useState<string[]>(["seg", "ter", "qua", "qui", "sex"]);
+  const [orcamentoCabecalho, setOrcamentoCabecalho] = useState("");
+  const [orcamentoRodape, setOrcamentoRodape] = useState("");
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [isSavingLetterhead, setIsSavingLetterhead] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -48,6 +55,9 @@ export function OrganizationSettings() {
       if (org.dias_acesso && Array.isArray(org.dias_acesso)) {
         setDiasAcesso(org.dias_acesso);
       }
+      setOrcamentoCabecalho(org.orcamento_cabecalho || "");
+      setOrcamentoRodape(org.orcamento_rodape || "");
+      setLogoUrl(org.orcamento_logo_url || null);
     }
   }, [organization]);
 
@@ -82,6 +92,69 @@ export function OrganizationSettings() {
       toast.error("Erro ao salvar configurações de acesso");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleUploadLogo = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !organization) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Apenas arquivos de imagem são aceitos.");
+      return;
+    }
+
+    setIsUploadingLogo(true);
+    try {
+      const filePath = `logos/${organization.id}/logo.${file.name.split(".").pop()}`;
+      const { error: uploadError } = await supabase.storage
+        .from("org-logos")
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("org-logos")
+        .getPublicUrl(filePath);
+
+      const { error: updateError } = await supabase
+        .from("organizations")
+        .update({ orcamento_logo_url: publicUrl } as any)
+        .eq("id", organization.id);
+
+      if (updateError) throw updateError;
+
+      setLogoUrl(publicUrl);
+      await queryClient.invalidateQueries({ queryKey: ["current-organization"] });
+      toast.success("Logo enviado com sucesso!");
+    } catch (error: any) {
+      toast.error("Erro ao enviar logo", { description: error.message });
+    } finally {
+      setIsUploadingLogo(false);
+      if (logoInputRef.current) logoInputRef.current.value = "";
+    }
+  };
+
+  const handleSaveLetterhead = async () => {
+    if (!organization) return;
+    setIsSavingLetterhead(true);
+    try {
+      const { error } = await supabase
+        .from("organizations")
+        .update({
+          orcamento_cabecalho: orcamentoCabecalho || null,
+          orcamento_rodape: orcamentoRodape || null,
+        } as any)
+        .eq("id", organization.id);
+
+      if (error) throw error;
+
+      await queryClient.invalidateQueries({ queryKey: ["current-organization"] });
+      toast.success("Papel timbrado salvo com sucesso!");
+    } catch (error: any) {
+      toast.error("Erro ao salvar", { description: error.message });
+    } finally {
+      setIsSavingLetterhead(false);
     }
   };
 
@@ -209,6 +282,95 @@ export function OrganizationSettings() {
             <Button onClick={handleSaveAccessControl} disabled={isSaving} className="gap-2">
               <Save className="h-4 w-4" />
               {isSaving ? "Salvando..." : t.common.save}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Papel Timbrado / Orçamentos */}
+      <Card className="bg-gradient-to-br from-slate-50 to-zinc-100 dark:from-zinc-900 dark:to-slate-900 border-slate-200 dark:border-zinc-800">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Image className="h-5 w-5 text-blue-600" />
+            Papel Timbrado & Orçamentos
+          </CardTitle>
+          <CardDescription>
+            Personalize o logo, cabeçalho e rodapé dos seus orçamentos e documentos
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Logo Upload */}
+          <div className="space-y-3">
+            <Label>Logo da Empresa</Label>
+            <div className="flex items-center gap-4">
+              {logoUrl ? (
+                <img src={logoUrl} alt="Logo" className="h-16 w-auto rounded border border-border object-contain bg-white p-1" />
+              ) : (
+                <div className="h-16 w-16 rounded border border-dashed border-border flex items-center justify-center bg-muted">
+                  <Image className="h-6 w-6 text-muted-foreground" />
+                </div>
+              )}
+              <div>
+                <input
+                  ref={logoInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleUploadLogo}
+                  className="hidden"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => logoInputRef.current?.click()}
+                  disabled={isUploadingLogo}
+                  className="gap-2"
+                >
+                  {isUploadingLogo ? (
+                    <><Loader2 className="h-4 w-4 animate-spin" /> Enviando...</>
+                  ) : (
+                    <><Upload className="h-4 w-4" /> Enviar Logo</>
+                  )}
+                </Button>
+                <p className="text-xs text-muted-foreground mt-1">PNG, JPG ou SVG. Recomendado 200x200px.</p>
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Header & Footer */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label>Texto do Cabeçalho</Label>
+              <Textarea
+                placeholder="Ex: Soluções em Tratamento de Água - Desde 2010"
+                value={orcamentoCabecalho}
+                onChange={(e) => setOrcamentoCabecalho(e.target.value)}
+                className="bg-background resize-none"
+                rows={3}
+              />
+              <p className="text-xs text-muted-foreground">Aparece no topo dos orçamentos, abaixo do logo.</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Texto do Rodapé</Label>
+              <Textarea
+                placeholder="Ex: contato@empresa.com.br | (11) 0000-0000"
+                value={orcamentoRodape}
+                onChange={(e) => setOrcamentoRodape(e.target.value)}
+                className="bg-background resize-none"
+                rows={3}
+              />
+              <p className="text-xs text-muted-foreground">Aparece no rodapé dos orçamentos.</p>
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-2">
+            <Button onClick={handleSaveLetterhead} disabled={isSavingLetterhead} className="gap-2">
+              {isSavingLetterhead ? (
+                <><Loader2 className="h-4 w-4 animate-spin" /> Salvando...</>
+              ) : (
+                <><Save className="h-4 w-4" /> Salvar Papel Timbrado</>
+              )}
             </Button>
           </div>
         </CardContent>

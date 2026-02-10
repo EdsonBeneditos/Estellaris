@@ -111,7 +111,9 @@ export function OrcamentosList({ onNewOrcamento, onEditOrcamento, onViewOrcament
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight text-foreground">Orçamentos</h2>
-          <p className="text-muted-foreground">Gerencie seus orçamentos e vendas</p>
+          <p className="text-muted-foreground">
+            Gerencie seus orçamentos e vendas. Orçamentos aprovados são convertidos automaticamente em movimentações financeiras.
+          </p>
         </div>
         <Button onClick={onNewOrcamento} className="gap-2">
           <Plus className="h-4 w-4" />
@@ -220,11 +222,11 @@ export function OrcamentosList({ onNewOrcamento, onEditOrcamento, onViewOrcament
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => onViewOrcamento(orcamento)}>
                             <Eye className="mr-2 h-4 w-4" />
-                            Visualizar NF-e
+                            Visualizar
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => onGeneratePdf(orcamento)}>
                             <FileDown className="mr-2 h-4 w-4" />
-                            Gerar PDF
+                            Baixar PDF
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={() => onEditOrcamento(orcamento)}>
