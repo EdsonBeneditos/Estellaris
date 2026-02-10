@@ -1317,6 +1317,7 @@ export type Database = {
         Row: {
           ambiente_nfe: string | null
           ativo: boolean
+          certificado_arquivo_path: string | null
           certificado_status: string | null
           cnpj: string | null
           created_at: string
@@ -1330,12 +1331,14 @@ export type Database = {
           modules_enabled: string[] | null
           nome: string
           plano: Database["public"]["Enums"]["plano_organizacao"]
+          regime_tributario: string | null
           tema: string | null
           updated_at: string
         }
         Insert: {
           ambiente_nfe?: string | null
           ativo?: boolean
+          certificado_arquivo_path?: string | null
           certificado_status?: string | null
           cnpj?: string | null
           created_at?: string
@@ -1349,12 +1352,14 @@ export type Database = {
           modules_enabled?: string[] | null
           nome: string
           plano?: Database["public"]["Enums"]["plano_organizacao"]
+          regime_tributario?: string | null
           tema?: string | null
           updated_at?: string
         }
         Update: {
           ambiente_nfe?: string | null
           ativo?: boolean
+          certificado_arquivo_path?: string | null
           certificado_status?: string | null
           cnpj?: string | null
           created_at?: string
@@ -1368,6 +1373,7 @@ export type Database = {
           modules_enabled?: string[] | null
           nome?: string
           plano?: Database["public"]["Enums"]["plano_organizacao"]
+          regime_tributario?: string | null
           tema?: string | null
           updated_at?: string
         }
