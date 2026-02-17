@@ -46,6 +46,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useOrcamentos, useDeleteOrcamento, useUpdateOrcamento, Orcamento } from "@/hooks/useOrcamentos";
+import { CancelarOrcamentoModal } from "./CancelarOrcamentoModal";
 
 interface OrcamentosListProps {
   onNewOrcamento: () => void;
@@ -66,6 +67,8 @@ export function OrcamentosList({ onNewOrcamento, onEditOrcamento, onViewOrcament
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedOrcamento, setSelectedOrcamento] = useState<Orcamento | null>(null);
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [cancelOrcamento, setCancelOrcamento] = useState<Orcamento | null>(null);
 
   const { data: orcamentos, isLoading } = useOrcamentos();
   const { mutate: deleteOrcamento } = useDeleteOrcamento();
@@ -96,6 +99,11 @@ export function OrcamentosList({ onNewOrcamento, onEditOrcamento, onViewOrcament
 
   const handleStatusChange = (orcamento: Orcamento, newStatus: string) => {
     updateOrcamento({ id: orcamento.id, data: { status: newStatus } });
+  };
+
+  const handleCancelApproved = (orcamento: Orcamento) => {
+    setCancelOrcamento(orcamento);
+    setCancelModalOpen(true);
   };
 
   const formatCurrency = (value: number) => {
@@ -245,7 +253,13 @@ export function OrcamentosList({ onNewOrcamento, onEditOrcamento, onViewOrcament
                               Aprovar Venda
                             </DropdownMenuItem>
                           )}
-                          {orcamento.status !== "Cancelado" && (
+                          {orcamento.status === "Aprovado" && (
+                            <DropdownMenuItem onClick={() => handleCancelApproved(orcamento)}>
+                              <XCircle className="mr-2 h-4 w-4 text-destructive" />
+                              Cancelar
+                            </DropdownMenuItem>
+                          )}
+                          {orcamento.status === "Pendente" && (
                             <DropdownMenuItem onClick={() => handleStatusChange(orcamento, "Cancelado")}>
                               <XCircle className="mr-2 h-4 w-4 text-destructive" />
                               Cancelar
@@ -290,6 +304,13 @@ export function OrcamentosList({ onNewOrcamento, onEditOrcamento, onViewOrcament
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Cancel Modal */}
+      <CancelarOrcamentoModal
+        open={cancelModalOpen}
+        onOpenChange={setCancelModalOpen}
+        orcamento={cancelOrcamento}
+      />
     </div>
   );
 }

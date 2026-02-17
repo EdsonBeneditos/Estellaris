@@ -20,6 +20,9 @@ export interface Profile {
   email: string;
   avatar_url: string | null;
   is_super_admin: boolean | null;
+  dias_acesso: string[] | null;
+  horario_inicio: string | null;
+  horario_fim: string | null;
   created_at: string;
   updated_at: string;
 }

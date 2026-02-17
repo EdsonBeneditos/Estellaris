@@ -1247,10 +1247,12 @@ export type Database = {
           desconto_total: number
           id: string
           lead_id: string | null
+          motivo_cancelamento: string | null
           numero_orcamento: number
           observacoes: string | null
           organization_id: string | null
           status: string
+          status_financeiro: string | null
           subtotal: number
           updated_at: string
           validade_dias: number | null
@@ -1267,10 +1269,12 @@ export type Database = {
           desconto_total?: number
           id?: string
           lead_id?: string | null
+          motivo_cancelamento?: string | null
           numero_orcamento?: number
           observacoes?: string | null
           organization_id?: string | null
           status?: string
+          status_financeiro?: string | null
           subtotal?: number
           updated_at?: string
           validade_dias?: number | null
@@ -1287,10 +1291,12 @@ export type Database = {
           desconto_total?: number
           id?: string
           lead_id?: string | null
+          motivo_cancelamento?: string | null
           numero_orcamento?: number
           observacoes?: string | null
           organization_id?: string | null
           status?: string
+          status_financeiro?: string | null
           subtotal?: number
           updated_at?: string
           validade_dias?: number | null
@@ -1511,7 +1517,10 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          dias_acesso: Json | null
           email: string
+          horario_fim: string | null
+          horario_inicio: string | null
           id: string
           is_super_admin: boolean | null
           nome: string
@@ -1522,7 +1531,10 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          dias_acesso?: Json | null
           email: string
+          horario_fim?: string | null
+          horario_inicio?: string | null
           id: string
           is_super_admin?: boolean | null
           nome: string
@@ -1533,7 +1545,10 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string
+          dias_acesso?: Json | null
           email?: string
+          horario_fim?: string | null
+          horario_inicio?: string | null
           id?: string
           is_super_admin?: boolean | null
           nome?: string

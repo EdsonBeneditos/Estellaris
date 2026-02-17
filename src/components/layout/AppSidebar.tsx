@@ -34,7 +34,7 @@ const moduleMenuItems: Record<ModuleKey, { title: string; url: string; icon: Rea
   estoque: { title: "Estoque", url: "/estoque", icon: Package },
   orcamentos: { title: "Orçamentos", url: "/orcamentos", icon: FileText },
   notas_fiscais: { title: "Notas Fiscais", url: "/notas-fiscais", icon: Receipt },
-  financeiro: { title: "Financeiro", url: "/financeiro", icon: Wallet },
+  financeiro: { title: "Financeiro / Caixa", url: "/financeiro", icon: Wallet },
   relatorios_leads: null, // Tratado separadamente como "Relatórios"
   relatorios_financeiro: null, // Tratado separadamente como "Relatórios"
   equipe: { title: "Equipe", url: "/equipe", icon: UsersRound },

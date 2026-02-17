@@ -1,4 +1,4 @@
-import { useCurrentOrganization, useCurrentUserRoles } from "@/hooks/useOrganization";
+import { useCurrentOrganization, useCurrentUserRoles, useCurrentProfile } from "@/hooks/useOrganization";
 
 const DAY_MAP: Record<number, string> = {
   0: "dom",
@@ -19,8 +19,9 @@ export interface AccessControlSettings {
 export function useAccessControl() {
   const { data: organization, isLoading: orgLoading } = useCurrentOrganization();
   const { data: roles = [], isLoading: rolesLoading } = useCurrentUserRoles();
+  const { data: profile, isLoading: profileLoading } = useCurrentProfile();
 
-  const isLoading = orgLoading || rolesLoading;
+  const isLoading = orgLoading || rolesLoading || profileLoading;
   const isAdmin = roles.some((r) => r.role === "admin");
 
   const checkAccess = (): { allowed: boolean; reason?: string; settings?: AccessControlSettings } => {
@@ -29,22 +30,53 @@ export function useAccessControl() {
       return { allowed: true };
     }
 
+    // Check profile-level (individual) restrictions first
+    if (profile) {
+      const profileDias = profile.dias_acesso as string[] | null;
+      const profileInicio = (profile as any).horario_inicio;
+      const profileFim = (profile as any).horario_fim;
+
+      if (profileDias && profileDias.length > 0 && profileInicio && profileFim) {
+        const now = new Date();
+        const currentDay = DAY_MAP[now.getDay()];
+        const currentTime = now.toTimeString().slice(0, 5);
+
+        const settings: AccessControlSettings = {
+          horaInicioAcesso: profileInicio,
+          horaFimAcesso: profileFim,
+          diasAcesso: profileDias,
+        };
+
+        if (!profileDias.includes(currentDay)) {
+          return { allowed: false, reason: "day", settings };
+        }
+
+        const inicio = String(profileInicio).slice(0, 5);
+        const fim = String(profileFim).slice(0, 5);
+        if (currentTime < inicio || currentTime > fim) {
+          return { allowed: false, reason: "time", settings };
+        }
+
+        return { allowed: true };
+      }
+    }
+
+    // Fallback to organization-level restrictions
     if (!organization) {
-      return { allowed: true }; // Allow if no org data yet
+      return { allowed: true };
     }
 
     const horaInicio = (organization as any).hora_inicio_acesso;
     const horaFim = (organization as any).hora_fim_acesso;
     const diasAcesso = (organization as any).dias_acesso as string[] | null;
 
-    // If no restrictions set, allow access
     if (!horaInicio || !horaFim || !diasAcesso || diasAcesso.length === 0) {
       return { allowed: true };
     }
 
     const now = new Date();
     const currentDay = DAY_MAP[now.getDay()];
-    const currentTime = now.toTimeString().slice(0, 5); // HH:MM format
+    const currentTime = now.toTimeString().slice(0, 5);
 
     const settings: AccessControlSettings = {
       horaInicioAcesso: horaInicio,
@@ -52,22 +84,12 @@ export function useAccessControl() {
       diasAcesso: diasAcesso,
     };
 
-    // Check day
     if (!diasAcesso.includes(currentDay)) {
-      return { 
-        allowed: false, 
-        reason: "day",
-        settings,
-      };
+      return { allowed: false, reason: "day", settings };
     }
 
-    // Check time (compare as strings works for HH:MM format)
     if (currentTime < horaInicio.slice(0, 5) || currentTime > horaFim.slice(0, 5)) {
-      return { 
-        allowed: false, 
-        reason: "time",
-        settings,
-      };
+      return { allowed: false, reason: "time", settings };
     }
 
     return { allowed: true };
