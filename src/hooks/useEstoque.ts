@@ -16,6 +16,7 @@ export interface Produto {
   id: string;
   nome: string;
   sku: string;
+  marca: string | null;
   preco_venda: number;
   preco_custo: number;
   quantidade_estoque: number;
