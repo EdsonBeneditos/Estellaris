@@ -13,6 +13,8 @@ export type Orcamento = {
   cliente_email: string | null;
   cliente_endereco: string | null;
   status: string;
+  status_financeiro: string | null;
+  motivo_cancelamento: string | null;
   subtotal: number;
   desconto_total: number;
   valor_total: number;
@@ -40,7 +42,7 @@ export type OrcamentoItem = {
   created_at: string;
 };
 
-export type OrcamentoInsert = Omit<Orcamento, 'id' | 'numero_orcamento' | 'created_at' | 'updated_at' | 'organization_id'>;
+export type OrcamentoInsert = Omit<Orcamento, 'id' | 'numero_orcamento' | 'created_at' | 'updated_at' | 'organization_id' | 'status_financeiro' | 'motivo_cancelamento'>;
 export type OrcamentoItemInsert = Omit<OrcamentoItem, 'id' | 'created_at' | 'organization_id'>;
 
 export const useOrcamentos = () => {

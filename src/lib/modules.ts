@@ -77,7 +77,7 @@ export const MODULE_CONFIG: Record<
     category: "financeiro",
   },
   financeiro: {
-    label: "Financeiro",
+    label: "Financeiro / Caixa",
     description: "Controle de caixa e movimentações",
     route: "/financeiro",
     category: "financeiro",

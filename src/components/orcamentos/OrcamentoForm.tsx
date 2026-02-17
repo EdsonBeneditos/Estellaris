@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
@@ -50,6 +51,7 @@ import { toast } from "sonner";
 import { useLeads } from "@/hooks/useLeads";
 import { useProdutos } from "@/hooks/useEstoque";
 import { useCreateOrcamento, useUpdateOrcamento, useBulkCreateOrcamentoItens, Orcamento, OrcamentoItemInsert } from "@/hooks/useOrcamentos";
+import { maskCPFCNPJ, unmask } from "@/lib/masks";
 
 interface CartItem {
   produto_id: string;
@@ -73,6 +75,7 @@ interface OrcamentoFormProps {
 export function OrcamentoForm({ orcamento, onBack, onSuccess }: OrcamentoFormProps) {
   const [clienteNome, setClienteNome] = useState(orcamento?.cliente_nome || "");
   const [clienteCnpj, setClienteCnpj] = useState(orcamento?.cliente_cnpj || "");
+  const [docType, setDocType] = useState<"cpf" | "cnpj">("cnpj");
   const [clienteTelefone, setClienteTelefone] = useState(orcamento?.cliente_telefone || "");
   const [clienteEmail, setClienteEmail] = useState(orcamento?.cliente_email || "");
   const [clienteEndereco, setClienteEndereco] = useState(orcamento?.cliente_endereco || "");
@@ -334,13 +337,31 @@ export function OrcamentoForm({ orcamento, onBack, onSuccess }: OrcamentoFormPro
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="cliente_cnpj">CNPJ / CPF</Label>
+                <Label htmlFor="cliente_cnpj" className="flex items-center gap-2">
+                  {docType === "cpf" ? "CPF" : "CNPJ"}
+                </Label>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs text-muted-foreground">CPF</span>
+                  <Switch
+                    checked={docType === "cnpj"}
+                    onCheckedChange={(checked) => {
+                      setDocType(checked ? "cnpj" : "cpf");
+                      setClienteCnpj("");
+                    }}
+                  />
+                  <span className="text-xs text-muted-foreground">CNPJ</span>
+                </div>
                 <Input
                   id="cliente_cnpj"
                   value={clienteCnpj}
-                  onChange={(e) => setClienteCnpj(e.target.value)}
-                  placeholder="00.000.000/0000-00"
+                  onChange={(e) => {
+                    const masked = maskCPFCNPJ(e.target.value, docType);
+                    setClienteCnpj(masked);
+                  }}
+                  placeholder={docType === "cpf" ? "000.000.000-00" : "00.000.000/0000-00"}
+                  maxLength={docType === "cpf" ? 14 : 18}
                 />
+                <p className="text-xs text-muted-foreground">(apenas números)</p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="cliente_telefone" className="flex items-center gap-2">

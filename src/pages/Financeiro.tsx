@@ -13,6 +13,7 @@ import { CaixaControl } from "@/components/financeiro/CaixaControl";
 import { MovimentacoesTable } from "@/components/financeiro/MovimentacoesTable";
 import { MovimentacaoModal } from "@/components/financeiro/MovimentacaoModal";
 import { FiltrosMovimentacoes } from "@/components/financeiro/FiltrosMovimentacoes";
+import { AguardandoFaturamento } from "@/components/financeiro/AguardandoFaturamento";
 
 export default function Financeiro() {
   const now = new Date();
@@ -44,6 +45,9 @@ export default function Financeiro() {
           Nova Movimentação
         </Button>
       </div>
+
+      {/* Aguardando Faturamento */}
+      <AguardandoFaturamento caixaId={caixaAberto?.id} />
 
       {/* Layout principal */}
       <div className="grid gap-6 lg:grid-cols-[1fr,320px]">

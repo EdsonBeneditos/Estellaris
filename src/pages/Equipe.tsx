@@ -9,12 +9,15 @@ import {
   User,
   Building2,
   AlertCircle,
+  Clock,
+  Settings,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -40,6 +43,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
@@ -50,6 +54,7 @@ import {
   useIsOrgAdmin,
 } from "@/hooks/useOrganization";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const roleLabels: Record<string, { label: string; icon: React.ElementType; color: string }> = {
@@ -57,6 +62,16 @@ const roleLabels: Record<string, { label: string; icon: React.ElementType; color
   gerente: { label: "Gerente", icon: Briefcase, color: "bg-blue-500" },
   vendedor: { label: "Vendedor", icon: User, color: "bg-emerald-500" },
 };
+
+const DAYS_OPTIONS = [
+  { value: "seg", label: "Seg" },
+  { value: "ter", label: "Ter" },
+  { value: "qua", label: "Qua" },
+  { value: "qui", label: "Qui" },
+  { value: "sex", label: "Sex" },
+  { value: "sab", label: "Sáb" },
+  { value: "dom", label: "Dom" },
+];
 
 export default function Equipe() {
   const { user } = useAuthContext();
@@ -69,6 +84,14 @@ export default function Equipe() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<"vendedor" | "gerente" | "admin">("vendedor");
   const [isInviteOpen, setIsInviteOpen] = useState(false);
+
+  // Access control modal state
+  const [accessModalOpen, setAccessModalOpen] = useState(false);
+  const [accessMember, setAccessMember] = useState<any>(null);
+  const [accessDays, setAccessDays] = useState<string[]>([]);
+  const [accessInicio, setAccessInicio] = useState("08:00");
+  const [accessFim, setAccessFim] = useState("18:00");
+  const [savingAccess, setSavingAccess] = useState(false);
 
   const handleRoleChange = async (userId: string, newRole: "admin" | "gerente" | "vendedor") => {
     try {
@@ -89,13 +112,48 @@ export default function Equipe() {
   };
 
   const handleInvite = async () => {
-    // Por enquanto, apenas mostrar instruções
-    // A implementação completa requer edge functions para enviar convites
     toast.info(
       "Para adicionar novos membros, crie o usuário no Supabase Dashboard e depois adicione o perfil aqui."
     );
     setIsInviteOpen(false);
     setInviteEmail("");
+  };
+
+  const openAccessModal = (member: any) => {
+    setAccessMember(member);
+    setAccessDays(member.dias_acesso || ["seg", "ter", "qua", "qui", "sex"]);
+    setAccessInicio(member.horario_inicio ? String(member.horario_inicio).slice(0, 5) : "08:00");
+    setAccessFim(member.horario_fim ? String(member.horario_fim).slice(0, 5) : "18:00");
+    setAccessModalOpen(true);
+  };
+
+  const handleSaveAccess = async () => {
+    if (!accessMember) return;
+    setSavingAccess(true);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          dias_acesso: accessDays,
+          horario_inicio: accessInicio,
+          horario_fim: accessFim,
+        })
+        .eq("id", accessMember.id);
+
+      if (error) throw error;
+      toast.success(`Acesso de ${accessMember.nome} atualizado!`);
+      setAccessModalOpen(false);
+    } catch (error: any) {
+      toast.error("Erro ao salvar acesso", { description: error.message });
+    } finally {
+      setSavingAccess(false);
+    }
+  };
+
+  const toggleDay = (day: string) => {
+    setAccessDays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+    );
   };
 
   if (orgLoading || membersLoading) {
@@ -192,7 +250,7 @@ export default function Equipe() {
       </div>
 
       {/* Organization Info */}
-      <Card className="border-zinc-200 dark:border-zinc-800">
+      <Card className="border-border">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-lg">
             <Building2 className="h-5 w-5 text-muted-foreground" />
@@ -216,7 +274,7 @@ export default function Equipe() {
       </Card>
 
       {/* Members List */}
-      <Card className="border-zinc-200 dark:border-zinc-800">
+      <Card className="border-border">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
@@ -239,7 +297,7 @@ export default function Equipe() {
                 return (
                   <div
                     key={member.id}
-                    className="flex items-center justify-between p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50"
+                    className="flex items-center justify-between p-4 rounded-lg border border-border bg-card"
                   >
                     <div className="flex items-center gap-4">
                       <div
@@ -265,6 +323,16 @@ export default function Equipe() {
                     <div className="flex items-center gap-3">
                       {isAdmin && !isCurrentUser ? (
                         <>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-muted-foreground hover:text-foreground"
+                            title="Controle de Acesso"
+                            onClick={() => openAccessModal(member)}
+                          >
+                            <Clock className="h-4 w-4" />
+                          </Button>
+
                           <Select
                             value={primaryRole}
                             onValueChange={(v) =>
@@ -344,7 +412,7 @@ export default function Equipe() {
       </Card>
 
       {/* Security Notice */}
-      <Alert className="border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-900">
+      <Alert className="border-border bg-muted/50">
         <Shield className="h-4 w-4" />
         <AlertDescription className="text-sm">
           <strong>Segurança Multi-tenant:</strong> Cada organização possui isolamento
@@ -353,6 +421,75 @@ export default function Equipe() {
           no nível do banco de dados.
         </AlertDescription>
       </Alert>
+
+      {/* Access Control Modal */}
+      <Dialog open={accessModalOpen} onOpenChange={setAccessModalOpen}>
+        <DialogContent className="sm:max-w-[450px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Controle de Acesso — {accessMember?.nome}
+            </DialogTitle>
+            <DialogDescription>
+              Defina os dias e horários em que este colaborador pode acessar o sistema.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 py-4">
+            {/* Days */}
+            <div className="space-y-3">
+              <Label>Dias permitidos</Label>
+              <div className="flex flex-wrap gap-2">
+                {DAYS_OPTIONS.map((day) => (
+                  <label
+                    key={day.value}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-md border cursor-pointer transition-colors ${
+                      accessDays.includes(day.value)
+                        ? "bg-primary/10 border-primary text-primary"
+                        : "border-border text-muted-foreground hover:bg-accent"
+                    }`}
+                  >
+                    <Checkbox
+                      checked={accessDays.includes(day.value)}
+                      onCheckedChange={() => toggleDay(day.value)}
+                    />
+                    <span className="text-sm font-medium">{day.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Time range */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Horário Início</Label>
+                <Input
+                  type="time"
+                  value={accessInicio}
+                  onChange={(e) => setAccessInicio(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Horário Fim</Label>
+                <Input
+                  type="time"
+                  value={accessFim}
+                  onChange={(e) => setAccessFim(e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAccessModalOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveAccess} disabled={savingAccess}>
+              {savingAccess ? "Salvando..." : "Salvar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

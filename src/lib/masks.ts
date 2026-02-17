@@ -1,3 +1,12 @@
+export function maskCPF(value: string): string {
+  const digits = value.replace(/\D/g, "");
+  return digits
+    .replace(/^(\d{3})(\d)/, "$1.$2")
+    .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
+    .replace(/\.(\d{3})(\d)/, ".$1-$2")
+    .slice(0, 14);
+}
+
 export function maskCNPJ(value: string): string {
   const digits = value.replace(/\D/g, "");
   return digits
@@ -6,6 +15,10 @@ export function maskCNPJ(value: string): string {
     .replace(/\.(\d{3})(\d)/, ".$1/$2")
     .replace(/(\d{4})(\d)/, "$1-$2")
     .slice(0, 18);
+}
+
+export function maskCPFCNPJ(value: string, type: "cpf" | "cnpj"): string {
+  return type === "cpf" ? maskCPF(value) : maskCNPJ(value);
 }
 
 export function maskPhone(value: string): string {
