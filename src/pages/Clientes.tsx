@@ -55,7 +55,7 @@ export default function Clientes() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-950">Clientes</h1>
+          <h1 className="text-2xl font-bold text-foreground">Clientes</h1>
           <p className="text-muted-foreground">
             Gestão de contratos e histórico de relacionamento
           </p>
@@ -76,13 +76,13 @@ export default function Clientes() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-1 -m-1">
         <Card className="relative transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:border-primary/30 hover:z-10 cursor-pointer">
           <CardContent className="pt-4">
-            <div className="text-2xl font-bold text-zinc-950">{totalClientes}</div>
+            <div className="text-2xl font-bold text-foreground">{totalClientes}</div>
             <p className="text-xs text-muted-foreground">Total de Clientes</p>
           </CardContent>
         </Card>
         <Card className="relative transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:border-primary/30 hover:z-10 cursor-pointer">
           <CardContent className="pt-4">
-            <div className="text-2xl font-bold text-zinc-950">{clientesComContrato}</div>
+            <div className="text-2xl font-bold text-foreground">{clientesComContrato}</div>
             <p className="text-xs text-muted-foreground">Com Contrato Ativo</p>
           </CardContent>
         </Card>

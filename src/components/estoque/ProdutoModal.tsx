@@ -34,11 +34,13 @@ import {
   useCreateProduto,
   useUpdateProduto,
   useGruposProdutos,
+  useProdutos,
 } from "@/hooks/useEstoque";
 
 const formSchema = z.object({
   nome: z.string().min(1, "Nome é obrigatório"),
   sku: z.string().min(1, "SKU é obrigatório"),
+  marca: z.string().optional().or(z.literal("")),
   preco_venda: z.coerce.number().min(0, "Preço de venda inválido"),
   preco_custo: z.coerce.number().min(0, "Preço de custo inválido"),
   quantidade_estoque: z.coerce.number().int().min(0, "Quantidade inválida"),
@@ -110,14 +112,17 @@ interface ProdutoModalProps {
 
 export function ProdutoModal({ open, onOpenChange, produto }: ProdutoModalProps) {
   const { data: grupos = [] } = useGruposProdutos();
+  const { data: allProdutos = [] } = useProdutos();
   const createProduto = useCreateProduto();
   const updateProduto = useUpdateProduto();
+  const [skuError, setSkuError] = useState<string | null>(null);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       nome: "",
       sku: "",
+      marca: "",
       preco_venda: 0,
       preco_custo: 0,
       quantidade_estoque: 0,
@@ -136,6 +141,7 @@ export function ProdutoModal({ open, onOpenChange, produto }: ProdutoModalProps)
       form.reset({
         nome: produto.nome,
         sku: produto.sku,
+        marca: (produto as any).marca || "",
         preco_venda: produto.preco_venda,
         preco_custo: produto.preco_custo,
         quantidade_estoque: produto.quantidade_estoque,
@@ -151,6 +157,7 @@ export function ProdutoModal({ open, onOpenChange, produto }: ProdutoModalProps)
       form.reset({
         nome: "",
         sku: "",
+        marca: "",
         preco_venda: 0,
         preco_custo: 0,
         quantidade_estoque: 0,
@@ -163,13 +170,35 @@ export function ProdutoModal({ open, onOpenChange, produto }: ProdutoModalProps)
         cst_csosn: "102",
       });
     }
+    setSkuError(null);
   }, [produto, form, open]);
 
+  const validateSku = (sku: string) => {
+    if (!sku.trim()) {
+      setSkuError(null);
+      return;
+    }
+    const exists = allProdutos.some(
+      (p) => p.sku.toLowerCase() === sku.toLowerCase() && p.id !== produto?.id
+    );
+    setSkuError(exists ? "Código já cadastrado" : null);
+  };
+
   const onSubmit = async (data: FormData) => {
+    // Revalidate SKU before submit
+    const skuExists = allProdutos.some(
+      (p) => p.sku.toLowerCase() === data.sku.toLowerCase() && p.id !== produto?.id
+    );
+    if (skuExists) {
+      setSkuError("Código já cadastrado");
+      return;
+    }
+
     try {
       const produtoData = {
         nome: data.nome,
         sku: data.sku,
+        marca: data.marca || null,
         preco_venda: data.preco_venda,
         preco_custo: data.preco_custo,
         quantidade_estoque: data.quantidade_estoque,
@@ -226,8 +255,19 @@ export function ProdutoModal({ open, onOpenChange, produto }: ProdutoModalProps)
                   <FormItem>
                     <FormLabel>SKU / Código</FormLabel>
                     <FormControl>
-                      <Input placeholder="Ex: FLT-001" {...field} />
+                      <Input
+                        placeholder="Ex: FLT-001"
+                        {...field}
+                        onChange={(e) => {
+                          field.onChange(e);
+                          validateSku(e.target.value);
+                        }}
+                        className={skuError ? "border-destructive" : ""}
+                      />
                     </FormControl>
+                    {skuError && (
+                      <p className="text-xs text-destructive font-medium">{skuError}</p>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}
@@ -258,6 +298,20 @@ export function ProdutoModal({ open, onOpenChange, produto }: ProdutoModalProps)
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="marca"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Marca (opcional)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Ex: Acqua Nobilis" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <div className="grid grid-cols-2 gap-4">
               <FormField
@@ -468,7 +522,7 @@ export function ProdutoModal({ open, onOpenChange, produto }: ProdutoModalProps)
               </Button>
               <Button
                 type="submit"
-                disabled={createProduto.isPending || updateProduto.isPending}
+                disabled={createProduto.isPending || updateProduto.isPending || !!skuError}
               >
                 {produto ? "Salvar Alterações" : "Criar Produto"}
               </Button>

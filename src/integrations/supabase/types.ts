@@ -1317,6 +1317,7 @@ export type Database = {
         Row: {
           ambiente_nfe: string | null
           ativo: boolean
+          cabecalho_orcamento: string | null
           certificado_arquivo_path: string | null
           certificado_status: string | null
           cnpj: string | null
@@ -1328,6 +1329,7 @@ export type Database = {
           id: string
           idioma: string | null
           inscricao_municipal: string | null
+          logo_url: string | null
           modules_enabled: string[] | null
           nome: string
           orcamento_cabecalho: string | null
@@ -1335,12 +1337,14 @@ export type Database = {
           orcamento_rodape: string | null
           plano: Database["public"]["Enums"]["plano_organizacao"]
           regime_tributario: string | null
+          rodape_orcamento: string | null
           tema: string | null
           updated_at: string
         }
         Insert: {
           ambiente_nfe?: string | null
           ativo?: boolean
+          cabecalho_orcamento?: string | null
           certificado_arquivo_path?: string | null
           certificado_status?: string | null
           cnpj?: string | null
@@ -1352,6 +1356,7 @@ export type Database = {
           id?: string
           idioma?: string | null
           inscricao_municipal?: string | null
+          logo_url?: string | null
           modules_enabled?: string[] | null
           nome: string
           orcamento_cabecalho?: string | null
@@ -1359,12 +1364,14 @@ export type Database = {
           orcamento_rodape?: string | null
           plano?: Database["public"]["Enums"]["plano_organizacao"]
           regime_tributario?: string | null
+          rodape_orcamento?: string | null
           tema?: string | null
           updated_at?: string
         }
         Update: {
           ambiente_nfe?: string | null
           ativo?: boolean
+          cabecalho_orcamento?: string | null
           certificado_arquivo_path?: string | null
           certificado_status?: string | null
           cnpj?: string | null
@@ -1376,6 +1383,7 @@ export type Database = {
           id?: string
           idioma?: string | null
           inscricao_municipal?: string | null
+          logo_url?: string | null
           modules_enabled?: string[] | null
           nome?: string
           orcamento_cabecalho?: string | null
@@ -1383,6 +1391,7 @@ export type Database = {
           orcamento_rodape?: string | null
           plano?: Database["public"]["Enums"]["plano_organizacao"]
           regime_tributario?: string | null
+          rodape_orcamento?: string | null
           tema?: string | null
           updated_at?: string
         }
@@ -1431,6 +1440,7 @@ export type Database = {
           cst_csosn: string | null
           grupo_id: string | null
           id: string
+          marca: string | null
           ncm: string | null
           nome: string
           organization_id: string | null
@@ -1449,6 +1459,7 @@ export type Database = {
           cst_csosn?: string | null
           grupo_id?: string | null
           id?: string
+          marca?: string | null
           ncm?: string | null
           nome: string
           organization_id?: string | null
@@ -1467,6 +1478,7 @@ export type Database = {
           cst_csosn?: string | null
           grupo_id?: string | null
           id?: string
+          marca?: string | null
           ncm?: string | null
           nome?: string
           organization_id?: string | null
