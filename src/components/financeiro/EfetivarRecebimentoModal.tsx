@@ -20,6 +20,7 @@ import { useCategorias } from "@/hooks/useFinanceiro";
 import { useUpdateOrcamento, Orcamento } from "@/hooks/useOrcamentos";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { useCurrentProfile } from "@/hooks/useOrganization";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -47,6 +48,7 @@ export function EfetivarRecebimentoModal({
   caixaId,
 }: EfetivarRecebimentoModalProps) {
   const { user } = useAuthContext();
+  const { data: profile } = useCurrentProfile();
   const { data: categorias } = useCategorias();
   const updateOrcamento = useUpdateOrcamento();
   const queryClient = useQueryClient();
@@ -67,11 +69,24 @@ export function EfetivarRecebimentoModal({
   }, [open]);
 
   const handleSubmit = async () => {
-    if (!orcamento) return;
+    if (!orcamento || !profile?.organization_id) return;
     setIsPending(true);
 
     try {
       const categoriaSelecionada = categorias?.find((c) => c.id === categoriaId);
+      // Fallback to a default "Entrada" category if none selected
+      let finalCategoriaId = categoriaId || null;
+      let finalCategoriaNome = categoriaSelecionada?.nome || "Venda de Produtos";
+      if (!finalCategoriaId) {
+        const defaultCat = categorias?.find((c) => c.tipo === "Entrada");
+        if (defaultCat) {
+          finalCategoriaId = defaultCat.id;
+          finalCategoriaNome = defaultCat.nome;
+        }
+      }
+
+      // Format date as ISO with time to ensure correct filter matching
+      const dataISO = new Date(dataRecebimento + "T12:00:00").toISOString();
 
       // Update the existing movimentação linked to this orcamento
       const { data: movExistente } = await supabase
@@ -81,16 +96,19 @@ export function EfetivarRecebimentoModal({
         .maybeSingle();
 
       if (movExistente) {
-        await supabase
+        const { error: updateError } = await supabase
           .from("movimentacoes_caixa")
           .update({
-            categoria_id: categoriaId || null,
-            categoria_nome: categoriaSelecionada?.nome || "Venda de Produtos",
+            categoria_id: finalCategoriaId,
+            categoria_nome: finalCategoriaNome,
             forma_pagamento: formaPagamento,
-            data_hora: new Date(dataRecebimento).toISOString(),
+            data_hora: dataISO,
             caixa_id: caixaId || null,
+            organization_id: profile.organization_id,
           })
           .eq("id", movExistente.id);
+
+        if (updateError) throw updateError;
       }
 
       // Update orcamento status_financeiro
@@ -99,9 +117,15 @@ export function EfetivarRecebimentoModal({
         data: { status_financeiro: "conciliado" } as any,
       });
 
+      // Invalidate all relevant queries
       queryClient.invalidateQueries({ queryKey: ["movimentacoes_caixa"] });
       queryClient.invalidateQueries({ queryKey: ["orcamentos"] });
-      toast.success("Recebimento efetivado com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["relatorios"] });
+      queryClient.invalidateQueries({ queryKey: ["caixa_aberto"] });
+
+      const valorFormatado = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(orcamento.valor_total);
+      toast.success(`Venda de ${valorFormatado} registrada no caixa com sucesso!`);
       onOpenChange(false);
     } catch (error: any) {
       toast.error("Erro ao efetivar recebimento", { description: error.message });
