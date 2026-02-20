@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -17,6 +17,8 @@ import { FileText, Loader2, ArrowUpCircle, ArrowDownCircle, ExternalLink } from 
 import { MovimentacaoCaixa } from "@/hooks/useFinanceiro";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentProfile } from "@/hooks/useOrganization";
+import { useViaCep } from "@/hooks/useViaCep";
+import { applyCEPMask } from "@/lib/masks";
 import { toast } from "sonner";
 
 interface EmitirNFModalProps {
@@ -30,10 +32,69 @@ const formatCurrency = (value: number) =>
 
 export function EmitirNFModal({ open, onOpenChange, movimentacao }: EmitirNFModalProps) {
   const { data: profile } = useCurrentProfile();
+  const { fetchAddress, isLoading: isLoadingCep } = useViaCep();
   const [isEmitting, setIsEmitting] = useState(false);
   const [destinatarioNome, setDestinatarioNome] = useState("");
   const [destinatarioCnpj, setDestinatarioCnpj] = useState("");
+  const [destinatarioCep, setDestinatarioCep] = useState("");
+  const [destinatarioLogradouro, setDestinatarioLogradouro] = useState("");
+  const [destinatarioNumero, setDestinatarioNumero] = useState("");
+  const [destinatarioBairro, setDestinatarioBairro] = useState("");
+  const [destinatarioCidade, setDestinatarioCidade] = useState("");
+  const [destinatarioUf, setDestinatarioUf] = useState("");
+  const [ncm, setNcm] = useState("");
+  const [cfop, setCfop] = useState("");
   const [observacoes, setObservacoes] = useState("");
+
+  // Auto-populate from orcamento products
+  useEffect(() => {
+    if (!movimentacao?.orcamento_id || !open) return;
+    
+    supabase
+      .from("orcamento_itens")
+      .select("produto_id")
+      .eq("orcamento_id", movimentacao.orcamento_id)
+      .limit(1)
+      .then(({ data: itens }) => {
+        if (itens?.[0]) {
+          supabase
+            .from("produtos")
+            .select("ncm, cfop, cest")
+            .eq("id", itens[0].produto_id)
+            .single()
+            .then(({ data: produto }) => {
+              if (produto) {
+                setNcm(produto.ncm || "");
+                setCfop(produto.cfop || "");
+              }
+            });
+        }
+      });
+
+    supabase
+      .from("orcamentos")
+      .select("cliente_nome, cliente_cnpj, cliente_endereco")
+      .eq("id", movimentacao.orcamento_id)
+      .single()
+      .then(({ data: orc }) => {
+        if (orc) {
+          setDestinatarioNome(orc.cliente_nome || "");
+          setDestinatarioCnpj(orc.cliente_cnpj || "");
+        }
+      });
+  }, [movimentacao?.orcamento_id, open]);
+
+  const handleCepBlur = async () => {
+    const result = await fetchAddress(destinatarioCep);
+    if (result) {
+      setDestinatarioLogradouro(result.logradouro || "");
+      setDestinatarioBairro(result.bairro || "");
+      setDestinatarioCidade(result.localidade || "");
+      setDestinatarioUf(result.uf || "");
+    }
+  };
+
+  const dadosFiscaisIncompletos = !ncm || ncm === "00000000" || !destinatarioCnpj.trim();
 
   if (!movimentacao) return null;
 
@@ -145,36 +206,64 @@ export function EmitirNFModal({ open, onOpenChange, movimentacao }: EmitirNFModa
           <Separator />
 
           <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Nome do Destinatário *</Label>
-              <Input
-                placeholder="Razão social ou nome"
-                value={destinatarioNome}
-                onChange={(e) => setDestinatarioNome(e.target.value)}
-                disabled={isEmitting}
-                className="bg-background"
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="col-span-2 space-y-2">
+                <Label>Nome do Destinatário *</Label>
+                <Input placeholder="Razão social ou nome" value={destinatarioNome} onChange={(e) => setDestinatarioNome(e.target.value)} disabled={isEmitting} className="bg-background" />
+              </div>
+              <div className="space-y-2">
+                <Label>CNPJ/CPF *</Label>
+                <Input placeholder="00.000.000/0001-00" value={destinatarioCnpj} onChange={(e) => setDestinatarioCnpj(e.target.value)} disabled={isEmitting} className="bg-background" />
+              </div>
+              <div className="space-y-2">
+                <Label>CEP</Label>
+                <Input placeholder="00000-000" value={destinatarioCep} onChange={(e) => setDestinatarioCep(applyCEPMask(e.target.value))} onBlur={handleCepBlur} disabled={isEmitting} className="bg-background" />
+                {isLoadingCep && <span className="text-xs text-muted-foreground">Buscando...</span>}
+              </div>
+              <div className="space-y-2">
+                <Label>Logradouro</Label>
+                <Input value={destinatarioLogradouro} onChange={(e) => setDestinatarioLogradouro(e.target.value)} disabled={isEmitting} className="bg-background" />
+              </div>
+              <div className="space-y-2">
+                <Label>Número</Label>
+                <Input value={destinatarioNumero} onChange={(e) => setDestinatarioNumero(e.target.value)} disabled={isEmitting} className="bg-background" />
+              </div>
+              <div className="space-y-2">
+                <Label>Bairro</Label>
+                <Input value={destinatarioBairro} onChange={(e) => setDestinatarioBairro(e.target.value)} disabled={isEmitting} className="bg-background" />
+              </div>
+              <div className="space-y-2">
+                <Label>Cidade</Label>
+                <Input value={destinatarioCidade} onChange={(e) => setDestinatarioCidade(e.target.value)} disabled={isEmitting} className="bg-background" />
+              </div>
+              <div className="space-y-2">
+                <Label>UF</Label>
+                <Input value={destinatarioUf} onChange={(e) => setDestinatarioUf(e.target.value)} maxLength={2} disabled={isEmitting} className="bg-background w-20" />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label>CNPJ/CPF do Destinatário</Label>
-              <Input
-                placeholder="00.000.000/0001-00"
-                value={destinatarioCnpj}
-                onChange={(e) => setDestinatarioCnpj(e.target.value)}
-                disabled={isEmitting}
-                className="bg-background"
-              />
+
+            <Separator />
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>NCM *</Label>
+                <Input placeholder="00000000" value={ncm} onChange={(e) => setNcm(e.target.value)} disabled={isEmitting} className="bg-background" />
+              </div>
+              <div className="space-y-2">
+                <Label>CFOP</Label>
+                <Input placeholder="5102" value={cfop} onChange={(e) => setCfop(e.target.value)} disabled={isEmitting} className="bg-background" />
+              </div>
             </div>
+
+            {dadosFiscaisIncompletos && (
+              <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-400">
+                ⚠️ Dados fiscais incompletos — NCM e CNPJ/CPF são obrigatórios para emissão.
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label>Observações</Label>
-              <Textarea
-                placeholder="Informações adicionais da nota..."
-                value={observacoes}
-                onChange={(e) => setObservacoes(e.target.value)}
-                disabled={isEmitting}
-                className="bg-background resize-none"
-                rows={3}
-              />
+              <Textarea placeholder="Informações adicionais da nota..." value={observacoes} onChange={(e) => setObservacoes(e.target.value)} disabled={isEmitting} className="bg-background resize-none" rows={2} />
             </div>
           </div>
         </div>
@@ -183,7 +272,7 @@ export function EmitirNFModal({ open, onOpenChange, movimentacao }: EmitirNFModa
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isEmitting}>
             Cancelar
           </Button>
-          <Button onClick={handleEmitir} disabled={isEmitting} className="gap-2">
+          <Button onClick={handleEmitir} disabled={isEmitting || dadosFiscaisIncompletos} className="gap-2">
             {isEmitting ? (
               <><Loader2 className="h-4 w-4 animate-spin" /> Emitindo...</>
             ) : (
