@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus } from "lucide-react";
+import { Plus, Eye, EyeOff } from "lucide-react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import {
   useMovimentacoes,
@@ -26,20 +26,41 @@ export default function Financeiro() {
   });
 
   const [novaMovimentacaoOpen, setNovaMovimentacaoOpen] = useState(false);
+  const [valoresVisiveis, setValoresVisiveis] = useState(false);
 
   const { data: movimentacoes, isLoading } = useMovimentacoes(filtros);
   const { data: caixaAberto } = useCaixaAberto();
   const totais = useTotaisMovimentacoes(movimentacoes);
 
+  // Check if using default month filter
+  const isDefaultMonth =
+    filtros.dataInicio === format(startOfMonth(now), "yyyy-MM-dd") &&
+    filtros.dataFim === format(endOfMonth(now), "yyyy-MM-dd");
+
+  const periodLabel = isDefaultMonth ? "Neste mês" : `${filtros.dataInicio} a ${filtros.dataFim}`;
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Financeiro / Caixa</h1>
-          <p className="text-muted-foreground">
-            Controle de movimentações, entradas e saídas
-          </p>
+        <div className="flex items-center gap-3">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Financeiro / Caixa</h1>
+            <p className="text-muted-foreground">
+              Controle de movimentações, entradas e saídas
+            </p>
+          </div>
+          <button
+            onClick={() => setValoresVisiveis((v) => !v)}
+            className="p-2 rounded-lg hover:bg-muted transition-colors"
+            title={valoresVisiveis ? "Ocultar valores" : "Mostrar valores"}
+          >
+            {valoresVisiveis ? (
+              <Eye className="h-5 w-5 text-foreground" />
+            ) : (
+              <EyeOff className="h-5 w-5 text-foreground" />
+            )}
+          </button>
         </div>
         <Button onClick={() => setNovaMovimentacaoOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
@@ -53,9 +74,13 @@ export default function Financeiro() {
       {/* Layout principal */}
       <div className="grid gap-6 xl:grid-cols-[1fr_minmax(0,320px)]">
         {/* Coluna principal */}
-        <div className="space-y-6">
+        <div className="space-y-6 min-w-0">
           {/* Totalizadores */}
-          <TotalizadoresCard {...totais} />
+          <TotalizadoresCard
+            {...totais}
+            valoresVisiveis={valoresVisiveis}
+            periodLabel={periodLabel}
+          />
 
           {/* Filtros */}
           <Card className="border-border/50">
@@ -96,6 +121,7 @@ export default function Financeiro() {
                     );
                   })}
                   caixaId={caixaAberto?.id}
+                  valoresVisiveis={valoresVisiveis}
                 />
               )}
             </CardContent>
@@ -103,7 +129,7 @@ export default function Financeiro() {
         </div>
 
         {/* Sidebar - Controle de Caixa */}
-        <div className="space-y-6">
+        <div className="space-y-6 min-w-0">
           <CaixaControl caixaAberto={caixaAberto || null} movimentacoes={movimentacoes} />
         </div>
       </div>
