@@ -23,19 +23,19 @@ const maskedValue = "R$ ••••";
 
 const getDynamicFontClass = (value: number) => {
   const abs = Math.abs(value);
-  if (abs >= 10_000_000) return "text-sm sm:text-base lg:text-lg";
-  if (abs >= 1_000_000) return "text-base sm:text-lg lg:text-xl";
-  if (abs >= 100_000) return "text-lg sm:text-xl lg:text-2xl";
+  if (abs >= 10_000_000) return "text-xs sm:text-sm lg:text-base";
+  if (abs >= 1_000_000) return "text-sm sm:text-base lg:text-lg";
+  if (abs >= 100_000) return "text-base sm:text-lg lg:text-xl";
   return "text-xl sm:text-2xl lg:text-3xl";
 };
 
 const formasPagamentoIcons: Record<string, React.ReactNode> = {
-  Pix: <Smartphone className="h-4 w-4" />,
-  "Cartão Débito": <CreditCard className="h-4 w-4" />,
-  "Cartão Crédito": <CreditCard className="h-4 w-4" />,
-  Dinheiro: <Banknote className="h-4 w-4" />,
-  Boleto: <Building2 className="h-4 w-4" />,
-  Transferência: <Building2 className="h-4 w-4" />,
+  Pix: <Smartphone className="h-4 w-4 flex-shrink-0" />,
+  "Cartão Débito": <CreditCard className="h-4 w-4 flex-shrink-0" />,
+  "Cartão Crédito": <CreditCard className="h-4 w-4 flex-shrink-0" />,
+  Dinheiro: <Banknote className="h-4 w-4 flex-shrink-0" />,
+  Boleto: <Building2 className="h-4 w-4 flex-shrink-0" />,
+  Transferência: <Building2 className="h-4 w-4 flex-shrink-0" />,
 };
 
 export function TotalizadoresCard({
@@ -59,7 +59,7 @@ export function TotalizadoresCard({
           <ArrowUpCircle className="h-5 w-5 text-emerald-500 flex-shrink-0" />
         </CardHeader>
         <CardContent>
-          <div className={cn(getDynamicFontClass(totalEntradas), "font-bold text-emerald-600 break-all leading-tight")} title={formatCurrency(totalEntradas)}>
+          <div className={cn(getDynamicFontClass(totalEntradas), "font-bold text-emerald-600 whitespace-nowrap overflow-hidden text-ellipsis leading-tight")} title={formatCurrency(totalEntradas)}>
             {displayValue(totalEntradas)}
           </div>
           <Badge variant="secondary" className="mt-2 text-xs font-normal">{periodLabel}</Badge>
@@ -75,7 +75,7 @@ export function TotalizadoresCard({
           <ArrowDownCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
         </CardHeader>
         <CardContent>
-          <div className={cn(getDynamicFontClass(totalSaidas), "font-bold text-red-600 break-all leading-tight")} title={formatCurrency(totalSaidas)}>
+          <div className={cn(getDynamicFontClass(totalSaidas), "font-bold text-red-600 whitespace-nowrap overflow-hidden text-ellipsis leading-tight")} title={formatCurrency(totalSaidas)}>
             {displayValue(totalSaidas)}
           </div>
           <Badge variant="secondary" className="mt-2 text-xs font-normal">{periodLabel}</Badge>
@@ -94,7 +94,7 @@ export function TotalizadoresCard({
           <div
             className={cn(
               getDynamicFontClass(saldoLiquido),
-              "font-bold break-all leading-tight",
+              "font-bold whitespace-nowrap overflow-hidden text-ellipsis leading-tight",
               saldoLiquido >= 0 ? "text-emerald-600" : "text-red-600"
             )}
             title={formatCurrency(saldoLiquido)}
@@ -112,21 +112,23 @@ export function TotalizadoresCard({
             Entradas por Método
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2">
+        <CardContent>
           {Object.entries(porFormaPagamento).length === 0 ? (
             <p className="text-xs text-muted-foreground">Nenhuma entrada no período</p>
           ) : (
-            Object.entries(porFormaPagamento).map(([forma, valor]) => (
-              <div key={forma} className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  {formasPagamentoIcons[forma] || <CreditCard className="h-4 w-4" />}
-                  <span>{forma}</span>
+            <div className="space-y-2">
+              {Object.entries(porFormaPagamento).map(([forma, valor]) => (
+                <div key={forma} className="flex items-center gap-2 min-w-0">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    {formasPagamentoIcons[forma] || <CreditCard className="h-4 w-4 flex-shrink-0" />}
+                    <span className="text-sm text-muted-foreground truncate">{forma}</span>
+                  </div>
+                  <span className="font-medium text-sm text-foreground whitespace-nowrap flex-shrink-0">
+                    {valoresVisiveis ? formatCurrency(valor) : maskedValue}
+                  </span>
                 </div>
-                <span className="font-medium text-foreground">
-                  {valoresVisiveis ? formatCurrency(valor) : maskedValue}
-                </span>
-              </div>
-            ))
+              ))}
+            </div>
           )}
         </CardContent>
       </Card>

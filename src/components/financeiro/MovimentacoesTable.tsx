@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Table,
   TableBody,
@@ -49,7 +49,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
-import { useCurrentProfile } from "@/hooks/useOrganization";
+import { useCurrentProfile, useOrganizationMembers } from "@/hooks/useOrganization";
 import { toast } from "sonner";
 
 interface MovimentacoesTableProps {
@@ -65,12 +65,6 @@ const formatCurrency = (value: number) => {
   }).format(value);
 };
 
-const truncateEmail = (email: string | null) => {
-  if (!email) return "—";
-  const [local] = email.split("@");
-  return local.length > 8 ? local.substring(0, 8) + "..." : local;
-};
-
 export function MovimentacoesTable({ movimentacoes, caixaId, valoresVisiveis = false }: MovimentacoesTableProps) {
   const deleteMovimentacao = useDeleteMovimentacao();
   const [editMovimentacao, setEditMovimentacao] = useState<MovimentacaoCaixa | null>(null);
@@ -80,6 +74,27 @@ export function MovimentacoesTable({ movimentacoes, caixaId, valoresVisiveis = f
   const [cancelJustificativa, setCancelJustificativa] = useState("");
   const [isCancelling, setIsCancelling] = useState(false);
   const { data: profile } = useCurrentProfile();
+  const { data: members } = useOrganizationMembers();
+
+  // Build lookup map: userId -> display name (id_nome or truncated email)
+  const userDisplayName = useMemo(() => {
+    const map: Record<string, string> = {};
+    if (members) {
+      members.forEach((m) => {
+        map[m.id] = m.id_nome || m.nome || m.email.split("@")[0];
+      });
+    }
+    return map;
+  }, [members]);
+
+  const getDisplayName = (userId: string | null, fallbackEmail: string | null) => {
+    if (userId && userDisplayName[userId]) return userDisplayName[userId];
+    if (fallbackEmail) {
+      const [local] = fallbackEmail.split("@");
+      return local.length > 10 ? local.substring(0, 10) + "…" : local;
+    }
+    return "—";
+  };
 
   const handleCancelNF = async () => {
     if (!cancelNFMov || !cancelJustificativa.trim() || !profile) return;
@@ -89,15 +104,6 @@ export function MovimentacoesTable({ movimentacoes, caixaId, valoresVisiveis = f
     }
     setIsCancelling(true);
     try {
-      // Find the nota_id from logs
-      const { data: logs } = await supabase
-        .from("notas_fiscais_logs")
-        .select("id")
-        .eq("movimentacao_id", cancelNFMov.id)
-        .eq("status", "Autorizada")
-        .limit(1);
-
-      // Find the actual nota fiscal
       const { data: notas } = await supabase
         .from("notas_fiscais")
         .select("id")
@@ -162,13 +168,13 @@ export function MovimentacoesTable({ movimentacoes, caixaId, valoresVisiveis = f
       </div>
 
       <div className="rounded-md border border-border/50 max-h-[500px] overflow-auto relative">
-        <Table>
+        <Table className="min-w-[800px]">
           <TableHeader className="sticky top-0 z-10 bg-muted/95 backdrop-blur-sm">
             <TableRow className="bg-muted/30">
-              <TableHead className="w-[120px]">Data</TableHead>
-              <TableHead className="text-right w-[110px]">Valor</TableHead>
-              <TableHead className="min-w-[130px]">Categoria</TableHead>
-              <TableHead className="w-[90px]">
+              <TableHead className="w-[110px]">Data</TableHead>
+              <TableHead className="text-right w-[120px]">Valor</TableHead>
+              <TableHead className="min-w-[140px]">Categoria</TableHead>
+              <TableHead className="w-[100px]">
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -176,12 +182,12 @@ export function MovimentacoesTable({ movimentacoes, caixaId, valoresVisiveis = f
                     </TooltipTrigger>
                     <TooltipContent className="max-w-[250px]">
                       <p className="font-medium">Forma de Pagamento</p>
-                      <p className="text-xs mt-1">Método utilizado na transação. Movimentações <strong>Conciliadas</strong> foram confirmadas no extrato bancário. <strong>Pendentes</strong> ainda aguardam confirmação.</p>
+                      <p className="text-xs mt-1">Método utilizado na transação. Movimentações <strong>Conciliadas</strong> foram confirmadas no extrato bancário.</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               </TableHead>
-              <TableHead className="w-[100px]">
+              <TableHead className="w-[120px]">
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -191,12 +197,12 @@ export function MovimentacoesTable({ movimentacoes, caixaId, valoresVisiveis = f
                       </div>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Usuário que realizou a movimentação</p>
+                      <p>Usuário que realizou a movimentação (ID Nome)</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               </TableHead>
-              <TableHead className="w-[100px]">
+              <TableHead className="w-[120px]">
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -206,7 +212,7 @@ export function MovimentacoesTable({ movimentacoes, caixaId, valoresVisiveis = f
                       </div>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Usuário que autorizou a movimentação</p>
+                      <p>Usuário que autorizou a movimentação (ID Nome)</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -225,7 +231,7 @@ export function MovimentacoesTable({ movimentacoes, caixaId, valoresVisiveis = f
                       <ArrowDownCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
                     )}
                     <div>
-                      <div className="text-sm font-medium">
+                      <div className="text-sm font-medium whitespace-nowrap">
                         {format(new Date(mov.data_hora), "dd/MM/yy", { locale: ptBR })}
                       </div>
                       <div className="text-xs text-muted-foreground">
@@ -236,7 +242,7 @@ export function MovimentacoesTable({ movimentacoes, caixaId, valoresVisiveis = f
                 </TableCell>
                 <TableCell
                   className={cn(
-                    "text-right font-semibold",
+                    "text-right font-semibold whitespace-nowrap",
                     mov.tipo === "Entrada" ? "text-emerald-600" : "text-red-600"
                   )}
                 >
@@ -269,7 +275,7 @@ export function MovimentacoesTable({ movimentacoes, caixaId, valoresVisiveis = f
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge variant="secondary" className="font-normal text-xs">
+                  <Badge variant="secondary" className="font-normal text-xs whitespace-nowrap">
                     {mov.forma_pagamento}
                   </Badge>
                 </TableCell>
@@ -277,16 +283,16 @@ export function MovimentacoesTable({ movimentacoes, caixaId, valoresVisiveis = f
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground cursor-help">
+                        <div className="flex items-center gap-1.5 text-sm text-muted-foreground cursor-help">
                           <User className="h-3.5 w-3.5 flex-shrink-0" />
-                          <span className="truncate">{truncateEmail(mov.usuario_email)}</span>
+                          <span className="truncate max-w-[90px]">{getDisplayName(mov.realizado_por, mov.usuario_email)}</span>
                         </div>
                       </TooltipTrigger>
                       <TooltipContent>
                         <p className="font-medium">Realizado por:</p>
-                        <p>{mov.usuario_email || "Não identificado"}</p>
-                        {mov.realizado_por && (
-                          <p className="text-xs text-muted-foreground mt-1">ID: {mov.realizado_por}</p>
+                        <p>{getDisplayName(mov.realizado_por, mov.usuario_email)}</p>
+                        {mov.usuario_email && (
+                          <p className="text-xs text-muted-foreground mt-1">{mov.usuario_email}</p>
                         )}
                       </TooltipContent>
                     </Tooltip>
@@ -296,16 +302,16 @@ export function MovimentacoesTable({ movimentacoes, caixaId, valoresVisiveis = f
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground cursor-help">
+                        <div className="flex items-center gap-1.5 text-sm text-muted-foreground cursor-help">
                           <UserCheck className="h-3.5 w-3.5 flex-shrink-0" />
-                          <span className="truncate">{truncateEmail(mov.autorizado_por_email)}</span>
+                          <span className="truncate max-w-[90px]">{getDisplayName(mov.autorizado_por, mov.autorizado_por_email)}</span>
                         </div>
                       </TooltipTrigger>
                       <TooltipContent>
                         <p className="font-medium">Autorizado por:</p>
-                        <p>{mov.autorizado_por_email || "Não requer autorização"}</p>
-                        {mov.autorizado_por && (
-                          <p className="text-xs text-muted-foreground mt-1">ID: {mov.autorizado_por}</p>
+                        <p>{getDisplayName(mov.autorizado_por, mov.autorizado_por_email)}</p>
+                        {mov.autorizado_por_email && (
+                          <p className="text-xs text-muted-foreground mt-1">{mov.autorizado_por_email}</p>
                         )}
                       </TooltipContent>
                     </Tooltip>
