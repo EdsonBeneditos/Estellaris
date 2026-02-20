@@ -9,6 +9,7 @@ import {
   Activity,
   Target,
   Calendar,
+  BarChart3,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -26,11 +27,14 @@ import {
   CartesianGrid,
   LineChart,
   Line,
+  AreaChart,
+  Area,
   PieChart as RechartsPieChart,
   Pie,
   Cell,
   Legend,
 } from "recharts";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { MovimentacaoCaixa } from "@/hooks/useFinanceiro";
@@ -41,8 +45,12 @@ import {
   parseISO,
   startOfMonth,
   endOfMonth,
+  startOfWeek,
+  endOfWeek,
   eachDayOfInterval,
+  eachWeekOfInterval,
   subMonths,
+  isWithinInterval,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -59,6 +67,7 @@ export function RelatorioFinanceiro() {
   const now = new Date();
   const [dataInicio, setDataInicio] = useState(format(startOfMonth(now), "yyyy-MM-dd"));
   const [dataFim, setDataFim] = useState(format(endOfMonth(now), "yyyy-MM-dd"));
+  const [granularity, setGranularity] = useState<"diario" | "semanal" | "mensal">("diario");
   const { data: centrosCusto = [] } = useCentrosCusto();
 
   // Fetch movimentações filtered by date range using data_movimentacao
@@ -196,6 +205,58 @@ export function RelatorioFinanceiro() {
     return { mediaLiquida, saldoAtual, projecao: saldoAtual + mediaLiquida, tendencia: mediaLiquida > 0 ? "positiva" as const : mediaLiquida < 0 ? "negativa" as const : "estavel" as const };
   }, [allMovimentacoes]);
 
+  // Interactive performance chart data with granularity
+  const performanceData = useMemo(() => {
+    if (!movimentacoes || !dataInicio || !dataFim) return [];
+    const start = parseISO(dataInicio);
+    const end = parseISO(dataFim);
+
+    if (granularity === "diario") {
+      const days = eachDayOfInterval({ start, end });
+      return days.map(day => {
+        const dayStr = format(day, "yyyy-MM-dd");
+        const dayMovs = movimentacoes.filter(m => (m.data_movimentacao || format(parseISO(m.data_hora), "yyyy-MM-dd")) === dayStr);
+        return {
+          label: format(day, "dd/MM", { locale: ptBR }),
+          entradas: dayMovs.filter(m => m.tipo === "Entrada").reduce((a, m) => a + Number(m.valor), 0),
+          saidas: dayMovs.filter(m => m.tipo === "Saída").reduce((a, m) => a + Number(m.valor), 0),
+        };
+      });
+    }
+
+    if (granularity === "semanal") {
+      const weeks = eachWeekOfInterval({ start, end }, { weekStartsOn: 1 });
+      return weeks.map((weekStart, i) => {
+        const weekEnd = i < weeks.length - 1 ? new Date(weeks[i + 1].getTime() - 1) : end;
+        const weekMovs = movimentacoes.filter(m => {
+          const d = parseISO(m.data_movimentacao || format(parseISO(m.data_hora), "yyyy-MM-dd"));
+          return d >= weekStart && d <= weekEnd;
+        });
+        return {
+          label: `Sem ${i + 1}`,
+          entradas: weekMovs.filter(m => m.tipo === "Entrada").reduce((a, m) => a + Number(m.valor), 0),
+          saidas: weekMovs.filter(m => m.tipo === "Saída").reduce((a, m) => a + Number(m.valor), 0),
+        };
+      });
+    }
+
+    // mensal
+    const months: { label: string; entradas: number; saidas: number }[] = [];
+    let cursor = startOfMonth(start);
+    while (cursor <= end) {
+      const mk = format(cursor, "yyyy-MM");
+      const mesLabel = format(cursor, "MMM/yy", { locale: ptBR });
+      const movMes = movimentacoes.filter(m => (m.data_movimentacao || "").startsWith(mk));
+      months.push({
+        label: mesLabel.charAt(0).toUpperCase() + mesLabel.slice(1),
+        entradas: movMes.filter(m => m.tipo === "Entrada").reduce((a, m) => a + Number(m.valor), 0),
+        saidas: movMes.filter(m => m.tipo === "Saída").reduce((a, m) => a + Number(m.valor), 0),
+      });
+      cursor = subMonths(cursor, -1);
+    }
+    return months;
+  }, [movimentacoes, dataInicio, dataFim, granularity]);
+
   if (isLoading) {
     return <div className="flex items-center justify-center h-64 text-muted-foreground">Carregando dados financeiros...</div>;
   }
@@ -220,6 +281,48 @@ export function RelatorioFinanceiro() {
             </div>
             <span className="text-sm text-muted-foreground">{movimentacoes?.length || 0} movimentações</span>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Interactive Performance Chart */}
+      <Card className="border-primary/20">
+        <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
+          <CardTitle className="flex items-center gap-2">
+            <BarChart3 className="h-5 w-5 text-primary" />
+            Performance Financeira
+          </CardTitle>
+          <ToggleGroup type="single" value={granularity} onValueChange={(v) => v && setGranularity(v as any)} className="bg-muted rounded-lg p-1">
+            <ToggleGroupItem value="diario" className="text-xs px-3 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground rounded-md">Diário</ToggleGroupItem>
+            <ToggleGroupItem value="semanal" className="text-xs px-3 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground rounded-md">Semanal</ToggleGroupItem>
+            <ToggleGroupItem value="mensal" className="text-xs px-3 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground rounded-md">Mensal</ToggleGroupItem>
+          </ToggleGroup>
+        </CardHeader>
+        <CardContent>
+          {performanceData.length === 0 ? (
+            <div className="h-[350px] flex items-center justify-center text-muted-foreground">Nenhum dado no período</div>
+          ) : (
+            <ChartContainer config={chartConfig} className="h-[350px] w-full">
+              <AreaChart data={performanceData} margin={{ left: 10, right: 10, top: 10, bottom: 20 }}>
+                <defs>
+                  <linearGradient id="gradEntradas" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10B981" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="gradSaidas" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#F97316" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#F97316" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                <XAxis dataKey="label" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+                <YAxis tick={{ fontSize: 11 }} tickFormatter={v => new Intl.NumberFormat("pt-BR", { notation: "compact" }).format(v)} stroke="hsl(var(--muted-foreground))" />
+                <ChartTooltip content={<ChartTooltipContent formatter={v => formatCurrency(Number(v))} />} />
+                <Legend />
+                <Area type="monotone" dataKey="entradas" name="Entradas" stroke="#10B981" strokeWidth={2} fill="url(#gradEntradas)" />
+                <Area type="monotone" dataKey="saidas" name="Saídas" stroke="#F97316" strokeWidth={2} fill="url(#gradSaidas)" />
+              </AreaChart>
+            </ChartContainer>
+          )}
         </CardContent>
       </Card>
 

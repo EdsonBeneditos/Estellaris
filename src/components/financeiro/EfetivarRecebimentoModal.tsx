@@ -103,6 +103,7 @@ export function EfetivarRecebimentoModal({
             categoria_nome: finalCategoriaNome,
             forma_pagamento: formaPagamento,
             data_hora: dataISO,
+            data_movimentacao: dataRecebimento,
             caixa_id: caixaId || null,
             organization_id: profile.organization_id,
           })
@@ -120,8 +121,10 @@ export function EfetivarRecebimentoModal({
       // Invalidate all relevant queries
       queryClient.invalidateQueries({ queryKey: ["movimentacoes_caixa"] });
       queryClient.invalidateQueries({ queryKey: ["orcamentos"] });
+      queryClient.invalidateQueries({ queryKey: ["pending_budgets_count"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
       queryClient.invalidateQueries({ queryKey: ["relatorios"] });
+      queryClient.invalidateQueries({ queryKey: ["relatorio_movimentacoes"] });
       queryClient.invalidateQueries({ queryKey: ["caixa_aberto"] });
 
       const valorFormatado = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(orcamento.valor_total);

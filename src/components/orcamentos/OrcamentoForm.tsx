@@ -12,6 +12,7 @@ import {
   MapPin,
   Package,
   Save,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,6 +53,7 @@ import { useLeads } from "@/hooks/useLeads";
 import { useProdutos } from "@/hooks/useEstoque";
 import { useCreateOrcamento, useUpdateOrcamento, useBulkCreateOrcamentoItens, Orcamento, OrcamentoItemInsert } from "@/hooks/useOrcamentos";
 import { maskCPFCNPJ, unmask } from "@/lib/masks";
+import { useViaCep } from "@/hooks/useViaCep";
 
 interface CartItem {
   produto_id: string;
@@ -79,6 +81,13 @@ export function OrcamentoForm({ orcamento, onBack, onSuccess }: OrcamentoFormPro
   const [clienteTelefone, setClienteTelefone] = useState(orcamento?.cliente_telefone || "");
   const [clienteEmail, setClienteEmail] = useState(orcamento?.cliente_email || "");
   const [clienteEndereco, setClienteEndereco] = useState(orcamento?.cliente_endereco || "");
+  const [clienteCep, setClienteCep] = useState("");
+  const [clienteLogradouro, setClienteLogradouro] = useState("");
+  const [clienteNumero, setClienteNumero] = useState("");
+  const [clienteComplemento, setClienteComplemento] = useState("");
+  const [clienteBairro, setClienteBairro] = useState("");
+  const [clienteCidade, setClienteCidade] = useState("");
+  const [clienteUf, setClienteUf] = useState("");
   const [leadId, setLeadId] = useState<string | null>(orcamento?.lead_id || null);
   const [observacoes, setObservacoes] = useState(orcamento?.observacoes || "");
   const [validadeDias, setValidadeDias] = useState(orcamento?.validade_dias || 30);
@@ -86,6 +95,8 @@ export function OrcamentoForm({ orcamento, onBack, onSuccess }: OrcamentoFormPro
   const [leadSearchOpen, setLeadSearchOpen] = useState(false);
   const [productSearchOpen, setProductSearchOpen] = useState(false);
   const [leadSearch, setLeadSearch] = useState("");
+
+  const { fetchAddress, isLoading: isLoadingCep } = useViaCep();
 
   const { data: leads } = useLeads();
   const { data: produtos } = useProdutos();
@@ -208,13 +219,16 @@ export function OrcamentoForm({ orcamento, onBack, onSuccess }: OrcamentoFormPro
 
     const dataValidade = addDays(new Date(), validadeDias);
 
+    // Build full address from parts
+    const enderecoCompleto = [clienteLogradouro, clienteNumero, clienteComplemento, clienteBairro, clienteCidade, clienteUf].filter(Boolean).join(", ");
+
     const orcamentoData = {
       lead_id: leadId,
       cliente_nome: clienteNome,
       cliente_cnpj: clienteCnpj || null,
       cliente_telefone: clienteTelefone || null,
       cliente_email: clienteEmail || null,
-      cliente_endereco: clienteEndereco || null,
+      cliente_endereco: enderecoCompleto || clienteEndereco || null,
       status: orcamento?.status || "Pendente",
       subtotal,
       desconto_total: descontoTotal,
@@ -390,17 +404,68 @@ export function OrcamentoForm({ orcamento, onBack, onSuccess }: OrcamentoFormPro
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="cliente_endereco" className="flex items-center gap-2">
+            {/* Address Grid with ViaCEP */}
+            <div className="space-y-3">
+              <Label className="flex items-center gap-2">
                 <MapPin className="h-4 w-4" />
                 Endereço
               </Label>
-              <Input
-                id="cliente_endereco"
-                value={clienteEndereco}
-                onChange={(e) => setClienteEndereco(e.target.value)}
-                placeholder="Endereço completo"
-              />
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="space-y-1">
+                  <Label htmlFor="cliente_cep" className="text-xs text-muted-foreground">CEP</Label>
+                  <div className="relative">
+                    <Input
+                      id="cliente_cep"
+                      value={clienteCep}
+                      onChange={async (e) => {
+                        const v = e.target.value.replace(/\D/g, "").slice(0, 8);
+                        const formatted = v.length > 5 ? `${v.slice(0, 5)}-${v.slice(5)}` : v;
+                        setClienteCep(formatted);
+                        if (v.length === 8) {
+                          const addr = await fetchAddress(v);
+                          if (addr) {
+                            setClienteLogradouro(addr.logradouro);
+                            setClienteBairro(addr.bairro);
+                            setClienteCidade(addr.localidade);
+                            setClienteUf(addr.uf);
+                          }
+                        }
+                      }}
+                      placeholder="00000-000"
+                      maxLength={9}
+                    />
+                    {isLoadingCep && <Loader2 className="absolute right-2 top-2.5 h-4 w-4 animate-spin text-muted-foreground" />}
+                  </div>
+                </div>
+                <div className="space-y-1 sm:col-span-2">
+                  <Label htmlFor="cliente_logradouro" className="text-xs text-muted-foreground">Logradouro</Label>
+                  <Input id="cliente_logradouro" value={clienteLogradouro} onChange={(e) => setClienteLogradouro(e.target.value)} placeholder="Rua, Avenida..." />
+                </div>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-4">
+                <div className="space-y-1">
+                  <Label htmlFor="cliente_numero" className="text-xs text-muted-foreground">Número</Label>
+                  <Input id="cliente_numero" value={clienteNumero} onChange={(e) => setClienteNumero(e.target.value)} placeholder="Nº" />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="cliente_complemento" className="text-xs text-muted-foreground">Complemento</Label>
+                  <Input id="cliente_complemento" value={clienteComplemento} onChange={(e) => setClienteComplemento(e.target.value)} placeholder="Apto, Sala..." />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="cliente_bairro" className="text-xs text-muted-foreground">Bairro</Label>
+                  <Input id="cliente_bairro" value={clienteBairro} onChange={(e) => setClienteBairro(e.target.value)} placeholder="Bairro" />
+                </div>
+                <div className="space-y-1 grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label htmlFor="cliente_cidade" className="text-xs text-muted-foreground">Cidade</Label>
+                    <Input id="cliente_cidade" value={clienteCidade} onChange={(e) => setClienteCidade(e.target.value)} placeholder="Cidade" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="cliente_uf" className="text-xs text-muted-foreground">UF</Label>
+                    <Input id="cliente_uf" value={clienteUf} onChange={(e) => setClienteUf(e.target.value)} placeholder="UF" maxLength={2} />
+                  </div>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
