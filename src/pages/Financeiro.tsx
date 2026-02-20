@@ -51,7 +51,7 @@ export default function Financeiro() {
       <AguardandoFaturamento caixaId={caixaAberto?.id} />
 
       {/* Layout principal */}
-      <div className="grid gap-6 xl:grid-cols-[1fr,320px]">
+      <div className="grid gap-6 xl:grid-cols-[1fr_minmax(0,320px)]">
         {/* Coluna principal */}
         <div className="space-y-6">
           {/* Totalizadores */}
