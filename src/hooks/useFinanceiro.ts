@@ -106,13 +106,13 @@ export function useMovimentacoes(filtros?: {
       let query = supabase
         .from("movimentacoes_caixa")
         .select("*")
-        .order("data_hora", { ascending: false });
+        .order("data_movimentacao", { ascending: false });
 
       if (filtros?.dataInicio) {
-        query = query.gte("data_hora", filtros.dataInicio);
+        query = query.gte("data_movimentacao", filtros.dataInicio);
       }
       if (filtros?.dataFim) {
-        query = query.lte("data_hora", filtros.dataFim + "T23:59:59");
+        query = query.lte("data_movimentacao", filtros.dataFim);
       }
       if (filtros?.formaPagamento && filtros.formaPagamento !== "todos") {
         query = query.eq("forma_pagamento", filtros.formaPagamento);
