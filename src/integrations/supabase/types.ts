@@ -654,6 +654,9 @@ export type Database = {
       }
       leads: {
         Row: {
+          bairro: string | null
+          cep: string | null
+          cidade: string | null
           cnpj: string | null
           created_at: string
           data_retorno: string | null
@@ -661,11 +664,13 @@ export type Database = {
           empresa: string | null
           id: string
           localizacao: string | null
+          logradouro: string | null
           meio_contato: string | null
           mes_referencia: string | null
           motivo_perda: string | null
           motivo_perda_detalhe: string | null
           nome_contato: string | null
+          numero: string | null
           organization_id: string | null
           origem: string | null
           prioridade: string | null
@@ -674,9 +679,13 @@ export type Database = {
           telefone: string | null
           tipo_atendimento: string | null
           tipo_servico: string | null
+          uf: string | null
           vendedor: string | null
         }
         Insert: {
+          bairro?: string | null
+          cep?: string | null
+          cidade?: string | null
           cnpj?: string | null
           created_at?: string
           data_retorno?: string | null
@@ -684,11 +693,13 @@ export type Database = {
           empresa?: string | null
           id?: string
           localizacao?: string | null
+          logradouro?: string | null
           meio_contato?: string | null
           mes_referencia?: string | null
           motivo_perda?: string | null
           motivo_perda_detalhe?: string | null
           nome_contato?: string | null
+          numero?: string | null
           organization_id?: string | null
           origem?: string | null
           prioridade?: string | null
@@ -697,9 +708,13 @@ export type Database = {
           telefone?: string | null
           tipo_atendimento?: string | null
           tipo_servico?: string | null
+          uf?: string | null
           vendedor?: string | null
         }
         Update: {
+          bairro?: string | null
+          cep?: string | null
+          cidade?: string | null
           cnpj?: string | null
           created_at?: string
           data_retorno?: string | null
@@ -707,11 +722,13 @@ export type Database = {
           empresa?: string | null
           id?: string
           localizacao?: string | null
+          logradouro?: string | null
           meio_contato?: string | null
           mes_referencia?: string | null
           motivo_perda?: string | null
           motivo_perda_detalhe?: string | null
           nome_contato?: string | null
+          numero?: string | null
           organization_id?: string | null
           origem?: string | null
           prioridade?: string | null
@@ -720,6 +737,7 @@ export type Database = {
           telefone?: string | null
           tipo_atendimento?: string | null
           tipo_servico?: string | null
+          uf?: string | null
           vendedor?: string | null
         }
         Relationships: [
@@ -1442,6 +1460,8 @@ export type Database = {
         Row: {
           ativo: boolean
           cest: string | null
+          cfop: string | null
+          codigo_servico_municipal: string | null
           created_at: string
           cst_csosn: string | null
           grupo_id: string | null
@@ -1461,6 +1481,8 @@ export type Database = {
         Insert: {
           ativo?: boolean
           cest?: string | null
+          cfop?: string | null
+          codigo_servico_municipal?: string | null
           created_at?: string
           cst_csosn?: string | null
           grupo_id?: string | null
@@ -1480,6 +1502,8 @@ export type Database = {
         Update: {
           ativo?: boolean
           cest?: string | null
+          cfop?: string | null
+          codigo_servico_municipal?: string | null
           created_at?: string
           cst_csosn?: string | null
           grupo_id?: string | null
@@ -1659,7 +1683,12 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      view_pendencias_faturamento: {
+        Row: {
+          total: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       get_user_organization_id: { Args: never; Returns: string }
