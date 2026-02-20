@@ -142,6 +142,8 @@ export const useUpdateOrcamento = () => {
       queryClient.invalidateQueries({ queryKey: ["orcamentos"] });
       queryClient.invalidateQueries({ queryKey: ["orcamento"] });
       queryClient.invalidateQueries({ queryKey: ["produtos"] });
+      queryClient.invalidateQueries({ queryKey: ["pending_budgets_count"] });
+      queryClient.invalidateQueries({ queryKey: ["movimentacoes_caixa"] });
       toast.success("Orçamento atualizado com sucesso!");
     },
     onError: (error) => {
