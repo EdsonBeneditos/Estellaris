@@ -49,6 +49,7 @@ const formSchema = z.object({
   ativo: z.boolean(),
   ncm: z.string().length(8, "NCM deve ter 8 dígitos").regex(/^\d+$/, "NCM deve conter apenas números").optional().or(z.literal("")),
   cest: z.string().optional().or(z.literal("")),
+  cfop: z.string().optional().or(z.literal("")),
   origem_mercadoria: z.coerce.number().min(0).max(8),
   cst_csosn: z.string().optional().or(z.literal("")),
 });
@@ -131,6 +132,7 @@ export function ProdutoModal({ open, onOpenChange, produto }: ProdutoModalProps)
       ativo: true,
       ncm: "00000000",
       cest: "",
+      cfop: "5102",
       origem_mercadoria: 0,
       cst_csosn: "102",
     },
@@ -150,6 +152,7 @@ export function ProdutoModal({ open, onOpenChange, produto }: ProdutoModalProps)
         ativo: produto.ativo,
         ncm: produto.ncm || "00000000",
         cest: produto.cest || "",
+        cfop: produto.cfop || "5102",
         origem_mercadoria: produto.origem_mercadoria ?? 0,
         cst_csosn: produto.cst_csosn || "102",
       });
@@ -166,6 +169,7 @@ export function ProdutoModal({ open, onOpenChange, produto }: ProdutoModalProps)
         ativo: true,
         ncm: "00000000",
         cest: "",
+        cfop: "5102",
         origem_mercadoria: 0,
         cst_csosn: "102",
       });
@@ -207,6 +211,7 @@ export function ProdutoModal({ open, onOpenChange, produto }: ProdutoModalProps)
         ativo: data.ativo,
         ncm: data.ncm || "00000000",
         cest: data.cest || null,
+        cfop: data.cfop || "5102",
         origem_mercadoria: data.origem_mercadoria,
         cst_csosn: data.cst_csosn || "102",
       };
@@ -455,6 +460,34 @@ export function ProdutoModal({ open, onOpenChange, produto }: ProdutoModalProps)
                 />
               </div>
 
+              <FormField
+                control={form.control}
+                name="cfop"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>CFOP Padrão</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value || "5102"}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione CFOP" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="5102">5102 - Venda de mercadoria</SelectItem>
+                        <SelectItem value="5405">5405 - Venda com ST</SelectItem>
+                        <SelectItem value="5933">5933 - Prestação de serviço</SelectItem>
+                        <SelectItem value="6102">6102 - Venda interestadual</SelectItem>
+                        <SelectItem value="6108">6108 - Venda interestadual não contribuinte</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription className="text-xs">
+                      Código fiscal usado na emissão de NF
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
               <FormField
                 control={form.control}
                 name="origem_mercadoria"

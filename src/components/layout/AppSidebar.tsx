@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { isModuleEnabled, hasAnyReport, ModuleKey, AVAILABLE_MODULES } from "@/lib/modules";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { usePendingBudgetsCount } from "@/hooks/usePendingBudgets";
 
 import {
   Sidebar,
@@ -50,6 +51,7 @@ export function AppSidebar() {
   const { canViewSettings, canManageTeam } = usePermissions();
   const { data: isSuperAdmin } = useIsSuperAdmin();
   const { data: organization } = useCurrentOrganization();
+  const { data: pendingBudgets = 0 } = usePendingBudgetsCount();
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -166,6 +168,11 @@ export function AppSidebar() {
                     >
                       <item.icon className="h-5 w-5 shrink-0 transition-transform duration-200" />
                       <span className="transition-opacity duration-200">{item.title}</span>
+                      {item.url === "/financeiro" && pendingBudgets > 0 && (
+                        <Badge className="ml-auto h-5 min-w-5 px-1.5 text-[10px] bg-destructive text-destructive-foreground border-0 rounded-full">
+                          {pendingBudgets}
+                        </Badge>
+                      )}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

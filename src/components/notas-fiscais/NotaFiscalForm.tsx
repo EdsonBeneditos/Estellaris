@@ -89,6 +89,9 @@ export function NotaFiscalForm({ nota, orcamentoId, onBack, onSuccess }: NotaFis
   // Destinatário
   const [destinatarioNome, setDestinatarioNome] = useState(nota?.destinatario_nome || "");
   const [destinatarioCnpj, setDestinatarioCnpj] = useState(nota?.destinatario_cnpj || "");
+  const [destinatarioLogradouro, setDestinatarioLogradouro] = useState((nota as any)?.destinatario_logradouro || "");
+  const [destinatarioNumero, setDestinatarioNumero] = useState((nota as any)?.destinatario_numero || "");
+  const [destinatarioBairro, setDestinatarioBairro] = useState((nota as any)?.destinatario_bairro || "");
   const [destinatarioEndereco, setDestinatarioEndereco] = useState(nota?.destinatario_endereco || "");
   const [destinatarioCidade, setDestinatarioCidade] = useState(nota?.destinatario_cidade || "");
   const [destinatarioUf, setDestinatarioUf] = useState(nota?.destinatario_uf || "");
@@ -184,7 +187,7 @@ export function NotaFiscalForm({ nota, orcamentoId, onBack, onSuccess }: NotaFis
           codigo: produto.sku,
           descricao: produto.nome,
           ncm: produto.ncm || "00000000",
-          cfop: cfopPadrao,
+          cfop: produto.cfop || cfopPadrao,
           cst_csosn: produto.cst_csosn || "102",
           origem: produto.origem_mercadoria ?? 0,
           unidade: produto.unidade_medida,
@@ -230,6 +233,11 @@ export function NotaFiscalForm({ nota, orcamentoId, onBack, onSuccess }: NotaFis
   const valorDesconto = orcamento?.desconto_total || 0;
   const valorTotal = valorProdutos + valorFrete + valorSeguro + valorOutrasDespesas - valorDesconto;
   const totalIcms = items.reduce((sum, item) => sum + item.valor_icms, 0);
+  
+  // Fiscal validation
+  const hasInvalidNcm = items.some((item) => !item.ncm || item.ncm === "00000000");
+  const hasMissingCnpj = !destinatarioCnpj.trim();
+  const isFiscalIncomplete = hasInvalidNcm || hasMissingCnpj;
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -261,13 +269,16 @@ export function NotaFiscalForm({ nota, orcamentoId, onBack, onSuccess }: NotaFis
       emitente_ie: emitenteIe,
       destinatario_nome: destinatarioNome,
       destinatario_cnpj: destinatarioCnpj || null,
-      destinatario_endereco: destinatarioEndereco || null,
+      destinatario_endereco: destinatarioEndereco || [destinatarioLogradouro, destinatarioNumero].filter(Boolean).join(", ") || null,
       destinatario_cidade: destinatarioCidade || null,
       destinatario_uf: destinatarioUf || null,
       destinatario_cep: destinatarioCep || null,
       destinatario_telefone: destinatarioTelefone || null,
       destinatario_email: destinatarioEmail || null,
       destinatario_ie: destinatarioIe || null,
+      destinatario_logradouro: destinatarioLogradouro || null,
+      destinatario_numero: destinatarioNumero || null,
+      destinatario_bairro: destinatarioBairro || null,
       chave_acesso: null,
       natureza_operacao: naturezaOperacao,
       data_emissao: new Date().toISOString(),
@@ -417,11 +428,16 @@ export function NotaFiscalForm({ nota, orcamentoId, onBack, onSuccess }: NotaFis
                 />
               </div>
               <div className="space-y-2">
-                <Label>CNPJ / CPF</Label>
+                <Label>CNPJ / CPF *</Label>
                 <Input
                   value={destinatarioCnpj}
                   onChange={(e) => setDestinatarioCnpj(e.target.value)}
+                  placeholder="00.000.000/0001-00"
+                  className={!destinatarioCnpj.trim() ? "border-amber-500" : ""}
                 />
+                {!destinatarioCnpj.trim() && (
+                  <p className="text-xs text-amber-600">Obrigatório para emissão fiscal</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label>Inscrição Estadual</Label>
@@ -430,11 +446,37 @@ export function NotaFiscalForm({ nota, orcamentoId, onBack, onSuccess }: NotaFis
                   onChange={(e) => setDestinatarioIe(e.target.value)}
                 />
               </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label>Endereço</Label>
+              <div className="space-y-2">
+                <Label>CEP</Label>
                 <Input
-                  value={destinatarioEndereco}
-                  onChange={(e) => setDestinatarioEndereco(e.target.value)}
+                  value={destinatarioCep}
+                  onChange={(e) => setDestinatarioCep(e.target.value)}
+                  placeholder="00000-000"
+                  maxLength={9}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Logradouro</Label>
+                <Input
+                  value={destinatarioLogradouro}
+                  onChange={(e) => setDestinatarioLogradouro(e.target.value)}
+                  placeholder="Rua, Av, etc."
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Número</Label>
+                <Input
+                  value={destinatarioNumero}
+                  onChange={(e) => setDestinatarioNumero(e.target.value)}
+                  placeholder="Nº"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Bairro</Label>
+                <Input
+                  value={destinatarioBairro}
+                  onChange={(e) => setDestinatarioBairro(e.target.value)}
+                  placeholder="Bairro"
                 />
               </div>
               <div className="space-y-2">
@@ -783,12 +825,26 @@ export function NotaFiscalForm({ nota, orcamentoId, onBack, onSuccess }: NotaFis
         </CardContent>
       </Card>
 
+      {/* Fiscal Validation Warning */}
+      {isFiscalIncomplete && items.length > 0 && (
+        <div className="flex items-center gap-2 rounded-lg border border-amber-500/50 bg-amber-50 dark:bg-amber-900/20 p-4 text-sm text-amber-800 dark:text-amber-300">
+          <FileText className="h-5 w-5 flex-shrink-0" />
+          <div>
+            <p className="font-medium">Dados fiscais incompletos</p>
+            <ul className="mt-1 text-xs space-y-0.5">
+              {hasInvalidNcm && <li>• NCM não preenchido ou padrão (00000000) em um ou mais produtos</li>}
+              {hasMissingCnpj && <li>• CNPJ/CPF do destinatário não informado</li>}
+            </ul>
+          </div>
+        </div>
+      )}
+
       {/* Actions */}
       <div className="flex justify-end gap-4">
         <Button variant="outline" onClick={onBack}>
           Cancelar
         </Button>
-        <Button onClick={handleSubmit} disabled={isPending} className="gap-2">
+        <Button onClick={handleSubmit} disabled={isPending || isFiscalIncomplete} className="gap-2">
           <Save className="h-4 w-4" />
           {isPending ? "Salvando..." : isEditing ? "Atualizar Nota" : "Salvar Nota Fiscal"}
         </Button>
