@@ -160,9 +160,9 @@ export function MovimentacoesTable({ movimentacoes, caixaId }: MovimentacoesTabl
         <span>Registros de auditoria são automáticos e imutáveis para segurança da empresa.</span>
       </div>
 
-      <div className="rounded-md border border-border/50">
+      <div className="rounded-md border border-border/50 max-h-[500px] overflow-auto relative">
         <Table>
-          <TableHeader>
+          <TableHeader className="sticky top-0 z-10 bg-muted/95 backdrop-blur-sm">
             <TableRow className="bg-muted/30">
               <TableHead className="w-[120px]">Data</TableHead>
               <TableHead className="text-right w-[110px]">Valor</TableHead>

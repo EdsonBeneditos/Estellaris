@@ -170,9 +170,9 @@ export function ProdutosTable() {
         ) : (
           <>
             {/* Desktop Table */}
-            <div className="hidden md:block overflow-x-auto">
+            <div className="hidden md:block max-h-[500px] overflow-auto relative">
               <Table>
-                <TableHeader>
+                <TableHeader className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm">
                   <TableRow className="hover:bg-transparent">
                     <TableHead>Produto</TableHead>
                     <TableHead>SKU</TableHead>

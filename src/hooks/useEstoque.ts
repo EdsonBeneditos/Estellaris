@@ -27,6 +27,7 @@ export interface Produto {
   cest: string | null;
   origem_mercadoria: number | null;
   cst_csosn: string | null;
+  cfop: string | null;
   organization_id: string | null;
   created_at: string;
   updated_at: string;

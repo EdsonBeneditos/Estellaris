@@ -940,13 +940,16 @@ export type Database = {
           created_at: string
           data_emissao: string | null
           data_saida: string | null
+          destinatario_bairro: string | null
           destinatario_cep: string | null
           destinatario_cidade: string | null
           destinatario_cnpj: string | null
           destinatario_email: string | null
           destinatario_endereco: string | null
           destinatario_ie: string | null
+          destinatario_logradouro: string | null
           destinatario_nome: string
+          destinatario_numero: string | null
           destinatario_telefone: string | null
           destinatario_uf: string | null
           emitente_cep: string | null
@@ -988,13 +991,16 @@ export type Database = {
           created_at?: string
           data_emissao?: string | null
           data_saida?: string | null
+          destinatario_bairro?: string | null
           destinatario_cep?: string | null
           destinatario_cidade?: string | null
           destinatario_cnpj?: string | null
           destinatario_email?: string | null
           destinatario_endereco?: string | null
           destinatario_ie?: string | null
+          destinatario_logradouro?: string | null
           destinatario_nome: string
+          destinatario_numero?: string | null
           destinatario_telefone?: string | null
           destinatario_uf?: string | null
           emitente_cep?: string | null
@@ -1036,13 +1042,16 @@ export type Database = {
           created_at?: string
           data_emissao?: string | null
           data_saida?: string | null
+          destinatario_bairro?: string | null
           destinatario_cep?: string | null
           destinatario_cidade?: string | null
           destinatario_cnpj?: string | null
           destinatario_email?: string | null
           destinatario_endereco?: string | null
           destinatario_ie?: string | null
+          destinatario_logradouro?: string | null
           destinatario_nome?: string
+          destinatario_numero?: string | null
           destinatario_telefone?: string | null
           destinatario_uf?: string | null
           emitente_cep?: string | null

@@ -22,6 +22,7 @@ export default function Financeiro() {
     dataFim: format(endOfMonth(now), "yyyy-MM-dd"),
     formaPagamento: "todos",
     tipo: "todos",
+    busca: "",
   });
 
   const [novaMovimentacaoOpen, setNovaMovimentacaoOpen] = useState(false);
@@ -85,7 +86,15 @@ export default function Financeiro() {
                 </div>
               ) : (
                 <MovimentacoesTable
-                  movimentacoes={movimentacoes || []}
+                  movimentacoes={(movimentacoes || []).filter((m) => {
+                    if (!filtros.busca) return true;
+                    const term = filtros.busca.toLowerCase();
+                    return (
+                      m.descricao?.toLowerCase().includes(term) ||
+                      m.categoria_nome?.toLowerCase().includes(term) ||
+                      m.usuario_email?.toLowerCase().includes(term)
+                    );
+                  })}
                   caixaId={caixaAberto?.id}
                 />
               )}

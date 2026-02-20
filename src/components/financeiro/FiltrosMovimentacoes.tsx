@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Calendar, Filter } from "lucide-react";
+import { Calendar, Filter, Search } from "lucide-react";
 import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 
 interface FiltrosMovimentacoesProps {
@@ -17,12 +17,14 @@ interface FiltrosMovimentacoesProps {
     dataFim: string;
     formaPagamento: string;
     tipo: string;
+    busca: string;
   };
   onFiltrosChange: (filtros: {
     dataInicio: string;
     dataFim: string;
     formaPagamento: string;
     tipo: string;
+    busca: string;
   }) => void;
 }
 
@@ -66,6 +68,17 @@ export function FiltrosMovimentacoes({ filtros, onFiltrosChange }: FiltrosMovime
 
   return (
     <div className="space-y-4">
+      {/* Search bar */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Buscar por descrição, categoria ou usuário..."
+          className="pl-10"
+          value={filtros.busca}
+          onChange={(e) => onFiltrosChange({ ...filtros, busca: e.target.value })}
+        />
+      </div>
+
       {/* Quick filters */}
       <div className="flex flex-wrap gap-2">
         <Button
