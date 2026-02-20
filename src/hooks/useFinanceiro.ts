@@ -22,6 +22,7 @@ export interface MovimentacaoCaixa {
   forma_pagamento: string;
   descricao: string | null;
   data_hora: string;
+  data_movimentacao: string | null;
   usuario_email: string | null;
   realizado_por: string | null;
   autorizado_por: string | null;

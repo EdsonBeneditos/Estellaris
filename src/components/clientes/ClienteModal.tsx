@@ -10,6 +10,7 @@ import { Cliente, useCreateCliente, useUpdateCliente } from "@/hooks/useClientes
 import { applyCNPJMask, applyPhoneMask, applyCEPMask } from "@/lib/masks";
 import { VisitaConfirmDialog } from "./VisitaConfirmDialog";
 import { useCreateAtividade } from "@/hooks/useAtividadesCliente";
+import { useViaCep } from "@/hooks/useViaCep";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -37,6 +38,19 @@ export function ClienteModal({ open, onOpenChange, cliente }: ClienteModalProps)
   const createCliente = useCreateCliente();
   const updateCliente = useUpdateCliente();
   const createAtividade = useCreateAtividade();
+  const { fetchAddress, isLoading: isLoadingCep } = useViaCep();
+
+  const handleCepBlur = async () => {
+    const result = await fetchAddress(formData.cep);
+    if (result) {
+      setFormData(prev => ({
+        ...prev,
+        endereco: result.logradouro || prev.endereco,
+        cidade: result.localidade || prev.cidade,
+        uf: result.uf || prev.uf,
+      }));
+    }
+  };
   
   const [formData, setFormData] = useState({
     nome: "",
@@ -265,8 +279,10 @@ export function ClienteModal({ open, onOpenChange, cliente }: ClienteModalProps)
                     id="cep"
                     value={formData.cep}
                     onChange={(e) => setFormData({ ...formData, cep: applyCEPMask(e.target.value) })}
+                    onBlur={handleCepBlur}
                     placeholder="00000-000"
                   />
+                  {isLoadingCep && <span className="text-xs text-muted-foreground">Buscando...</span>}
                 </div>
               </div>
             </div>

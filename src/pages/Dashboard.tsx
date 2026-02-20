@@ -147,7 +147,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="space-y-8 max-w-full overflow-visible">
+    <div className="space-y-8 w-full max-w-full overflow-x-hidden overflow-y-visible">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="min-w-0">

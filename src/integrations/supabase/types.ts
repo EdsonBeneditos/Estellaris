@@ -760,6 +760,7 @@ export type Database = {
           centro_custo_id: string | null
           created_at: string
           data_hora: string
+          data_movimentacao: string | null
           descricao: string | null
           forma_pagamento: string
           id: string
@@ -779,6 +780,7 @@ export type Database = {
           centro_custo_id?: string | null
           created_at?: string
           data_hora?: string
+          data_movimentacao?: string | null
           descricao?: string | null
           forma_pagamento?: string
           id?: string
@@ -798,6 +800,7 @@ export type Database = {
           centro_custo_id?: string | null
           created_at?: string
           data_hora?: string
+          data_movimentacao?: string | null
           descricao?: string | null
           forma_pagamento?: string
           id?: string
