@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Save, Clock, Calendar, Palette, Globe, Shield, Upload, Image, Loader2 } from "lucide-react";
+import { Save, Clock, Calendar, Palette, Globe, Shield, Upload, Image, Loader2, UserCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { useCurrentOrganization, useUpdateOrganization } from "@/hooks/useOrganization";
+import { useCurrentOrganization, useUpdateOrganization, useCurrentProfile } from "@/hooks/useOrganization";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Language } from "@/lib/i18n/translations";
@@ -28,6 +28,7 @@ const DAYS = [
 
 export function OrganizationSettings() {
   const { data: organization, isLoading } = useCurrentOrganization();
+  const { data: currentProfile } = useCurrentProfile();
   const { theme, setTheme } = useTheme();
   const { language, setLanguage, t } = useLanguage();
   const queryClient = useQueryClient();
@@ -42,6 +43,8 @@ export function OrganizationSettings() {
   const [isSavingLetterhead, setIsSavingLetterhead] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [idNome, setIdNome] = useState("");
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
 
   useEffect(() => {
     if (organization) {
@@ -60,6 +63,12 @@ export function OrganizationSettings() {
       setLogoUrl(org.orcamento_logo_url || null);
     }
   }, [organization]);
+
+  useEffect(() => {
+    if (currentProfile) {
+      setIdNome(currentProfile.id_nome || "");
+    }
+  }, [currentProfile]);
 
   const toggleDay = (day: string) => {
     setDiasAcesso((prev) =>
@@ -157,6 +166,26 @@ export function OrganizationSettings() {
       setIsSavingLetterhead(false);
     }
   };
+  const handleSaveProfile = async () => {
+    if (!currentProfile) return;
+    setIsSavingProfile(true);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ id_nome: idNome.trim() || null })
+        .eq("id", currentProfile.id);
+
+      if (error) throw error;
+
+      await queryClient.invalidateQueries({ queryKey: ["current-profile"] });
+      await queryClient.invalidateQueries({ queryKey: ["organization-members"] });
+      toast.success("Nome de exibição salvo com sucesso!");
+    } catch (error: any) {
+      toast.error("Erro ao salvar", { description: error.message });
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -174,6 +203,48 @@ export function OrganizationSettings() {
 
   return (
     <div className="space-y-6">
+      {/* Perfil do Usuário - ID Nome */}
+      <Card className="bg-gradient-to-br from-slate-50 to-zinc-100 dark:from-zinc-900 dark:to-slate-900 border-slate-200 dark:border-zinc-800">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <UserCircle className="h-5 w-5 text-blue-600" />
+            Meu Perfil
+          </CardTitle>
+          <CardDescription>
+            Configure seu nome de exibição (ID Nome) — será usado nas tabelas de movimentações e auditorias
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Nome de Exibição (ID Nome)</Label>
+              <Input
+                placeholder="Ex: João Silva"
+                value={idNome}
+                onChange={(e) => setIdNome(e.target.value)}
+                className="bg-background"
+              />
+              <p className="text-xs text-muted-foreground">
+                Este nome aparecerá nas colunas 'Quem Fez' e 'Autorizou' das movimentações.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label>E-mail</Label>
+              <Input value={currentProfile?.email || ""} disabled className="bg-muted" />
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <Button onClick={handleSaveProfile} disabled={isSavingProfile} className="gap-2">
+              {isSavingProfile ? (
+                <><Loader2 className="h-4 w-4 animate-spin" /> Salvando...</>
+              ) : (
+                <><Save className="h-4 w-4" /> Salvar Perfil</>
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Theme and Language */}
       <Card className="bg-gradient-to-br from-slate-50 to-zinc-100 dark:from-zinc-900 dark:to-slate-900 border-slate-200 dark:border-zinc-800">
         <CardHeader>

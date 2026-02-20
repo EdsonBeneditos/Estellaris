@@ -18,6 +18,7 @@ export interface Profile {
   organization_id: string;
   nome: string;
   email: string;
+  id_nome: string | null;
   avatar_url: string | null;
   is_super_admin: boolean | null;
   dias_acesso: string[] | null;

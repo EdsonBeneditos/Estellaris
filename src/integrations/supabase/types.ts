@@ -1558,6 +1558,7 @@ export type Database = {
           horario_fim: string | null
           horario_inicio: string | null
           id: string
+          id_nome: string | null
           is_super_admin: boolean | null
           nome: string
           organization_id: string
@@ -1572,6 +1573,7 @@ export type Database = {
           horario_fim?: string | null
           horario_inicio?: string | null
           id: string
+          id_nome?: string | null
           is_super_admin?: boolean | null
           nome: string
           organization_id: string
@@ -1586,6 +1588,7 @@ export type Database = {
           horario_fim?: string | null
           horario_inicio?: string | null
           id?: string
+          id_nome?: string | null
           is_super_admin?: boolean | null
           nome?: string
           organization_id?: string
