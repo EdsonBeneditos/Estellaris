@@ -1703,6 +1703,7 @@ export type Database = {
       }
     }
     Functions: {
+      get_start_of_month_br: { Args: never; Returns: string }
       get_today_br: { Args: never; Returns: string }
       get_user_organization_id: { Args: never; Returns: string }
       has_role: {

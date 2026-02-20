@@ -55,6 +55,7 @@ import { toast } from "sonner";
 interface MovimentacoesTableProps {
   movimentacoes: MovimentacaoCaixa[];
   caixaId?: string | null;
+  valoresVisiveis?: boolean;
 }
 
 const formatCurrency = (value: number) => {
@@ -70,7 +71,7 @@ const truncateEmail = (email: string | null) => {
   return local.length > 8 ? local.substring(0, 8) + "..." : local;
 };
 
-export function MovimentacoesTable({ movimentacoes, caixaId }: MovimentacoesTableProps) {
+export function MovimentacoesTable({ movimentacoes, caixaId, valoresVisiveis = false }: MovimentacoesTableProps) {
   const deleteMovimentacao = useDeleteMovimentacao();
   const [editMovimentacao, setEditMovimentacao] = useState<MovimentacaoCaixa | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -239,8 +240,14 @@ export function MovimentacoesTable({ movimentacoes, caixaId }: MovimentacoesTabl
                     mov.tipo === "Entrada" ? "text-emerald-600" : "text-red-600"
                   )}
                 >
-                  {mov.tipo === "Entrada" ? "+" : "-"}
-                  {formatCurrency(Number(mov.valor))}
+                  {valoresVisiveis ? (
+                    <>
+                      {mov.tipo === "Entrada" ? "+" : "-"}
+                      {formatCurrency(Number(mov.valor))}
+                    </>
+                  ) : (
+                    "R$ ••••"
+                  )}
                 </TableCell>
                 <TableCell>
                   <div>

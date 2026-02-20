@@ -128,24 +128,7 @@ export function RelatorioFinanceiro() {
     return months;
   }, [allMovimentacoes]);
 
-  // Saldo acumulado diário no período filtrado
-  const saldoAcumulado = useMemo(() => {
-    if (!movimentacoes || !dataInicio || !dataFim) return [];
-    const start = parseISO(dataInicio);
-    const end = parseISO(dataFim);
-    const days = eachDayOfInterval({ start, end });
-
-    let saldo = 0;
-    return days.map(day => {
-      const dayStr = format(day, "yyyy-MM-dd");
-      movimentacoes
-        .filter(m => (m.data_movimentacao || format(parseISO(m.data_hora), "yyyy-MM-dd")) === dayStr)
-        .forEach(m => {
-          saldo += m.tipo === "Entrada" ? Number(m.valor) : -Number(m.valor);
-        });
-      return { dia: format(day, "dd"), diaCompleto: format(day, "dd/MM", { locale: ptBR }), saldo };
-    });
-  }, [movimentacoes, dataInicio, dataFim]);
+  // (Accumulated balance chart removed — volume chart used instead)
 
   // Mix pagamentos entradas
   const mixEntradas = useMemo(() => {
@@ -402,23 +385,7 @@ export function RelatorioFinanceiro() {
           </CardContent>
         </Card>
 
-        {/* Saúde do Caixa */}
-        <Card className="relative overflow-visible transition-all duration-200 hover:shadow-lg hover:border-primary/30">
-          <CardHeader><CardTitle className="flex items-center gap-2"><Activity className="h-5 w-5" />Saúde do Caixa (Período)</CardTitle></CardHeader>
-          <CardContent>
-            {saldoAcumulado.length === 0 ? <div className="h-[300px] flex items-center justify-center text-muted-foreground">Nenhum dado</div> : (
-              <ChartContainer config={chartConfig} className="h-[300px] w-full">
-                <LineChart data={saldoAcumulado} margin={{ left: 10, right: 10, top: 20, bottom: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="dia" tick={{ fontSize: 11 }} interval="preserveStartEnd" />
-                  <YAxis tick={{ fontSize: 11 }} tickFormatter={v => new Intl.NumberFormat("pt-BR", { notation: "compact" }).format(v)} />
-                  <ChartTooltip content={<ChartTooltipContent formatter={v => formatCurrency(Number(v))} labelFormatter={(_, p) => p?.[0] ? `Dia ${p[0].payload.diaCompleto}` : ""} />} />
-                  <Line type="monotone" dataKey="saldo" name="Saldo" stroke="#3B82F6" strokeWidth={2} dot={false} activeDot={{ r: 6, fill: "#3B82F6" }} />
-                </LineChart>
-              </ChartContainer>
-            )}
-          </CardContent>
-        </Card>
+        {/* Removed accumulated balance chart — use Performance chart above for volume analysis */}
 
         {/* Mix Entradas */}
         <Card className="relative overflow-visible transition-all duration-200 hover:shadow-lg hover:border-primary/30">

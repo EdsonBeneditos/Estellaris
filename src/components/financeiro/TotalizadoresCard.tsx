@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { ArrowUpCircle, ArrowDownCircle, Wallet, CreditCard, Banknote, Smartphone, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -7,6 +8,8 @@ interface TotalizadoresCardProps {
   totalSaidas: number;
   saldoLiquido: number;
   porFormaPagamento: Record<string, number>;
+  valoresVisiveis?: boolean;
+  periodLabel?: string;
 }
 
 const formatCurrency = (value: number) => {
@@ -15,6 +18,8 @@ const formatCurrency = (value: number) => {
     currency: "BRL",
   }).format(value);
 };
+
+const maskedValue = "R$ ••••";
 
 const getDynamicFontClass = (value: number) => {
   const abs = Math.abs(value);
@@ -38,7 +43,11 @@ export function TotalizadoresCard({
   totalSaidas,
   saldoLiquido,
   porFormaPagamento,
+  valoresVisiveis = false,
+  periodLabel = "Neste mês",
 }: TotalizadoresCardProps) {
+  const displayValue = (value: number) => valoresVisiveis ? formatCurrency(value) : maskedValue;
+
   return (
     <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4 p-1 -m-1">
       {/* Total Entradas */}
@@ -51,8 +60,9 @@ export function TotalizadoresCard({
         </CardHeader>
         <CardContent>
           <div className={cn(getDynamicFontClass(totalEntradas), "font-bold text-emerald-600 break-all leading-tight")} title={formatCurrency(totalEntradas)}>
-            {formatCurrency(totalEntradas)}
+            {displayValue(totalEntradas)}
           </div>
+          <Badge variant="secondary" className="mt-2 text-xs font-normal">{periodLabel}</Badge>
         </CardContent>
       </Card>
 
@@ -66,8 +76,9 @@ export function TotalizadoresCard({
         </CardHeader>
         <CardContent>
           <div className={cn(getDynamicFontClass(totalSaidas), "font-bold text-red-600 break-all leading-tight")} title={formatCurrency(totalSaidas)}>
-            {formatCurrency(totalSaidas)}
+            {displayValue(totalSaidas)}
           </div>
+          <Badge variant="secondary" className="mt-2 text-xs font-normal">{periodLabel}</Badge>
         </CardContent>
       </Card>
 
@@ -88,8 +99,9 @@ export function TotalizadoresCard({
             )}
             title={formatCurrency(saldoLiquido)}
           >
-            {formatCurrency(saldoLiquido)}
+            {displayValue(saldoLiquido)}
           </div>
+          <Badge variant="secondary" className="mt-2 text-xs font-normal">{periodLabel}</Badge>
         </CardContent>
       </Card>
 
@@ -111,7 +123,7 @@ export function TotalizadoresCard({
                   <span>{forma}</span>
                 </div>
                 <span className="font-medium text-foreground">
-                  {formatCurrency(valor)}
+                  {valoresVisiveis ? formatCurrency(valor) : maskedValue}
                 </span>
               </div>
             ))
