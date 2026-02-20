@@ -1,0 +1,1 @@
+UPDATE movimentacoes_caixa SET organization_id = '42879cb7-4372-4e7c-a177-7237e63f5f88' WHERE organization_id IS NULL AND orcamento_id IN ('7230ec0d-0250-4276-bac4-f31f20a3c762', '6723d738-3ca2-4b88-b5aa-34e6a6d9e3ab', '2dc9bef0-1ac0-48ca-a863-e92e47c4804c');
