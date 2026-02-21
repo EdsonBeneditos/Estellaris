@@ -41,7 +41,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { MoreHorizontal, Pencil, Trash2, ArrowUpCircle, ArrowDownCircle, User, UserCheck, Lock, FileText, XCircle, Loader2 } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, ArrowUpCircle, ArrowDownCircle, User, Lock, FileText, XCircle, Loader2 } from "lucide-react";
 import { MovimentacaoCaixa, useDeleteMovimentacao } from "@/hooks/useFinanceiro";
 import { MovimentacaoModal } from "./MovimentacaoModal";
 import { EmitirNFModal } from "./EmitirNFModal";
@@ -168,56 +168,20 @@ export function MovimentacoesTable({ movimentacoes, caixaId, valoresVisiveis = f
       </div>
 
       <div className="rounded-md border border-border/50 max-h-[500px] overflow-auto relative">
-        <Table className="min-w-[800px]">
+        <Table>
           <TableHeader className="sticky top-0 z-10 bg-muted/95 backdrop-blur-sm">
             <TableRow className="bg-muted/30">
-              <TableHead className="w-[110px]">Data</TableHead>
-              <TableHead className="text-right w-[120px]">Valor</TableHead>
-              <TableHead className="min-w-[140px]">Categoria</TableHead>
-              <TableHead className="w-[100px]">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="cursor-help">Pagamento</span>
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-[250px]">
-                      <p className="font-medium">Forma de Pagamento</p>
-                      <p className="text-xs mt-1">Método utilizado na transação. Movimentações <strong>Conciliadas</strong> foram confirmadas no extrato bancário.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </TableHead>
+              <TableHead className="w-[100px]">Data</TableHead>
+              <TableHead className="text-right w-[110px]">Valor</TableHead>
+              <TableHead>Categoria</TableHead>
+              <TableHead className="w-[100px]">Pagamento</TableHead>
               <TableHead className="w-[120px]">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="flex items-center gap-1 cursor-help">
-                        <User className="h-3.5 w-3.5" />
-                        Quem Fez
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Usuário que realizou a movimentação (ID Nome)</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <div className="flex items-center gap-1">
+                  <User className="h-3.5 w-3.5" />
+                  Quem Fez
+                </div>
               </TableHead>
-              <TableHead className="w-[120px]">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="flex items-center gap-1 cursor-help">
-                        <UserCheck className="h-3.5 w-3.5" />
-                        Autorizou
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Usuário que autorizou a movimentação (ID Nome)</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </TableHead>
-              <TableHead className="w-[50px]"></TableHead>
+              <TableHead className="w-[48px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -280,42 +244,9 @@ export function MovimentacoesTable({ movimentacoes, caixaId, valoresVisiveis = f
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="flex items-center gap-1.5 text-sm text-muted-foreground cursor-help">
-                          <User className="h-3.5 w-3.5 flex-shrink-0" />
-                          <span className="truncate max-w-[90px]">{getDisplayName(mov.realizado_por, mov.usuario_email)}</span>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="font-medium">Realizado por:</p>
-                        <p>{getDisplayName(mov.realizado_por, mov.usuario_email)}</p>
-                        {mov.usuario_email && (
-                          <p className="text-xs text-muted-foreground mt-1">{mov.usuario_email}</p>
-                        )}
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </TableCell>
-                <TableCell>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="flex items-center gap-1.5 text-sm text-muted-foreground cursor-help">
-                          <UserCheck className="h-3.5 w-3.5 flex-shrink-0" />
-                          <span className="truncate max-w-[90px]">{getDisplayName(mov.autorizado_por, mov.autorizado_por_email)}</span>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="font-medium">Autorizado por:</p>
-                        <p>{getDisplayName(mov.autorizado_por, mov.autorizado_por_email)}</p>
-                        {mov.autorizado_por_email && (
-                          <p className="text-xs text-muted-foreground mt-1">{mov.autorizado_por_email}</p>
-                        )}
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                  <span className="text-sm text-muted-foreground truncate block max-w-[110px]">
+                    {getDisplayName(mov.realizado_por, mov.usuario_email)}
+                  </span>
                 </TableCell>
                 <TableCell>
                   <DropdownMenu>
