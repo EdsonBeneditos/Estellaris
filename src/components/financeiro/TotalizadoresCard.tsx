@@ -112,22 +112,22 @@ export function TotalizadoresCard({
             Entradas por Método
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="max-h-[180px] overflow-y-auto">
           {Object.entries(porFormaPagamento).length === 0 ? (
             <p className="text-xs text-muted-foreground">Nenhuma entrada no período</p>
           ) : (
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               {Object.entries(porFormaPagamento).map(([forma, valor]) => (
-                <div key={forma} className="flex items-center justify-between gap-3 py-1.5 px-2 rounded-md hover:bg-muted/50 transition-colors">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="flex-shrink-0 w-7 h-7 rounded-md bg-muted flex items-center justify-center">
-                      {formasPagamentoIcons[forma] || <CreditCard className="h-3.5 w-3.5" />}
-                    </div>
-                    <span className="text-sm text-foreground truncate">{forma}</span>
+                <div key={forma} className="flex items-center gap-3 py-1.5 px-2 rounded-md hover:bg-muted/50 transition-colors">
+                  <div className="flex-shrink-0 w-7 h-7 rounded-md bg-muted flex items-center justify-center">
+                    {formasPagamentoIcons[forma] || <CreditCard className="h-3.5 w-3.5" />}
                   </div>
-                  <span className="font-semibold text-sm text-foreground whitespace-nowrap flex-shrink-0">
-                    {valoresVisiveis ? formatCurrency(valor) : maskedValue}
-                  </span>
+                  <div className="flex flex-col min-w-0 flex-1">
+                    <span className="text-xs text-muted-foreground truncate">{forma}</span>
+                    <span className="font-semibold text-sm text-foreground whitespace-nowrap">
+                      {valoresVisiveis ? formatCurrency(valor) : maskedValue}
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>
