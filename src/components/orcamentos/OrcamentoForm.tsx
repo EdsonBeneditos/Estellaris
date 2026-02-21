@@ -364,16 +364,16 @@ export function OrcamentoForm({ orcamento, onBack, onSuccess }: OrcamentoFormPro
                     {docType === "cpf" ? "CPF" : "CNPJ"}
                   </Label>
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] text-muted-foreground">CPF</span>
+                    <span className={`text-[10px] font-medium transition-opacity ${docType === "cpf" ? "text-foreground opacity-100" : "text-muted-foreground opacity-50"}`}>CPF</span>
                     <Switch
                       checked={docType === "cnpj"}
                       onCheckedChange={(checked) => {
                         setDocType(checked ? "cnpj" : "cpf");
                         setClienteCnpj("");
                       }}
-                      className="h-4 w-8 data-[state=checked]:bg-muted data-[state=unchecked]:bg-muted [&>span]:h-3 [&>span]:w-3 [&>span]:data-[state=checked]:translate-x-4"
+                      className="h-4 w-8 data-[state=checked]:bg-primary data-[state=unchecked]:bg-secondary border border-border [&>span]:h-3 [&>span]:w-3 [&>span]:bg-white [&>span]:shadow-sm [&>span]:data-[state=checked]:translate-x-4"
                     />
-                    <span className="text-[10px] text-muted-foreground">CNPJ</span>
+                    <span className={`text-[10px] font-medium transition-opacity ${docType === "cnpj" ? "text-foreground opacity-100" : "text-muted-foreground opacity-50"}`}>CNPJ</span>
                   </div>
                 </div>
                 <Input
