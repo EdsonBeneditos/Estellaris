@@ -116,8 +116,7 @@ export function RelatorioFinanceiro() {
       const mesKey = format(date, "yyyy-MM");
       const mesLabel = format(date, "MMM/yy", { locale: ptBR });
       const movMes = allMovimentacoes.filter(m => {
-        const mDate = m.data_movimentacao || format(parseISO(m.data_hora), "yyyy-MM-dd");
-        return mDate.startsWith(mesKey);
+        return m.data_movimentacao && m.data_movimentacao.startsWith(mesKey);
       });
       months.push({
         mes: mesLabel.charAt(0).toUpperCase() + mesLabel.slice(1),
@@ -176,8 +175,7 @@ export function RelatorioFinanceiro() {
       const d = subMonths(now, i);
       const mk = format(d, "yyyy-MM");
       const movMes = allMovimentacoes.filter(m => {
-        const md = m.data_movimentacao || format(parseISO(m.data_hora), "yyyy-MM-dd");
-        return md.startsWith(mk);
+        return m.data_movimentacao && m.data_movimentacao.startsWith(mk);
       });
       const e = movMes.filter(m => m.tipo === "Entrada").reduce((a, m) => a + Number(m.valor), 0);
       const s = movMes.filter(m => m.tipo === "Saída").reduce((a, m) => a + Number(m.valor), 0);
@@ -198,7 +196,7 @@ export function RelatorioFinanceiro() {
       const days = eachDayOfInterval({ start, end });
       return days.map(day => {
         const dayStr = format(day, "yyyy-MM-dd");
-        const dayMovs = movimentacoes.filter(m => (m.data_movimentacao || format(parseISO(m.data_hora), "yyyy-MM-dd")) === dayStr);
+        const dayMovs = movimentacoes.filter(m => m.data_movimentacao === dayStr);
         return {
           label: format(day, "dd/MM", { locale: ptBR }),
           entradas: dayMovs.filter(m => m.tipo === "Entrada").reduce((a, m) => a + Number(m.valor), 0),
@@ -212,7 +210,8 @@ export function RelatorioFinanceiro() {
       return weeks.map((weekStart, i) => {
         const weekEnd = i < weeks.length - 1 ? new Date(weeks[i + 1].getTime() - 1) : end;
         const weekMovs = movimentacoes.filter(m => {
-          const d = parseISO(m.data_movimentacao || format(parseISO(m.data_hora), "yyyy-MM-dd"));
+          if (!m.data_movimentacao) return false;
+          const d = parseISO(m.data_movimentacao);
           return d >= weekStart && d <= weekEnd;
         });
         return {
@@ -229,7 +228,7 @@ export function RelatorioFinanceiro() {
     while (cursor <= end) {
       const mk = format(cursor, "yyyy-MM");
       const mesLabel = format(cursor, "MMM/yy", { locale: ptBR });
-      const movMes = movimentacoes.filter(m => (m.data_movimentacao || "").startsWith(mk));
+      const movMes = movimentacoes.filter(m => m.data_movimentacao && m.data_movimentacao.startsWith(mk));
       months.push({
         label: mesLabel.charAt(0).toUpperCase() + mesLabel.slice(1),
         entradas: movMes.filter(m => m.tipo === "Entrada").reduce((a, m) => a + Number(m.valor), 0),
