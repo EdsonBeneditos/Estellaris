@@ -203,6 +203,11 @@ export function OrcamentoForm({ orcamento, onBack, onSuccess }: OrcamentoFormPro
       toast.error("Informe o nome do cliente");
       return;
     }
+
+    if (clienteEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clienteEmail)) {
+      toast.error("E-mail inválido. Verifique o formato (ex: nome@dominio.com)");
+      return;
+    }
     
     if (cartItems.length === 0) {
       toast.error("Adicione pelo menos um produto");
@@ -338,6 +343,7 @@ export function OrcamentoForm({ orcamento, onBack, onSuccess }: OrcamentoFormPro
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
+              {/* Nome / Empresa */}
               <div className="space-y-2">
                 <Label htmlFor="cliente_nome" className="flex items-center gap-2">
                   <Building2 className="h-4 w-4" />
@@ -350,33 +356,40 @@ export function OrcamentoForm({ orcamento, onBack, onSuccess }: OrcamentoFormPro
                   placeholder="Nome do cliente ou empresa"
                 />
               </div>
+
+              {/* CPF/CNPJ with discrete switch */}
               <div className="space-y-2">
-                <Label htmlFor="cliente_cnpj" className="flex items-center gap-2">
-                  {docType === "cpf" ? "CPF" : "CNPJ"}
-                </Label>
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs text-muted-foreground">CPF</span>
-                  <Switch
-                    checked={docType === "cnpj"}
-                    onCheckedChange={(checked) => {
-                      setDocType(checked ? "cnpj" : "cpf");
-                      setClienteCnpj("");
-                    }}
-                  />
-                  <span className="text-xs text-muted-foreground">CNPJ</span>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="cliente_cnpj">
+                    {docType === "cpf" ? "CPF" : "CNPJ"}
+                  </Label>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] text-muted-foreground">CPF</span>
+                    <Switch
+                      checked={docType === "cnpj"}
+                      onCheckedChange={(checked) => {
+                        setDocType(checked ? "cnpj" : "cpf");
+                        setClienteCnpj("");
+                      }}
+                      className="h-4 w-8 data-[state=checked]:bg-muted data-[state=unchecked]:bg-muted [&>span]:h-3 [&>span]:w-3 [&>span]:data-[state=checked]:translate-x-4"
+                    />
+                    <span className="text-[10px] text-muted-foreground">CNPJ</span>
+                  </div>
                 </div>
                 <Input
                   id="cliente_cnpj"
                   value={clienteCnpj}
                   onChange={(e) => {
-                    const masked = maskCPFCNPJ(e.target.value, docType);
+                    const raw = e.target.value.replace(/\D/g, "");
+                    const masked = maskCPFCNPJ(raw, docType);
                     setClienteCnpj(masked);
                   }}
                   placeholder={docType === "cpf" ? "000.000.000-00" : "00.000.000/0000-00"}
                   maxLength={docType === "cpf" ? 14 : 18}
                 />
-                <p className="text-xs text-muted-foreground">(apenas números)</p>
               </div>
+
+              {/* Telefone with mask */}
               <div className="space-y-2">
                 <Label htmlFor="cliente_telefone" className="flex items-center gap-2">
                   <Phone className="h-4 w-4" />
@@ -385,10 +398,23 @@ export function OrcamentoForm({ orcamento, onBack, onSuccess }: OrcamentoFormPro
                 <Input
                   id="cliente_telefone"
                   value={clienteTelefone}
-                  onChange={(e) => setClienteTelefone(e.target.value)}
+                  onChange={(e) => {
+                    const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
+                    let formatted = digits;
+                    if (digits.length > 2) {
+                      formatted = `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+                    }
+                    if (digits.length > 7) {
+                      formatted = `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+                    }
+                    setClienteTelefone(formatted);
+                  }}
                   placeholder="(00) 00000-0000"
+                  maxLength={15}
                 />
               </div>
+
+              {/* Email with validation */}
               <div className="space-y-2">
                 <Label htmlFor="cliente_email" className="flex items-center gap-2">
                   <Mail className="h-4 w-4" />
@@ -400,7 +426,11 @@ export function OrcamentoForm({ orcamento, onBack, onSuccess }: OrcamentoFormPro
                   value={clienteEmail}
                   onChange={(e) => setClienteEmail(e.target.value)}
                   placeholder="email@exemplo.com"
+                  className={clienteEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clienteEmail) ? "border-destructive" : ""}
                 />
+                {clienteEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clienteEmail) && (
+                  <p className="text-xs text-destructive">E-mail inválido</p>
+                )}
               </div>
             </div>
 
