@@ -158,6 +158,7 @@ export function ProdutoModal({ open, onOpenChange, produto }: ProdutoModalProps)
         nome: produto.nome,
         sku: produto.sku,
         marca: (produto as any).marca || "",
+        descricao: (produto as any).descricao || "",
         preco_venda: produto.preco_venda,
         preco_custo: produto.preco_custo,
         quantidade_estoque: produto.quantidade_estoque,
@@ -170,11 +171,14 @@ export function ProdutoModal({ open, onOpenChange, produto }: ProdutoModalProps)
         origem_mercadoria: produto.origem_mercadoria ?? 0,
         cst_csosn: produto.cst_csosn || "102",
       });
+      setPrecoCustoDisplay(formatCurrency(produto.preco_custo));
+      setPrecoVendaDisplay(formatCurrency(produto.preco_venda));
     } else {
       form.reset({
         nome: "",
         sku: "",
         marca: "",
+        descricao: "",
         preco_venda: 0,
         preco_custo: 0,
         quantidade_estoque: 0,
@@ -187,6 +191,8 @@ export function ProdutoModal({ open, onOpenChange, produto }: ProdutoModalProps)
         origem_mercadoria: 0,
         cst_csosn: "102",
       });
+      setPrecoCustoDisplay("R$ 0,00");
+      setPrecoVendaDisplay("R$ 0,00");
     }
     setSkuError(null);
   }, [produto, form, open]);
