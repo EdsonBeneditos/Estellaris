@@ -223,6 +223,7 @@ export function ProdutoModal({ open, onOpenChange, produto }: ProdutoModalProps)
         nome: data.nome,
         sku: data.sku,
         marca: data.marca || null,
+        descricao: data.descricao || null,
         preco_venda: data.preco_venda,
         preco_custo: data.preco_custo,
         quantidade_estoque: data.quantidade_estoque,
