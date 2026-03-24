@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Sheet,
   SheetContent,
@@ -41,6 +42,7 @@ const formSchema = z.object({
   nome: z.string().min(1, "Nome é obrigatório"),
   sku: z.string().min(1, "SKU é obrigatório"),
   marca: z.string().optional().or(z.literal("")),
+  descricao: z.string().optional().or(z.literal("")),
   preco_venda: z.coerce.number().min(0, "Preço de venda inválido"),
   preco_custo: z.coerce.number().min(0, "Preço de custo inválido"),
   quantidade_estoque: z.coerce.number().int().min(0, "Quantidade inválida"),
@@ -111,12 +113,24 @@ interface ProdutoModalProps {
   produto?: Produto | null;
 }
 
+// Currency mask helpers
+function formatCurrency(value: number): string {
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+}
+
+function parseCurrencyInput(raw: string): number {
+  const digits = raw.replace(/\D/g, "");
+  return Number(digits) / 100;
+}
+
 export function ProdutoModal({ open, onOpenChange, produto }: ProdutoModalProps) {
   const { data: grupos = [] } = useGruposProdutos();
   const { data: allProdutos = [] } = useProdutos();
   const createProduto = useCreateProduto();
   const updateProduto = useUpdateProduto();
   const [skuError, setSkuError] = useState<string | null>(null);
+  const [precoCustoDisplay, setPrecoCustoDisplay] = useState("R$ 0,00");
+  const [precoVendaDisplay, setPrecoVendaDisplay] = useState("R$ 0,00");
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -124,6 +138,7 @@ export function ProdutoModal({ open, onOpenChange, produto }: ProdutoModalProps)
       nome: "",
       sku: "",
       marca: "",
+      descricao: "",
       preco_venda: 0,
       preco_custo: 0,
       quantidade_estoque: 0,
@@ -144,6 +159,7 @@ export function ProdutoModal({ open, onOpenChange, produto }: ProdutoModalProps)
         nome: produto.nome,
         sku: produto.sku,
         marca: (produto as any).marca || "",
+        descricao: (produto as any).descricao || "",
         preco_venda: produto.preco_venda,
         preco_custo: produto.preco_custo,
         quantidade_estoque: produto.quantidade_estoque,
@@ -156,11 +172,14 @@ export function ProdutoModal({ open, onOpenChange, produto }: ProdutoModalProps)
         origem_mercadoria: produto.origem_mercadoria ?? 0,
         cst_csosn: produto.cst_csosn || "102",
       });
+      setPrecoCustoDisplay(formatCurrency(produto.preco_custo));
+      setPrecoVendaDisplay(formatCurrency(produto.preco_venda));
     } else {
       form.reset({
         nome: "",
         sku: "",
         marca: "",
+        descricao: "",
         preco_venda: 0,
         preco_custo: 0,
         quantidade_estoque: 0,
@@ -173,6 +192,8 @@ export function ProdutoModal({ open, onOpenChange, produto }: ProdutoModalProps)
         origem_mercadoria: 0,
         cst_csosn: "102",
       });
+      setPrecoCustoDisplay("R$ 0,00");
+      setPrecoVendaDisplay("R$ 0,00");
     }
     setSkuError(null);
   }, [produto, form, open]);
@@ -203,6 +224,7 @@ export function ProdutoModal({ open, onOpenChange, produto }: ProdutoModalProps)
         nome: data.nome,
         sku: data.sku,
         marca: data.marca || null,
+        descricao: data.descricao || null,
         preco_venda: data.preco_venda,
         preco_custo: data.preco_custo,
         quantidade_estoque: data.quantidade_estoque,
@@ -318,20 +340,40 @@ export function ProdutoModal({ open, onOpenChange, produto }: ProdutoModalProps)
               )}
             />
 
+            <FormField
+              control={form.control}
+              name="descricao"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Descrição do Produto (opcional)</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Detalhes técnicos, especificações, composição..."
+                      className="min-h-[80px] resize-y"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="preco_custo"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Preço de Custo (R$)</FormLabel>
+                    <FormLabel>Preço de Custo</FormLabel>
                     <FormControl>
                       <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder="0.00"
-                        {...field}
+                        placeholder="R$ 0,00"
+                        value={precoCustoDisplay}
+                        onChange={(e) => {
+                          const val = parseCurrencyInput(e.target.value);
+                          field.onChange(val);
+                          setPrecoCustoDisplay(formatCurrency(val));
+                        }}
                       />
                     </FormControl>
                     <FormMessage />
@@ -344,14 +386,16 @@ export function ProdutoModal({ open, onOpenChange, produto }: ProdutoModalProps)
                 name="preco_venda"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Preço de Venda (R$)</FormLabel>
+                    <FormLabel>Preço de Venda</FormLabel>
                     <FormControl>
                       <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder="0.00"
-                        {...field}
+                        placeholder="R$ 0,00"
+                        value={precoVendaDisplay}
+                        onChange={(e) => {
+                          const val = parseCurrencyInput(e.target.value);
+                          field.onChange(val);
+                          setPrecoVendaDisplay(formatCurrency(val));
+                        }}
                       />
                     </FormControl>
                     <FormMessage />
