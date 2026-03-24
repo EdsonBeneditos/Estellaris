@@ -339,20 +339,40 @@ export function ProdutoModal({ open, onOpenChange, produto }: ProdutoModalProps)
               )}
             />
 
+            <FormField
+              control={form.control}
+              name="descricao"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Descrição do Produto (opcional)</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Detalhes técnicos, especificações, composição..."
+                      className="min-h-[80px] resize-y"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="preco_custo"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Preço de Custo (R$)</FormLabel>
+                    <FormLabel>Preço de Custo</FormLabel>
                     <FormControl>
                       <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder="0.00"
-                        {...field}
+                        placeholder="R$ 0,00"
+                        value={precoCustoDisplay}
+                        onChange={(e) => {
+                          const val = parseCurrencyInput(e.target.value);
+                          field.onChange(val);
+                          setPrecoCustoDisplay(formatCurrency(val));
+                        }}
                       />
                     </FormControl>
                     <FormMessage />
@@ -365,14 +385,16 @@ export function ProdutoModal({ open, onOpenChange, produto }: ProdutoModalProps)
                 name="preco_venda"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Preço de Venda (R$)</FormLabel>
+                    <FormLabel>Preço de Venda</FormLabel>
                     <FormControl>
                       <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder="0.00"
-                        {...field}
+                        placeholder="R$ 0,00"
+                        value={precoVendaDisplay}
+                        onChange={(e) => {
+                          const val = parseCurrencyInput(e.target.value);
+                          field.onChange(val);
+                          setPrecoVendaDisplay(formatCurrency(val));
+                        }}
                       />
                     </FormControl>
                     <FormMessage />
