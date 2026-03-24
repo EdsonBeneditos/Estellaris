@@ -41,6 +41,7 @@ const formSchema = z.object({
   nome: z.string().min(1, "Nome é obrigatório"),
   sku: z.string().min(1, "SKU é obrigatório"),
   marca: z.string().optional().or(z.literal("")),
+  descricao: z.string().optional().or(z.literal("")),
   preco_venda: z.coerce.number().min(0, "Preço de venda inválido"),
   preco_custo: z.coerce.number().min(0, "Preço de custo inválido"),
   quantidade_estoque: z.coerce.number().int().min(0, "Quantidade inválida"),
