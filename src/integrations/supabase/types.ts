@@ -1476,6 +1476,7 @@ export type Database = {
           codigo_servico_municipal: string | null
           created_at: string
           cst_csosn: string | null
+          descricao: string | null
           grupo_id: string | null
           id: string
           marca: string | null
@@ -1497,6 +1498,7 @@ export type Database = {
           codigo_servico_municipal?: string | null
           created_at?: string
           cst_csosn?: string | null
+          descricao?: string | null
           grupo_id?: string | null
           id?: string
           marca?: string | null
@@ -1518,6 +1520,7 @@ export type Database = {
           codigo_servico_municipal?: string | null
           created_at?: string
           cst_csosn?: string | null
+          descricao?: string | null
           grupo_id?: string | null
           id?: string
           marca?: string | null
