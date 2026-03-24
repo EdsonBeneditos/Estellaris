@@ -112,12 +112,24 @@ interface ProdutoModalProps {
   produto?: Produto | null;
 }
 
+// Currency mask helpers
+function formatCurrency(value: number): string {
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+}
+
+function parseCurrencyInput(raw: string): number {
+  const digits = raw.replace(/\D/g, "");
+  return Number(digits) / 100;
+}
+
 export function ProdutoModal({ open, onOpenChange, produto }: ProdutoModalProps) {
   const { data: grupos = [] } = useGruposProdutos();
   const { data: allProdutos = [] } = useProdutos();
   const createProduto = useCreateProduto();
   const updateProduto = useUpdateProduto();
   const [skuError, setSkuError] = useState<string | null>(null);
+  const [precoCustoDisplay, setPrecoCustoDisplay] = useState("R$ 0,00");
+  const [precoVendaDisplay, setPrecoVendaDisplay] = useState("R$ 0,00");
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -125,6 +137,7 @@ export function ProdutoModal({ open, onOpenChange, produto }: ProdutoModalProps)
       nome: "",
       sku: "",
       marca: "",
+      descricao: "",
       preco_venda: 0,
       preco_custo: 0,
       quantidade_estoque: 0,
