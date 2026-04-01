@@ -312,18 +312,13 @@ export default function Configuracoes() {
 
         <TabsContent value="equipe" className="mt-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <SettingsList
-              title="Vendedores"
-              icon={Users}
-              items={vendedores}
+            <VendasSettings
+              vendedores={vendedores}
               isLoading={vendedoresLoading}
               onAdd={(nome) => createVendedor.mutateAsync(nome)}
               onDelete={(id) => deleteVendedor.mutateAsync(id)}
               onToggle={(id, ativo) => toggleVendedor.mutateAsync({ id, ativo })}
               onColorChange={(id, cor) => updateVendedorColor.mutateAsync({ id, cor })}
-              placeholder="Nome do vendedor"
-              description="Equipe comercial cadastrada no sistema"
-              defaultColor="#10B981"
             />
 
             <SettingsList
