@@ -170,10 +170,10 @@ function SettingsList({
             items.map((item) => (
               <div
                 key={item.id}
-                className={`flex items-center justify-between p-3 rounded-lg border transition-all duration-200 hover:scale-[1.01] hover:shadow-sm ${
+                className={`flex items-center justify-between p-3 rounded-lg border border-transparent transition-colors duration-200 hover:border-primary/30 hover:bg-muted/70 ${
                   item.ativo
-                    ? "bg-muted/50 border-border"
-                    : "bg-muted/20 border-border/50 opacity-60"
+                    ? "bg-muted/50"
+                    : "bg-muted/20 opacity-60"
                 }`}
               >
                 <div className="flex items-center gap-3">
