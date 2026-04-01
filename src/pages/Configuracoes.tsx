@@ -17,6 +17,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -44,6 +51,7 @@ import {
   useToggleOrigem,
   useUpdateOrigemColor,
 } from "@/hooks/useSettings";
+import { useColaboradores } from "@/hooks/useColaboradores";
 import { ColorPicker } from "@/components/settings/ColorPicker";
 import { OrganizationSettings } from "@/components/settings/OrganizationSettings";
 import { CentrosCustoManager } from "@/components/settings/CentrosCustoManager";
