@@ -257,6 +257,184 @@ function SettingsList({
   );
 }
 
+// Vendas section - select from Colaboradores
+interface VendasSettingsProps {
+  vendedores: Array<{ id: string; nome: string; ativo: boolean; cor: string | null }>;
+  isLoading: boolean;
+  onAdd: (nome: string) => Promise<unknown>;
+  onDelete: (id: string) => Promise<unknown>;
+  onToggle: (id: string, ativo: boolean) => Promise<unknown>;
+  onColorChange: (id: string, cor: string) => Promise<unknown>;
+}
+
+function VendasSettings({ vendedores, isLoading, onAdd, onDelete, onToggle, onColorChange }: VendasSettingsProps) {
+  const [selectedColaborador, setSelectedColaborador] = useState("");
+  const [isAdding, setIsAdding] = useState(false);
+  const { data: colaboradores = [], isLoading: colabLoading } = useColaboradores();
+
+  const vendedorNames = vendedores.map((v) => v.nome.toLowerCase());
+  const availableColaboradores = colaboradores.filter(
+    (c) => c.status === "Ativo" && !vendedorNames.includes(c.nome.toLowerCase())
+  );
+
+  const handleAdd = async () => {
+    if (!selectedColaborador) return;
+    setIsAdding(true);
+    try {
+      await onAdd(selectedColaborador);
+      setSelectedColaborador("");
+      toast.success("Vendedor adicionado com sucesso!");
+    } catch (error: any) {
+      if (error?.message?.includes("duplicate")) {
+        toast.error("Este vendedor já existe!");
+      } else {
+        toast.error("Erro ao adicionar vendedor");
+      }
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await onDelete(id);
+      toast.success("Vendedor removido com sucesso!");
+    } catch (error) {
+      toast.error("Erro ao remover vendedor");
+    }
+  };
+
+  const handleToggle = async (id: string, currentStatus: boolean) => {
+    try {
+      await onToggle(id, !currentStatus);
+      toast.success(currentStatus ? "Vendedor desativado" : "Vendedor ativado");
+    } catch (error) {
+      toast.error("Erro ao alterar status");
+    }
+  };
+
+  const handleColorChange = async (id: string, cor: string) => {
+    try {
+      await onColorChange(id, cor);
+      toast.success("Cor atualizada!");
+    } catch (error) {
+      toast.error("Erro ao atualizar cor");
+    }
+  };
+
+  return (
+    <Card className="relative overflow-visible transition-all duration-200 hover:shadow-lg hover:border-primary/30">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Users className="h-5 w-5" />
+          Vendas
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          Equipe comercial vinculada a colaboradores cadastrados
+        </p>
+
+        {/* Add from Colaboradores */}
+        <div className="flex gap-2">
+          <Select value={selectedColaborador} onValueChange={setSelectedColaborador}>
+            <SelectTrigger className="flex-1">
+              <SelectValue placeholder={colabLoading ? "Carregando..." : "Selecionar colaborador..."} />
+            </SelectTrigger>
+            <SelectContent>
+              {availableColaboradores.length === 0 ? (
+                <SelectItem value="__none" disabled>
+                  Nenhum colaborador disponível
+                </SelectItem>
+              ) : (
+                availableColaboradores.map((c) => (
+                  <SelectItem key={c.id} value={c.nome}>
+                    {c.nome} {c.cargo ? `(${c.cargo})` : ""}
+                  </SelectItem>
+                ))
+              )}
+            </SelectContent>
+          </Select>
+          <Button
+            size="sm"
+            onClick={handleAdd}
+            disabled={!selectedColaborador || isAdding}
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Vendedores list */}
+        <div className="space-y-2 max-h-[300px] overflow-y-auto">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-4">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
+            </div>
+          ) : vendedores.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              Nenhum vendedor cadastrado
+            </p>
+          ) : (
+            vendedores.map((item) => (
+              <div
+                key={item.id}
+                className={`flex items-center justify-between p-3 rounded-lg border border-transparent transition-colors duration-200 hover:border-primary/30 hover:bg-muted/70 ${
+                  item.ativo ? "bg-muted/50" : "bg-muted/20 opacity-60"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium text-white"
+                    style={{ backgroundColor: item.cor || "#10B981" }}
+                  >
+                    {item.nome.charAt(0).toUpperCase()}
+                  </div>
+                  <span className={item.ativo ? "font-medium" : "font-medium text-muted-foreground"}>
+                    {item.nome}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <ColorPicker
+                    value={item.cor || "#10B981"}
+                    onChange={(cor) => handleColorChange(item.id, cor)}
+                  />
+                  <Badge variant={item.ativo ? "secondary" : "outline"} className="text-xs">
+                    {item.ativo ? "Ativo" : "Inativo"}
+                  </Badge>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleToggle(item.id, item.ativo)}>
+                    {item.ativo ? <ToggleRight className="h-4 w-4 text-primary" /> : <ToggleLeft className="h-4 w-4 text-muted-foreground" />}
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Tem certeza que deseja remover "{item.nome}"? Esta ação não pode ser desfeita.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleDelete(item.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                          Excluir
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function Configuracoes() {
   const { data: vendedores = [], isLoading: vendedoresLoading } = useVendedores();
   const { data: tiposServico = [], isLoading: tiposLoading } = useTiposServico();
