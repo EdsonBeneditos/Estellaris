@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Cliente, useCreateCliente, useUpdateCliente } from "@/hooks/useClientes";
 import { applyCNPJMask, applyPhoneMask, applyCEPMask } from "@/lib/masks";
+import { PENDENTE_CADASTRO_MARKER } from "@/hooks/usePendingClientesCount";
 import { VisitaConfirmDialog } from "./VisitaConfirmDialog";
 import { useCreateAtividade } from "@/hooks/useAtividadesCliente";
 import { useViaCep } from "@/hooks/useViaCep";
@@ -81,20 +82,26 @@ export function ClienteModal({ open, onOpenChange, cliente }: ClienteModalProps)
 
   useEffect(() => {
     if (cliente) {
+      // Strip the pending registration marker from observacoes display
+      const rawObs = cliente.observacoes || "";
+      const displayObs = rawObs.startsWith(PENDENTE_CADASTRO_MARKER)
+        ? rawObs.slice(PENDENTE_CADASTRO_MARKER.length).trim()
+        : rawObs;
+
       setFormData({
         nome: cliente.nome || "",
-        cnpj: cliente.cnpj || "",
+        cnpj: applyCNPJMask(cliente.cnpj || ""),
         email: cliente.email || "",
-        telefone: cliente.telefone || "",
+        telefone: applyPhoneMask(cliente.telefone || ""),
         endereco: cliente.endereco || "",
         cidade: cliente.cidade || "",
         uf: cliente.uf || "",
-        cep: cliente.cep || "",
+        cep: applyCEPMask(cliente.cep || ""),
         rotina_visitas: cliente.rotina_visitas || false,
         frequencia_visita: cliente.frequencia_visita || "",
         ultima_visita: cliente.ultima_visita || "",
         proxima_visita: cliente.proxima_visita || "",
-        observacoes: cliente.observacoes || "",
+        observacoes: displayObs,
       });
     } else {
       setFormData({

@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getVisitaBadgeConfig } from "@/hooks/useVisitasAlerts";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { PENDENTE_CADASTRO_MARKER } from "@/hooks/usePendingClientesCount";
 
 interface ClienteAccordionProps {
   clientes: ClienteComContratos[];
@@ -217,6 +218,11 @@ export function ClienteAccordion({ clientes, onEdit }: ClienteAccordionProps) {
                 <div className="flex items-center justify-between w-full pr-4">
                   <div className="flex items-center gap-3 flex-wrap">
                     <span className="font-semibold text-foreground">{cliente.nome}</span>
+                    {cliente.observacoes?.startsWith(PENDENTE_CADASTRO_MARKER) && (
+                      <Badge className="bg-emerald-600 text-white text-xs animate-pulse border-0">
+                        Cadastro Pendente
+                      </Badge>
+                    )}
                     {temRenovacaoProxima(cliente.contratos) && (
                       <Badge variant="secondary" className="bg-amber-100 text-amber-800 text-xs">
                         Renovação Próxima

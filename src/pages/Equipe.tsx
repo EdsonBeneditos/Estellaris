@@ -427,7 +427,7 @@ export default function Equipe() {
         <DialogContent className="sm:max-w-[450px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
+              <Clock className="h-5 w-5 text-foreground" />
               Controle de Acesso — {accessMember?.nome}
             </DialogTitle>
             <DialogDescription>

@@ -10,6 +10,7 @@ import { isModuleEnabled, hasAnyReport, ModuleKey, AVAILABLE_MODULES } from "@/l
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { usePendingBudgetsCount } from "@/hooks/usePendingBudgets";
+import { usePendingClientesCount } from "@/hooks/usePendingClientesCount";
 
 import {
   Sidebar,
@@ -52,6 +53,7 @@ export function AppSidebar() {
   const { data: isSuperAdmin } = useIsSuperAdmin();
   const { data: organization } = useCurrentOrganization();
   const { data: pendingBudgets = 0 } = usePendingBudgetsCount();
+  const { data: pendingClientes = 0 } = usePendingClientesCount();
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -171,6 +173,11 @@ export function AppSidebar() {
                       {item.url === "/financeiro" && pendingBudgets > 0 && (
                         <Badge className="ml-auto h-5 min-w-5 px-1.5 text-[10px] bg-destructive text-destructive-foreground border-0 rounded-full">
                           {pendingBudgets}
+                        </Badge>
+                      )}
+                      {item.url === "/clientes" && pendingClientes > 0 && (
+                        <Badge className="ml-auto h-5 min-w-5 px-1.5 text-[10px] bg-emerald-600 text-white border-0 rounded-full">
+                          {pendingClientes}
                         </Badge>
                       )}
                     </NavLink>

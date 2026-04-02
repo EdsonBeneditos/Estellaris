@@ -58,6 +58,8 @@ import {
 } from "@/hooks/useLeadInteracoes";
 import { useActiveVendedores } from "@/hooks/useSettings";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useCreateCliente } from "@/hooks/useClientes";
+import { PENDENTE_CADASTRO_MARKER } from "@/hooks/usePendingClientesCount";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { STATUS_OPTIONS, PRIORIDADES, MOTIVOS_PERDA, MEIOS_CONTATO } from "@/lib/constants";
@@ -104,6 +106,7 @@ export function EditLeadModal({ lead, open, onOpenChange }: EditLeadModalProps) 
   const updateLead = useUpdateLead();
   const deleteLead = useDeleteLead();
   const createInteracao = useCreateInteracao();
+  const createCliente = useCreateCliente();
   const { data: vendedores = [] } = useActiveVendedores();
   const { data: interacoes = [], isLoading: interacoesLoading } =
     useLeadInteracoes(lead?.id || "");
@@ -169,6 +172,25 @@ export function EditLeadModal({ lead, open, onOpenChange }: EditLeadModalProps) 
           status_anterior: previousStatus || "Novo",
           status_novo: newStatus,
         });
+      }
+
+      // Auto-create client when lead is converted
+      if (newStatus === "Convertido" && previousStatus !== "Convertido") {
+        const enderecoParts = [lead.logradouro, lead.numero, lead.bairro].filter(Boolean);
+        await createCliente.mutateAsync({
+          nome: lead.empresa || "Sem nome",
+          cnpj: lead.cnpj || null,
+          telefone: lead.telefone || null,
+          email: lead.email || null,
+          cidade: lead.cidade || null,
+          uf: lead.uf || null,
+          cep: lead.cep || null,
+          endereco: enderecoParts.length > 0 ? enderecoParts.join(", ") : null,
+          observacoes: PENDENTE_CADASTRO_MARKER,
+          ativo: true,
+          rotina_visitas: false,
+        });
+        toast.success("Cliente pré-cadastrado na aba Clientes!");
       }
 
       toast.success("Lead atualizado com sucesso!");
