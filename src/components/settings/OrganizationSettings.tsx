@@ -513,14 +513,13 @@ export function OrganizationSettings() {
                         {MENU_KEYS.map((menuKey) => {
                           const hasAccess = perms === null || perms.includes(menuKey);
                           return (
-                            <div
+                            <label
                               key={menuKey}
-                              className={`flex items-center gap-2 p-2 rounded-md border cursor-pointer transition-colors ${
+                              className={`flex items-center gap-2 p-2 rounded-md border cursor-pointer transition-colors select-none ${
                                 hasAccess
                                   ? "bg-primary/10 border-primary/30 text-primary"
                                   : "bg-muted/30 border-border text-muted-foreground"
-                              }`}
-                              onClick={() => !isLoading && handleToggleMenuPermission(member.id, menuKey, perms)}
+                              } ${isLoading ? "opacity-50 pointer-events-none" : ""}`}
                             >
                               <Checkbox
                                 checked={hasAccess}
@@ -528,7 +527,7 @@ export function OrganizationSettings() {
                                 onCheckedChange={() => handleToggleMenuPermission(member.id, menuKey, perms)}
                               />
                               <span className="text-xs font-medium truncate">{MENU_LABELS[menuKey]}</span>
-                            </div>
+                            </label>
                           );
                         })}
                       </div>

@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { usePendingBudgetsCount } from "@/hooks/usePendingBudgets";
 import { usePendingClientesCount } from "@/hooks/usePendingClientesCount";
+import { useFuturosLeadsHojeCount } from "@/hooks/useFuturosLeadsAlerts";
 
 import {
   Sidebar,
@@ -54,6 +55,7 @@ export function AppSidebar() {
   const { data: organization } = useCurrentOrganization();
   const { data: pendingBudgets = 0 } = usePendingBudgetsCount();
   const { data: pendingClientes = 0 } = usePendingClientesCount();
+  const { data: futurosLeadsHoje = 0 } = useFuturosLeadsHojeCount();
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -181,6 +183,11 @@ export function AppSidebar() {
                       {item.url === "/clientes" && pendingClientes > 0 && (
                         <Badge className="ml-auto h-5 min-w-5 px-1.5 text-[10px] bg-emerald-600 text-white border-0 rounded-full">
                           {pendingClientes}
+                        </Badge>
+                      )}
+                      {item.url === "/futuros-leads" && futurosLeadsHoje > 0 && (
+                        <Badge className="ml-auto h-5 min-w-5 px-1.5 text-[10px] bg-destructive text-destructive-foreground border-0 rounded-full animate-pulse">
+                          {futurosLeadsHoje}
                         </Badge>
                       )}
                     </NavLink>

@@ -11,7 +11,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { DoorOpen, DoorClosed, Clock, User, Lock } from "lucide-react";
+import { DoorOpen, DoorClosed, Clock, User, Lock, Eye, EyeOff } from "lucide-react";
 import { Caixa, useAbrirCaixa, useTotaisMovimentacoes, useTotaisPorFormaPagamento, MovimentacaoCaixa } from "@/hooks/useFinanceiro";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { format } from "date-fns";
@@ -47,6 +47,7 @@ export function CaixaControl({ caixaAberto, movimentacoes }: CaixaControlProps) 
   const [abrirModalOpen, setAbrirModalOpen] = useState(false);
   const [fecharModalOpen, setFecharModalOpen] = useState(false);
   const [saldoInicial, setSaldoInicial] = useState("");
+  const [showSaldos, setShowSaldos] = useState(true);
 
   const saldoSistema = caixaAberto
     ? Number(caixaAberto.saldo_inicial) + totalEntradas - totalSaidas
@@ -98,13 +99,27 @@ export function CaixaControl({ caixaAberto, movimentacoes }: CaixaControlProps) 
               </div>
 
               <div className="flex flex-col gap-4 pt-2">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-muted-foreground">Valores do caixa</span>
+                  <button
+                    onClick={() => setShowSaldos((v) => !v)}
+                    className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showSaldos ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                    {showSaldos ? "Ocultar" : "Mostrar"}
+                  </button>
+                </div>
                 <div className="space-y-1.5 p-3 rounded-lg bg-muted/50 border border-border/50">
                   <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Saldo Inicial</span>
-                  <p className={`${getDynamicFontClass(Number(caixaAberto.saldo_inicial))} font-bold text-foreground break-all leading-tight`}>{formatCurrency(Number(caixaAberto.saldo_inicial))}</p>
+                  <p className={`${getDynamicFontClass(Number(caixaAberto.saldo_inicial))} font-bold text-foreground break-all leading-tight`}>
+                    {showSaldos ? formatCurrency(Number(caixaAberto.saldo_inicial)) : "••••••"}
+                  </p>
                 </div>
                 <div className="space-y-1.5 p-3 rounded-lg bg-primary/5 border border-primary/20">
                   <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Saldo Atual (Sistema)</span>
-                  <p className={`${getDynamicFontClass(saldoSistema)} font-bold text-primary break-all leading-tight`}>{formatCurrency(saldoSistema)}</p>
+                  <p className={`${getDynamicFontClass(saldoSistema)} font-bold text-primary break-all leading-tight`}>
+                    {showSaldos ? formatCurrency(saldoSistema) : "••••••"}
+                  </p>
                 </div>
               </div>
 

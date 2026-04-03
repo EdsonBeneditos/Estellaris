@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { X, Printer, FileDown, Loader2 } from "lucide-react";
+import { Printer, FileDown, Loader2 } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { Button } from "@/components/ui/button";
@@ -89,14 +89,6 @@ export function OrcamentoViewModal({ orcamento, open, onOpenChange }: OrcamentoV
                 <FileDown className="h-4 w-4" />
               )}
               Gerar PDF
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onOpenChange(false)}
-              className="h-8 w-8"
-            >
-              <X className="h-4 w-4" />
             </Button>
           </div>
         </DialogHeader>

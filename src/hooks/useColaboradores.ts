@@ -11,12 +11,23 @@ export interface Colaborador {
   data_admissao: string | null;
   status: string | null;
   tipo_carteira: string | null;
+  tipo_contrato: string | null;
+  beneficios: string[] | null;
   cnh_tipos: string[] | null;
   pcd: boolean | null;
   troca_turno: boolean | null;
   preferencia_turno: string | null;
   email_pessoal: string | null;
   telefone: string | null;
+  data_ultima_ferias: string | null;
+  data_retorno_ferias: string | null;
+  cep: string | null;
+  logradouro: string | null;
+  bairro: string | null;
+  cidade: string | null;
+  estado: string | null;
+  numero_endereco: string | null;
+  complemento: string | null;
   created_at: string | null;
 }
 
@@ -41,18 +52,24 @@ export function useColaboradoresProximosFerias() {
   return useQuery({
     queryKey: ["colaboradores-proximos-ferias"],
     queryFn: async () => {
-      const elevenMonthsAgo = new Date();
-      elevenMonthsAgo.setMonth(elevenMonthsAgo.getMonth() - 11);
-      
       const { data, error } = await supabase
         .from("colaboradores")
         .select("*")
         .eq("status", "Ativo")
-        .lte("data_admissao", elevenMonthsAgo.toISOString().split("T")[0])
+        .not("data_admissao", "is", null)
         .order("data_admissao");
 
       if (error) throw error;
-      return data as Colaborador[];
+      const all = data as Colaborador[];
+
+      // Only show alert if the colaborador is near or past 11 months since
+      // their last vacation return (or admission if never took vacation).
+      return all.filter((c) => {
+        const referenceDate = c.data_retorno_ferias || c.data_admissao;
+        if (!referenceDate) return false;
+        const months = calculateMonthsSinceDate(referenceDate);
+        return months >= 11;
+      });
     },
   });
 }
@@ -119,21 +136,22 @@ export function useDeleteColaborador() {
   });
 }
 
-// Utility function to calculate months since admission
-export function calculateMonthsSinceAdmission(dataAdmissao: string | null): number {
-  if (!dataAdmissao) return 0;
-  
-  const admission = new Date(dataAdmissao);
+// Generic: months since any date
+export function calculateMonthsSinceDate(date: string | null): number {
+  if (!date) return 0;
+  const ref = new Date(date);
   const now = new Date();
-  
-  const months = (now.getFullYear() - admission.getFullYear()) * 12 
-    + (now.getMonth() - admission.getMonth());
-  
-  return months;
+  return (now.getFullYear() - ref.getFullYear()) * 12 + (now.getMonth() - ref.getMonth());
 }
 
-// Check if employee is near vacation eligibility (11+ months)
-export function isNearVacation(dataAdmissao: string | null): boolean {
-  const months = calculateMonthsSinceAdmission(dataAdmissao);
-  return months >= 11 && months < 12;
+// Legacy alias (keep for backwards compat)
+export function calculateMonthsSinceAdmission(dataAdmissao: string | null): number {
+  return calculateMonthsSinceDate(dataAdmissao);
+}
+
+// Check if employee is near vacation eligibility based on return date or admission
+export function isNearVacation(colaborador: Pick<Colaborador, "data_admissao" | "data_retorno_ferias">): boolean {
+  const referenceDate = colaborador.data_retorno_ferias || colaborador.data_admissao;
+  const months = calculateMonthsSinceDate(referenceDate);
+  return months >= 11;
 }

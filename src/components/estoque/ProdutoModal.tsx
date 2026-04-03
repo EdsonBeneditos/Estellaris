@@ -111,6 +111,7 @@ interface ProdutoModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   produto?: Produto | null;
+  defaultGrupoId?: string | null;
 }
 
 // Currency mask helpers
@@ -123,7 +124,7 @@ function parseCurrencyInput(raw: string): number {
   return Number(digits) / 100;
 }
 
-export function ProdutoModal({ open, onOpenChange, produto }: ProdutoModalProps) {
+export function ProdutoModal({ open, onOpenChange, produto, defaultGrupoId }: ProdutoModalProps) {
   const { data: grupos = [] } = useGruposProdutos();
   const { data: allProdutos = [] } = useProdutos();
   const createProduto = useCreateProduto();
@@ -131,6 +132,29 @@ export function ProdutoModal({ open, onOpenChange, produto }: ProdutoModalProps)
   const [skuError, setSkuError] = useState<string | null>(null);
   const [precoCustoDisplay, setPrecoCustoDisplay] = useState("R$ 0,00");
   const [precoVendaDisplay, setPrecoVendaDisplay] = useState("R$ 0,00");
+
+  // Generate next child SKU for a group
+  const generateChildSku = (grupoId: string | null): string => {
+    if (!grupoId) return "";
+    const grupo = grupos.find((g) => g.id === grupoId);
+    if (!grupo) return "";
+    // Products in this group
+    const siblingSkus = allProdutos
+      .filter((p) => p.grupo_id === grupoId && p.id !== produto?.id)
+      .map((p) => p.sku);
+    // Find the highest suffix number
+    const base = grupo.numero_referencia;
+    let maxNum = 0;
+    siblingSkus.forEach((sku) => {
+      if (sku.startsWith(base)) {
+        const suffix = sku.slice(base.length);
+        const num = parseInt(suffix, 10);
+        if (!isNaN(num) && num > maxNum) maxNum = num;
+      }
+    });
+    const nextNum = maxNum + 1;
+    return `${base}${String(nextNum).padStart(2, "0")}`;
+  };
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -175,16 +199,17 @@ export function ProdutoModal({ open, onOpenChange, produto }: ProdutoModalProps)
       setPrecoCustoDisplay(formatCurrency(produto.preco_custo));
       setPrecoVendaDisplay(formatCurrency(produto.preco_venda));
     } else {
+      const autoSku = defaultGrupoId ? generateChildSku(defaultGrupoId) : "";
       form.reset({
         nome: "",
-        sku: "",
+        sku: autoSku,
         marca: "",
         descricao: "",
         preco_venda: 0,
         preco_custo: 0,
         quantidade_estoque: 0,
         unidade_medida: "UN",
-        grupo_id: null,
+        grupo_id: defaultGrupoId || null,
         ativo: true,
         ncm: "00000000",
         cest: "",
@@ -196,7 +221,7 @@ export function ProdutoModal({ open, onOpenChange, produto }: ProdutoModalProps)
       setPrecoVendaDisplay("R$ 0,00");
     }
     setSkuError(null);
-  }, [produto, form, open]);
+  }, [produto, form, open, defaultGrupoId, grupos, allProdutos]);
 
   const validateSku = (sku: string) => {
     if (!sku.trim()) {
@@ -431,9 +456,15 @@ export function ProdutoModal({ open, onOpenChange, produto }: ProdutoModalProps)
                 <FormItem>
                   <FormLabel>Grupo / Departamento</FormLabel>
                   <Select
-                    onValueChange={(value) =>
-                      field.onChange(value === "none" ? null : value)
-                    }
+                    onValueChange={(value) => {
+                      const newGrupoId = value === "none" ? null : value;
+                      field.onChange(newGrupoId);
+                      // Auto-fill SKU for new products when group is selected
+                      if (!produto && newGrupoId) {
+                        const autoSku = generateChildSku(newGrupoId);
+                        if (autoSku) form.setValue("sku", autoSku);
+                      }
+                    }}
                     value={field.value || "none"}
                   >
                     <FormControl>

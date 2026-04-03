@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Plus, Filter, X } from "lucide-react";
+import { Plus, Filter, X, LayoutList, Columns3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { LeadsTableModern } from "@/components/leads/LeadsTableModern";
+import { LeadsKanbanView } from "@/components/leads/LeadsKanbanView";
 import { SearchBar } from "@/components/leads/SearchBar";
 import { NewLeadModal } from "@/components/leads/NewLeadModal";
 import { DateRangePicker } from "@/components/leads/DateRangePicker";
@@ -23,9 +24,11 @@ import {
   format,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 export default function Leads() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<"list" | "kanban">("list");
   const [vendedorFilter, setVendedorFilter] = useState<string>("all");
   const [servicoFilter, setServicoFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -126,13 +129,42 @@ export default function Leads() {
             Visualize e gerencie todos os seus leads
           </p>
         </div>
-        <Button
-          onClick={() => setIsModalOpen(true)}
-          className="gap-2 w-full sm:w-auto"
-        >
-          <Plus className="h-4 w-4" />
-          Novo Lead
-        </Button>
+        <div className="flex items-center gap-2">
+          {/* View toggle */}
+          <div className="flex items-center rounded-lg border border-border bg-card p-1 gap-1">
+            <button
+              onClick={() => setViewMode("list")}
+              className={cn(
+                "p-1.5 rounded-md transition-colors",
+                viewMode === "list"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+              title="Visualização em lista"
+            >
+              <LayoutList className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setViewMode("kanban")}
+              className={cn(
+                "p-1.5 rounded-md transition-colors",
+                viewMode === "kanban"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+              title="Visualização em colunas"
+            >
+              <Columns3 className="h-4 w-4" />
+            </button>
+          </div>
+          <Button
+            onClick={() => setIsModalOpen(true)}
+            className="gap-2 w-full sm:w-auto"
+          >
+            <Plus className="h-4 w-4" />
+            Novo Lead
+          </Button>
+        </div>
       </div>
 
       {/* Global Search Bar */}
@@ -216,8 +248,10 @@ export default function Leads() {
         )}
       </div>
 
-      {/* Leads Table - Grouped by Month when no filters */}
-      {!hasActiveFilters ? (
+      {/* Leads - Kanban or List view */}
+      {viewMode === "kanban" ? (
+        <LeadsKanbanView leads={filteredLeads} isLoading={isLoading} />
+      ) : !hasActiveFilters ? (
         <div className="space-y-8">
           {groupedLeads.map(([monthKey, monthLeads]) => (
             <div key={monthKey}>

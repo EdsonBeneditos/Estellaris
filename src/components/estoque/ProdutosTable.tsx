@@ -8,6 +8,8 @@ import {
   Trash2,
   MoreVertical,
   AlertTriangle,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,12 +55,15 @@ import {
   useGruposProdutos,
 } from "@/hooks/useEstoque";
 
+const PAGE_SIZE = 20;
+
 export function ProdutosTable() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedGrupo, setSelectedGrupo] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedProduto, setSelectedProduto] = useState<Produto | null>(null);
+  const [page, setPage] = useState(1);
 
   const { data: grupos = [] } = useGruposProdutos();
   const { data: produtos = [], isLoading } = useProdutos(
@@ -71,6 +76,9 @@ export function ProdutosTable() {
       p.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.sku.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const totalPages = Math.max(1, Math.ceil(filteredProdutos.length / PAGE_SIZE));
+  const pagedProdutos = filteredProdutos.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const handleEdit = (produto: Produto) => {
     setSelectedProduto(produto);
@@ -169,6 +177,11 @@ export function ProdutosTable() {
           </div>
         ) : (
           <>
+            <p className="text-sm text-muted-foreground mb-3">
+              {filteredProdutos.length} produto(s) encontrado(s)
+              {totalPages > 1 && ` — Página ${page} de ${totalPages}`}
+            </p>
+
             {/* Desktop Table */}
             <div className="hidden md:block max-h-[500px] overflow-auto relative">
               <Table>
@@ -184,7 +197,7 @@ export function ProdutosTable() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredProdutos.map((produto) => (
+                  {pagedProdutos.map((produto) => (
                     <TableRow key={produto.id} className="group">
                       <TableCell>
                         <div className="flex items-center gap-3">
@@ -271,7 +284,7 @@ export function ProdutosTable() {
 
             {/* Mobile Cards */}
             <div className="md:hidden space-y-3">
-              {filteredProdutos.map((produto) => (
+              {pagedProdutos.map((produto) => (
                 <div
                   key={produto.id}
                   className="p-4 rounded-xl border border-border/50 bg-background/50"
@@ -353,6 +366,34 @@ export function ProdutosTable() {
                 </div>
               ))}
             </div>
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-3 mt-4 pt-4 border-t border-border/50">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="gap-1"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Anterior
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  {page} / {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="gap-1"
+                >
+                  Próxima
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
           </>
         )}
       </CardContent>

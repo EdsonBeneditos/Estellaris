@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
-import { X, Printer, Download } from "lucide-react";
+import { Printer, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DanfePreview } from "./DanfePreview";
@@ -75,9 +75,6 @@ export function DanfeViewModal({ nota, open, onOpenChange }: DanfeViewModalProps
             <Button size="sm" onClick={handleGeneratePdf} className="gap-2">
               <Download className="h-4 w-4" />
               Baixar PDF
-            </Button>
-            <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)}>
-              <X className="h-4 w-4" />
             </Button>
           </div>
         </DialogHeader>

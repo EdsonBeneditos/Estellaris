@@ -116,7 +116,7 @@ export function useProdutos(grupoId?: string | null) {
           *,
           grupo:grupos_produtos(*)
         `)
-        .order("nome");
+        .order("created_at", { ascending: false });
 
       if (grupoId) {
         query = query.eq("grupo_id", grupoId);
@@ -125,6 +125,26 @@ export function useProdutos(grupoId?: string | null) {
       const { data, error } = await query;
       if (error) throw error;
       return data as Produto[];
+    },
+  });
+}
+
+// Count products per group
+export function useProdutosCountByGrupo() {
+  return useQuery({
+    queryKey: ["produtos_count_by_grupo"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("produtos")
+        .select("grupo_id");
+      if (error) throw error;
+      const counts: Record<string, number> = {};
+      (data || []).forEach((p: { grupo_id: string | null }) => {
+        if (p.grupo_id) {
+          counts[p.grupo_id] = (counts[p.grupo_id] || 0) + 1;
+        }
+      });
+      return counts;
     },
   });
 }

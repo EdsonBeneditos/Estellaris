@@ -44,7 +44,7 @@ import { useActiveOrigens } from "@/hooks/useSettings";
 import { toast } from "sonner";
 import { maskCNPJ, maskPhone } from "@/lib/masks";
 import { SearchBar } from "@/components/leads/SearchBar";
-import { format, parseISO, isBefore, startOfDay } from "date-fns";
+import { format, parseISO, isBefore, isToday, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
@@ -347,22 +347,30 @@ export default function FuturosLeads() {
                 </div>
 
                 <div className="space-y-2 mb-4">
-                  {lead.data_prevista_contato && (
-                    <div className={cn(
-                      "flex items-center gap-2 text-sm px-2 py-1 rounded-md",
-                      isBefore(parseISO(lead.data_prevista_contato), startOfDay(new Date()))
-                        ? "bg-destructive/10 text-destructive"
-                        : "bg-primary/10 text-primary"
-                    )}>
-                      <CalendarDays className="h-3.5 w-3.5" />
-                      <span className="font-medium">
-                        {format(parseISO(lead.data_prevista_contato), "dd/MM/yyyy", { locale: ptBR })}
-                      </span>
-                      {isBefore(parseISO(lead.data_prevista_contato), startOfDay(new Date())) && (
-                        <Badge variant="destructive" className="text-[10px] h-4 px-1.5">Atrasado</Badge>
-                      )}
-                    </div>
-                  )}
+                  {lead.data_prevista_contato && (() => {
+                    const d = parseISO(lead.data_prevista_contato);
+                    const isOverdue = isBefore(d, startOfDay(new Date())) && !isToday(d);
+                    const isContactToday = isToday(d);
+                    return (
+                      <div className={cn(
+                        "flex items-center gap-2 text-sm px-2 py-1 rounded-md",
+                        isOverdue || isContactToday
+                          ? "bg-destructive/10 text-destructive"
+                          : "bg-primary/10 text-primary"
+                      )}>
+                        <CalendarDays className="h-3.5 w-3.5" />
+                        <span className="font-medium">
+                          {format(d, "dd/MM/yyyy", { locale: ptBR })}
+                        </span>
+                        {isOverdue && (
+                          <Badge variant="destructive" className="text-[10px] h-4 px-1.5">Atrasado</Badge>
+                        )}
+                        {isContactToday && (
+                          <Badge variant="destructive" className="text-[10px] h-4 px-1.5 animate-pulse">Hoje!</Badge>
+                        )}
+                      </div>
+                    );
+                  })()}
                   {lead.nome_contato && (
                     <div className="flex items-center gap-2 text-sm">
                       <Users className="h-3.5 w-3.5 text-muted-foreground" />

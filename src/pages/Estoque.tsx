@@ -15,24 +15,24 @@ export default function Estoque() {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="produtos" className="w-full">
+      <Tabs defaultValue="grupos" className="w-full">
         <TabsList className="grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="produtos" className="gap-2">
-            <Package className="h-4 w-4" />
-            Produtos
-          </TabsTrigger>
           <TabsTrigger value="grupos" className="gap-2">
             <FolderOpen className="h-4 w-4" />
             Grupos
           </TabsTrigger>
+          <TabsTrigger value="produtos" className="gap-2">
+            <Package className="h-4 w-4" />
+            Produtos
+          </TabsTrigger>
         </TabsList>
-
-        <TabsContent value="produtos" className="mt-6">
-          <ProdutosTable />
-        </TabsContent>
 
         <TabsContent value="grupos" className="mt-6">
           <GruposManager />
+        </TabsContent>
+
+        <TabsContent value="produtos" className="mt-6">
+          <ProdutosTable />
         </TabsContent>
       </Tabs>
     </div>
