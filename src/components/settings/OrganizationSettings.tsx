@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Save, Clock, Calendar, Palette, Globe, Shield, Upload, Image, Loader2, UserCircle } from "lucide-react";
+import { Save, Clock, Calendar, Palette, Globe, Shield, Upload, Image, Loader2, UserCircle, Users, Lock } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -8,13 +8,30 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { useCurrentOrganization, useUpdateOrganization, useCurrentProfile } from "@/hooks/useOrganization";
+import { Badge } from "@/components/ui/badge";
+import { useCurrentOrganization, useUpdateOrganization, useCurrentProfile, useOrganizationMembers } from "@/hooks/useOrganization";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { usePermissions, MENU_KEYS } from "@/hooks/usePermissions";
 import { Language } from "@/lib/i18n/translations";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+
+const MENU_LABELS: Record<string, string> = {
+  dashboard: "Dashboard",
+  leads: "Leads",
+  futuros_leads: "Futuros Leads",
+  clientes: "Clientes",
+  colaboradores: "Colaboradores",
+  estoque: "Estoque",
+  orcamentos: "Orçamentos",
+  notas_fiscais: "Notas Fiscais",
+  financeiro: "Financeiro / Caixa",
+  relatorios: "Relatórios",
+  equipe: "Equipe",
+  configuracoes: "Configurações",
+};
 
 const DAYS = [
   { key: "seg", label: "Segunda-feira" },
@@ -29,9 +46,12 @@ const DAYS = [
 export function OrganizationSettings() {
   const { data: organization, isLoading } = useCurrentOrganization();
   const { data: currentProfile } = useCurrentProfile();
+  const { data: orgMembers = [] } = useOrganizationMembers();
   const { theme, setTheme } = useTheme();
   const { language, setLanguage, t } = useLanguage();
+  const { isAdmin } = usePermissions();
   const queryClient = useQueryClient();
+  const [savingPermissions, setSavingPermissions] = useState<string | null>(null);
 
   const [horaInicio, setHoraInicio] = useState("08:00");
   const [horaFim, setHoraFim] = useState("18:00");
@@ -166,6 +186,66 @@ export function OrganizationSettings() {
       setIsSavingLetterhead(false);
     }
   };
+  const handleToggleMenuPermission = async (userId: string, menuKey: string, currentPermissions: string[] | null) => {
+    setSavingPermissions(userId);
+    try {
+      let updated: string[];
+      if (currentPermissions === null) {
+        // null = sem restrições → ao desmarcar um menu, criamos a lista com todos exceto o desmarcado
+        updated = MENU_KEYS.filter((k) => k !== menuKey);
+      } else if (currentPermissions.includes(menuKey)) {
+        updated = currentPermissions.filter((k) => k !== menuKey);
+      } else {
+        updated = [...currentPermissions, menuKey];
+      }
+      const { error } = await supabase
+        .from("profiles")
+        .update({ menu_permissions: updated } as any)
+        .eq("id", userId);
+      if (error) throw error;
+      await queryClient.invalidateQueries({ queryKey: ["organization-members"] });
+      toast.success("Permissão atualizada!");
+    } catch (error: any) {
+      toast.error("Erro ao atualizar permissão", { description: error.message });
+    } finally {
+      setSavingPermissions(null);
+    }
+  };
+
+  const handleGrantAllMenus = async (userId: string) => {
+    setSavingPermissions(userId);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ menu_permissions: null } as any)
+        .eq("id", userId);
+      if (error) throw error;
+      await queryClient.invalidateQueries({ queryKey: ["organization-members"] });
+      toast.success("Acesso total liberado!");
+    } catch (error: any) {
+      toast.error("Erro ao atualizar permissões", { description: error.message });
+    } finally {
+      setSavingPermissions(null);
+    }
+  };
+
+  const handleRevokeAllMenus = async (userId: string) => {
+    setSavingPermissions(userId);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ menu_permissions: [] } as any)
+        .eq("id", userId);
+      if (error) throw error;
+      await queryClient.invalidateQueries({ queryKey: ["organization-members"] });
+      toast.success("Todos os acessos revogados!");
+    } catch (error: any) {
+      toast.error("Erro ao atualizar permissões", { description: error.message });
+    } finally {
+      setSavingPermissions(null);
+    }
+  };
+
   const handleSaveProfile = async () => {
     if (!currentProfile) return;
     setIsSavingProfile(true);
@@ -258,6 +338,23 @@ export function OrganizationSettings() {
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Theme Selector */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Palette className="h-4 w-4" />
+                {t.settings.theme}
+              </Label>
+              <Select value={theme} onValueChange={(v) => setTheme(v as "light" | "dark")}>
+                <SelectTrigger className="bg-background">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="dark">Escuro</SelectItem>
+                  <SelectItem value="light">Claro</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Language Selector */}
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
@@ -357,6 +454,91 @@ export function OrganizationSettings() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Permissões de Menu por Usuário — apenas admin */}
+      {isAdmin && (
+        <Card className="bg-gradient-to-br from-slate-50 to-zinc-100 dark:from-zinc-900 dark:to-slate-900 border-slate-200 dark:border-zinc-800">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Lock className="h-5 w-5 text-red-600" />
+              Permissões de Acesso ao Menu
+            </CardTitle>
+            <CardDescription>
+              Defina quais menus cada colaborador pode visualizar. Administradores sempre têm acesso total.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {orgMembers.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nenhum colaborador encontrado.</p>
+            ) : (
+              orgMembers
+                .filter((m) => m.id !== currentProfile?.id && !m.is_super_admin)
+                .filter((m) => !m.roles.some((r) => r.role === "admin"))
+                .map((member) => {
+                  const perms: string[] | null = (member as any).menu_permissions ?? null;
+                  const isLoading = savingPermissions === member.id;
+                  return (
+                    <div key={member.id} className="rounded-lg border border-border bg-background p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium text-sm">{member.id_nome || member.nome}</span>
+                          <span className="text-xs text-muted-foreground">({member.email})</span>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={isLoading}
+                            onClick={() => handleGrantAllMenus(member.id)}
+                            className="text-xs h-7"
+                          >
+                            Liberar tudo
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={isLoading}
+                            onClick={() => handleRevokeAllMenus(member.id)}
+                            className="text-xs h-7 text-destructive hover:text-destructive"
+                          >
+                            Revogar tudo
+                          </Button>
+                        </div>
+                      </div>
+                      {perms === null && (
+                        <Badge variant="secondary" className="text-xs">Acesso total (sem restrições)</Badge>
+                      )}
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                        {MENU_KEYS.map((menuKey) => {
+                          const hasAccess = perms === null || perms.includes(menuKey);
+                          return (
+                            <div
+                              key={menuKey}
+                              className={`flex items-center gap-2 p-2 rounded-md border cursor-pointer transition-colors ${
+                                hasAccess
+                                  ? "bg-primary/10 border-primary/30 text-primary"
+                                  : "bg-muted/30 border-border text-muted-foreground"
+                              }`}
+                              onClick={() => !isLoading && handleToggleMenuPermission(member.id, menuKey, perms)}
+                            >
+                              <Checkbox
+                                checked={hasAccess}
+                                disabled={isLoading}
+                                onCheckedChange={() => handleToggleMenuPermission(member.id, menuKey, perms)}
+                              />
+                              <span className="text-xs font-medium truncate">{MENU_LABELS[menuKey]}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Papel Timbrado / Orçamentos */}
       <Card className="bg-gradient-to-br from-slate-50 to-zinc-100 dark:from-zinc-900 dark:to-slate-900 border-slate-200 dark:border-zinc-800">

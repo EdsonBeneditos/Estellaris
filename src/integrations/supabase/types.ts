@@ -1563,6 +1563,7 @@ export type Database = {
           id: string
           id_nome: string
           is_super_admin: boolean | null
+          menu_permissions: string[] | null
           nome: string
           organization_id: string
           simulation_mode: boolean | null
@@ -1578,6 +1579,7 @@ export type Database = {
           id: string
           id_nome: string
           is_super_admin?: boolean | null
+          menu_permissions?: string[] | null
           nome: string
           organization_id: string
           simulation_mode?: boolean | null
@@ -1593,6 +1595,7 @@ export type Database = {
           id?: string
           id_nome?: string
           is_super_admin?: boolean | null
+          menu_permissions?: string[] | null
           nome?: string
           organization_id?: string
           simulation_mode?: boolean | null

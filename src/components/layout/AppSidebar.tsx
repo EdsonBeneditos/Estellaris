@@ -49,7 +49,7 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const location = useLocation();
   const { signOut, user } = useAuthContext();
-  const { canViewSettings, canManageTeam } = usePermissions();
+  const { canViewSettings, canManageTeam, isAdmin, hasMenuAccess } = usePermissions();
   const { data: isSuperAdmin } = useIsSuperAdmin();
   const { data: organization } = useCurrentOrganization();
   const { data: pendingBudgets = 0 } = usePendingBudgetsCount();
@@ -102,28 +102,31 @@ export function AppSidebar() {
     const superAdminItem = moduleMenuItems.super_admin;
     if (superAdminItem) menuItems.push(superAdminItem);
   } else {
-    // Modo normal: respeita modules_enabled e permissões
+    // Modo normal: respeita modules_enabled, permissões e menu_permissions por usuário
     regularModules.forEach((moduleKey) => {
       const menuItem = moduleMenuItems[moduleKey];
-      if (menuItem && isModuleEnabled(enabledModules, moduleKey)) {
-        menuItems.push(menuItem);
-      }
+      if (!menuItem || !isModuleEnabled(enabledModules, moduleKey)) return;
+      // Financeiro: apenas admin ou quem tiver permissão explícita
+      if (moduleKey === "financeiro" && !isAdmin && !hasMenuAccess("financeiro")) return;
+      // Outros menus: verificar menu_permissions
+      if (!hasMenuAccess(moduleKey)) return;
+      menuItems.push(menuItem);
     });
 
-    // Adicionar Relatórios se algum estiver habilitado
+    // Adicionar Relatórios se algum estiver habilitado e tiver acesso
     const reportStatus = hasAnyReport(enabledModules);
-    if (reportStatus.hasAny) {
+    if (reportStatus.hasAny && hasMenuAccess("relatorios")) {
       menuItems.push({ title: "Relatórios", url: "/relatorios", icon: BarChart3 });
     }
 
     // Adicionar Equipe se o módulo estiver habilitado E tiver permissão
-    if (isModuleEnabled(enabledModules, "equipe") && canManageTeam) {
+    if (isModuleEnabled(enabledModules, "equipe") && canManageTeam && hasMenuAccess("equipe")) {
       const equipeItem = moduleMenuItems.equipe;
       if (equipeItem) menuItems.push(equipeItem);
     }
 
     // Adicionar Configurações se o módulo estiver habilitado E tiver permissão
-    if (isModuleEnabled(enabledModules, "configuracoes") && canViewSettings) {
+    if (isModuleEnabled(enabledModules, "configuracoes") && canViewSettings && hasMenuAccess("configuracoes")) {
       const configItem = moduleMenuItems.configuracoes;
       if (configItem) menuItems.push(configItem);
     }

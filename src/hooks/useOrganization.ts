@@ -21,6 +21,7 @@ export interface Profile {
   id_nome: string | null;
   avatar_url: string | null;
   is_super_admin: boolean | null;
+  menu_permissions: string[] | null;
   dias_acesso: string[] | null;
   horario_inicio: string | null;
   horario_fim: string | null;
