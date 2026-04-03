@@ -31,13 +31,13 @@ function getIconForType(tipo: AtividadeCliente["tipo"]) {
 function getBadgeColor(tipo: AtividadeCliente["tipo"]) {
   switch (tipo) {
     case "Nota":
-      return "bg-blue-50 text-blue-700 border-blue-200";
+      return "bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800";
     case "Sistema":
-      return "bg-slate-50 text-slate-700 border-slate-200";
+      return "bg-slate-50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700";
     case "Contrato":
-      return "bg-green-50 text-green-700 border-green-200";
+      return "bg-green-50 dark:bg-green-950/50 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800";
     default:
-      return "bg-slate-50 text-slate-600 border-slate-200";
+      return "bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700";
   }
 }
 
@@ -68,8 +68,8 @@ export function ClienteTimeline({ clienteId }: ClienteTimelineProps) {
   return (
     <div className="space-y-4">
       {/* Campo para adicionar nota */}
-      <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-        <label className="block text-sm font-medium text-zinc-950 mb-2">
+      <div className="bg-slate-50 dark:bg-zinc-800/50 rounded-lg p-4 border border-slate-200 dark:border-zinc-700">
+        <label className="block text-sm font-medium text-zinc-950 dark:text-zinc-50 mb-2">
           Adicionar Nota
         </label>
         <div className="flex gap-2">
@@ -78,7 +78,7 @@ export function ClienteTimeline({ clienteId }: ClienteTimelineProps) {
             value={novaNota}
             onChange={(e) => setNovaNota(e.target.value)}
             onKeyDown={handleKeyDown}
-            className="min-h-[60px] bg-white border-slate-300 text-zinc-950 placeholder:text-slate-400 resize-none"
+            className="min-h-[60px] bg-white dark:bg-zinc-900 border-slate-300 dark:border-zinc-600 text-zinc-950 dark:text-zinc-50 placeholder:text-slate-400 dark:placeholder:text-zinc-500 resize-none"
             disabled={createAtividade.isPending}
           />
           <Button
@@ -94,15 +94,15 @@ export function ClienteTimeline({ clienteId }: ClienteTimelineProps) {
             )}
           </Button>
         </div>
-        <p className="text-xs text-slate-500 mt-1">
+        <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1">
           Pressione Enter para enviar ou Shift+Enter para nova linha
         </p>
       </div>
 
       {/* Timeline */}
-      <div className="bg-slate-50 rounded-lg border border-slate-200 overflow-hidden">
-        <div className="px-4 py-3 border-b border-slate-200">
-          <h4 className="text-sm font-semibold text-zinc-950">
+      <div className="bg-slate-50 dark:bg-zinc-800/50 rounded-lg border border-slate-200 dark:border-zinc-700 overflow-hidden">
+        <div className="px-4 py-3 border-b border-slate-200 dark:border-zinc-700">
+          <h4 className="text-sm font-semibold text-zinc-950 dark:text-zinc-50">
             Histórico de Atividades
           </h4>
         </div>
@@ -110,28 +110,28 @@ export function ClienteTimeline({ clienteId }: ClienteTimelineProps) {
         {isLoading ? (
           <div className="p-8 text-center">
             <Loader2 className="h-6 w-6 animate-spin mx-auto text-slate-400" />
-            <p className="text-sm text-slate-500 mt-2">Carregando...</p>
+            <p className="text-sm text-slate-500 dark:text-zinc-400 mt-2">Carregando...</p>
           </div>
         ) : atividades.length === 0 ? (
           <div className="p-8 text-center">
-            <FileText className="h-8 w-8 mx-auto text-slate-300" />
-            <p className="text-sm text-slate-500 mt-2">
+            <FileText className="h-8 w-8 mx-auto text-slate-300 dark:text-zinc-600" />
+            <p className="text-sm text-slate-500 dark:text-zinc-400 mt-2">
               Nenhuma atividade registrada
             </p>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-slate-400 dark:text-zinc-500 mt-1">
               Adicione uma nota acima para começar
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-slate-100 dark:divide-zinc-700">
             {atividades.map((atividade, index) => (
               <div
                 key={atividade.id}
-                className="px-4 py-3 hover:bg-slate-100/50 transition-colors"
+                className="px-4 py-3 hover:bg-slate-100/50 dark:hover:bg-zinc-700/30 transition-colors"
               >
                 <div className="flex items-start gap-3">
                   {/* Icon */}
-                  <div className="mt-0.5 p-1.5 rounded-full bg-white border border-slate-200 shadow-sm">
+                  <div className="mt-0.5 p-1.5 rounded-full bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-600 shadow-sm">
                     {getIconForType(atividade.tipo)}
                   </div>
 
@@ -145,7 +145,7 @@ export function ClienteTimeline({ clienteId }: ClienteTimelineProps) {
                       >
                         {atividade.tipo}
                       </span>
-                      <span className="text-xs text-slate-500">
+                      <span className="text-xs text-slate-500 dark:text-zinc-400">
                         {format(
                           new Date(atividade.data_hora),
                           "dd/MM/yyyy 'às' HH:mm",
@@ -154,14 +154,14 @@ export function ClienteTimeline({ clienteId }: ClienteTimelineProps) {
                       </span>
                     </div>
 
-                    <p className="text-sm text-zinc-950 mt-1 whitespace-pre-wrap break-words">
+                    <p className="text-sm text-zinc-950 dark:text-zinc-100 mt-1 whitespace-pre-wrap break-words">
                       {atividade.descricao}
                     </p>
 
                     {atividade.realizado_por_email && (
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <p className="text-xs text-slate-500 mt-1 cursor-default truncate max-w-[200px]">
+                          <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1 cursor-default truncate max-w-[200px]">
                             Por: {atividade.realizado_por_email.split("@")[0]}
                           </p>
                         </TooltipTrigger>
@@ -175,7 +175,7 @@ export function ClienteTimeline({ clienteId }: ClienteTimelineProps) {
 
                 {/* Linha de conexão (exceto último item) */}
                 {index < atividades.length - 1 && (
-                  <div className="ml-[18px] mt-2 h-4 w-px bg-slate-200" />
+                  <div className="ml-[18px] mt-2 h-4 w-px bg-slate-200 dark:bg-zinc-600" />
                 )}
               </div>
             ))}

@@ -82,6 +82,22 @@ const statusConfig: Record<string, { label: string; color: string; icon: React.E
 const turnoOptions = ["Manhã", "Tarde", "Noite", "12x36", "Flexível"];
 const cnhCategories = ["A", "B", "C", "D", "E"];
 
+function formatTelefone(value: string): string {
+  // Remove tudo que não for dígito
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (digits.length <= 2) return digits.length ? `(${digits}` : "";
+  if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  if (digits.length <= 10)
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  // 11 dígitos: celular (XX) XXXXX-XXXX
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+}
+
+function isTelefoneValido(value: string): boolean {
+  const digits = value.replace(/\D/g, "");
+  return digits.length === 10 || digits.length === 11;
+}
+
 export default function Colaboradores() {
   const { data: profile } = useCurrentProfile();
   const { data: colaboradores = [], isLoading } = useColaboradores();
@@ -155,6 +171,11 @@ export default function Colaboradores() {
   const handleSave = async () => {
     if (!formData.nome.trim()) {
       toast.error("Nome é obrigatório");
+      return;
+    }
+
+    if (formData.telefone && !isTelefoneValido(formData.telefone)) {
+      toast.error("Telefone inválido. Use o formato (XX) XXXXX-XXXX ou (XX) XXXX-XXXX");
       return;
     }
 
@@ -679,10 +700,19 @@ export default function Colaboradores() {
                     id="telefone"
                     value={formData.telefone}
                     onChange={(e) =>
-                      setFormData({ ...formData, telefone: e.target.value })
+                      setFormData({
+                        ...formData,
+                        telefone: formatTelefone(e.target.value),
+                      })
                     }
                     placeholder="(11) 99999-9999"
+                    inputMode="numeric"
                   />
+                  {formData.telefone && !isTelefoneValido(formData.telefone) && (
+                    <p className="text-xs text-destructive">
+                      Formato inválido. Ex: (11) 99999-9999
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">E-mail Pessoal</Label>

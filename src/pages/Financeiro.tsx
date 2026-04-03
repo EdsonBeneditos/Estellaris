@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Eye, EyeOff } from "lucide-react";
+import { Plus, Eye, EyeOff, ShieldOff } from "lucide-react";
+import { usePermissions } from "@/hooks/usePermissions";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import {
   useMovimentacoes,
@@ -16,6 +17,24 @@ import { FiltrosMovimentacoes } from "@/components/financeiro/FiltrosMovimentaco
 import { AguardandoFaturamento } from "@/components/financeiro/AguardandoFaturamento";
 
 export default function Financeiro() {
+  const { hasMenuAccess, isAdmin } = usePermissions();
+
+  if (!isAdmin && !hasMenuAccess("financeiro")) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 gap-4 text-center">
+        <ShieldOff className="h-12 w-12 text-muted-foreground" />
+        <div>
+          <h2 className="text-lg font-semibold">Acesso Restrito</h2>
+          <p className="text-muted-foreground text-sm mt-1">
+            Você não tem permissão para acessar o Financeiro / Caixa.
+            <br />
+            Entre em contato com o administrador da organização.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const now = new Date();
   const [filtros, setFiltros] = useState({
     dataInicio: format(startOfMonth(now), "yyyy-MM-dd"),
