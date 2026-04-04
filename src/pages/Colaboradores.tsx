@@ -69,6 +69,7 @@ import {
   useColaboradorHistorico,
   registrarHistoricoColaborador,
   calculateMonthsSinceDate,
+  formatTempoEmpresa,
   isNearVacation,
   Colaborador,
   ColaboradorHistorico,
@@ -189,15 +190,6 @@ function isTelefoneValido(value: string): boolean {
   return digits.length === 10 || digits.length === 11;
 }
 
-function formatTempoEmpresa(meses: number): string {
-  if (meses <= 0) return "< 1 mês";
-  if (meses < 12) return `${meses} ${meses === 1 ? "mês" : "meses"}`;
-  const anos = Math.floor(meses / 12);
-  const m = meses % 12;
-  const anosStr = `${anos} ${anos === 1 ? "ano" : "anos"}`;
-  if (m === 0) return anosStr;
-  return `${anosStr} e ${m} ${m === 1 ? "mês" : "meses"}`;
-}
 
 const emptyForm = {
   nome: "",
@@ -469,11 +461,14 @@ export default function Colaboradores() {
   const feriasAgendadas = colaboradores.filter((c) => {
     // Em férias confirmado → sempre mostrar
     if (c.status === "Férias") return true;
-    // Já retornou (status Ativo + data_retorno_ferias preenchida) → NÃO mostrar
-    if (c.status === "Ativo" && c.data_retorno_ferias) return false;
-    // Agendado: status Ativo, sem retorno registrado, data início hoje ou futura
-    if (c.status === "Ativo" && c.data_ultima_ferias && c.data_ultima_ferias >= todayStr) return true;
-    return false;
+    // Sem data agendada → não mostrar
+    if (!c.data_ultima_ferias) return false;
+    // Férias já passaram → não mostrar
+    if (c.data_ultima_ferias < todayStr) return false;
+    // Caso especial: confirmou início E retornou no mesmo dia → não mostrar
+    if (c.data_retorno_ferias && c.data_retorno_ferias <= todayStr && c.data_ultima_ferias <= todayStr) return false;
+    // Férias hoje ou futuras (data_retorno_ferias pode ser data planejada de retorno) → mostrar
+    return true;
   });
 
   const navigateFerias = (dir: "left" | "right") => {

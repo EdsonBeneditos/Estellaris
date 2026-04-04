@@ -110,8 +110,14 @@ export function useColaboradoresProximosFerias() {
 
       // Only show alert if the colaborador is near or past 11 months since
       // their last vacation return (or admission if never took vacation).
+      const today = new Date().toISOString().slice(0, 10);
       return all.filter((c) => {
-        const referenceDate = c.data_retorno_ferias || c.data_admissao;
+        // Usa data_retorno_ferias só se for passada (retorno já ocorreu)
+        // Caso contrário usa data_admissao
+        const retorno = c.data_retorno_ferias && c.data_retorno_ferias <= today
+          ? c.data_retorno_ferias
+          : null;
+        const referenceDate = retorno || c.data_admissao;
         if (!referenceDate) return false;
         const months = calculateMonthsSinceDate(referenceDate);
         return months >= 11;
@@ -182,6 +188,17 @@ export function useDeleteColaborador() {
   });
 }
 
+// Formata meses em texto legível: "3 meses", "1 ano", "1 ano e 3 meses"
+export function formatTempoEmpresa(meses: number): string {
+  if (meses <= 0) return "< 1 mês";
+  if (meses < 12) return `${meses} ${meses === 1 ? "mês" : "meses"}`;
+  const anos = Math.floor(meses / 12);
+  const m = meses % 12;
+  const anosStr = `${anos} ${anos === 1 ? "ano" : "anos"}`;
+  if (m === 0) return anosStr;
+  return `${anosStr} e ${m} ${m === 1 ? "mês" : "meses"}`;
+}
+
 // Generic: months since any date
 export function calculateMonthsSinceDate(date: string | null): number {
   if (!date) return 0;
@@ -197,7 +214,11 @@ export function calculateMonthsSinceAdmission(dataAdmissao: string | null): numb
 
 // Check if employee is near vacation eligibility based on return date or admission
 export function isNearVacation(colaborador: Pick<Colaborador, "data_admissao" | "data_retorno_ferias">): boolean {
-  const referenceDate = colaborador.data_retorno_ferias || colaborador.data_admissao;
+  const today = new Date().toISOString().slice(0, 10);
+  const retorno = colaborador.data_retorno_ferias && colaborador.data_retorno_ferias <= today
+    ? colaborador.data_retorno_ferias
+    : null;
+  const referenceDate = retorno || colaborador.data_admissao;
   const months = calculateMonthsSinceDate(referenceDate);
   return months >= 11;
 }

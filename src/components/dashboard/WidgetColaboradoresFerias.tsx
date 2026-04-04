@@ -1,7 +1,11 @@
 import { Palmtree, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useColaboradoresProximosFerias, calculateMonthsSinceAdmission } from "@/hooks/useColaboradores";
+import {
+  useColaboradoresProximosFerias,
+  calculateMonthsSinceDate,
+  formatTempoEmpresa,
+} from "@/hooks/useColaboradores";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -24,9 +28,9 @@ export function WidgetColaboradoresFerias({ visible = true }: WidgetColaboradore
     );
   }
 
-  if (colaboradores.length === 0) {
-    return null;
-  }
+  if (colaboradores.length === 0) return null;
+
+  const today = new Date().toISOString().slice(0, 10);
 
   return (
     <Card className="relative border-amber-500/30 bg-amber-500/5 dark:bg-amber-500/10 transition-all duration-300 hover:shadow-md hover:border-primary/30 hover:bg-primary/[0.02] hover:z-50">
@@ -39,21 +43,29 @@ export function WidgetColaboradoresFerias({ visible = true }: WidgetColaboradore
       <CardContent>
         <div className="space-y-2">
           {colaboradores.slice(0, 5).map((colaborador) => {
-            const meses = calculateMonthsSinceAdmission(colaborador.data_admissao);
+            // Usa data_retorno_ferias só se for passada, senão usa data_admissao
+            const retorno =
+              colaborador.data_retorno_ferias &&
+              colaborador.data_retorno_ferias <= today
+                ? colaborador.data_retorno_ferias
+                : null;
+            const refDate = retorno || colaborador.data_admissao;
+            const meses = calculateMonthsSinceDate(refDate);
+
             return (
               <div
                 key={colaborador.id}
                 className="flex items-center justify-between p-2 rounded-lg bg-white/50 dark:bg-zinc-900/50"
               >
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 text-amber-500" />
-                  <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                <div className="flex items-center gap-2 min-w-0">
+                  <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
+                  <span className="font-medium text-zinc-900 dark:text-zinc-100 truncate">
                     {colaborador.nome}
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-xs border-amber-500 text-amber-600">
-                    {meses} meses
+                <div className="flex items-center gap-2 shrink-0 ml-2">
+                  <Badge variant="outline" className="text-xs border-amber-500 text-amber-600 whitespace-nowrap">
+                    {formatTempoEmpresa(meses)}
                   </Badge>
                   {colaborador.data_admissao && (
                     <span className="text-xs text-muted-foreground">

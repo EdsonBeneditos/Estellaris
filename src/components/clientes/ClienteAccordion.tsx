@@ -10,6 +10,7 @@ import { ClienteComContratos, Contrato, calcularFidelidade, diasAteVencimento, u
 import { ContratoModal } from "./ContratoModal";
 import { RenovarContratoModal } from "./RenovarContratoModal";
 import { ClienteTimeline } from "./ClienteTimeline";
+import { AgendarVisitaModal } from "./AgendarVisitaModal";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getVisitaBadgeConfig } from "@/hooks/useVisitasAlerts";
@@ -145,6 +146,10 @@ export function ClienteAccordion({ clientes, onEdit }: ClienteAccordionProps) {
   const [renovarModal, setRenovarModal] = useState<{ open: boolean; contrato: Contrato | null }>({
     open: false,
     contrato: null,
+  });
+  const [agendarVisita, setAgendarVisita] = useState<{ open: boolean; cliente: ClienteComContratos | null }>({
+    open: false,
+    cliente: null,
   });
 
   // Efeito para expandir cliente via URL
@@ -415,6 +420,10 @@ export function ClienteAccordion({ clientes, onEdit }: ClienteAccordionProps) {
                         {uploadContrato.isPending ? "Enviando..." : "Anexar contrato"}
                       </Button>
                     )}
+                    <Button size="sm" variant="outline" className="gap-1" onClick={() => setAgendarVisita({ open: true, cliente })}>
+                      <CalendarDays className="h-4 w-4" />
+                      Agendar Visita
+                    </Button>
                     <Button size="sm" variant="outline" onClick={() => onEdit(cliente)}>
                       <Pencil className="h-4 w-4 mr-1" />
                       Editar Cliente
@@ -464,6 +473,17 @@ export function ClienteAccordion({ clientes, onEdit }: ClienteAccordionProps) {
         onOpenChange={(open) => setRenovarModal({ ...renovarModal, open })}
         contrato={renovarModal.contrato}
       />
+      {agendarVisita.cliente && (
+        <AgendarVisitaModal
+          open={agendarVisita.open}
+          onOpenChange={(open) => setAgendarVisita({ ...agendarVisita, open })}
+          clienteId={agendarVisita.cliente.id}
+          clienteNome={agendarVisita.cliente.nome}
+          proximaVisitaAtual={agendarVisita.cliente.proxima_visita ?? null}
+          rotinaVisitas={agendarVisita.cliente.rotina_visitas ?? false}
+          frequenciaAtual={agendarVisita.cliente.frequencia_visita ?? null}
+        />
+      )}
     </>
   );
 }

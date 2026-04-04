@@ -11,6 +11,7 @@ import { ClienteComContratos, Contrato, calcularFidelidade, diasAteVencimento, u
 import { ContratoModal } from "./ContratoModal";
 import { RenovarContratoModal } from "./RenovarContratoModal";
 import { ClienteTimeline } from "./ClienteTimeline";
+import { AgendarVisitaModal } from "./AgendarVisitaModal";
 import { getVisitaBadgeConfig } from "@/hooks/useVisitasAlerts";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -39,6 +40,7 @@ export function ClienteCardGrid({ clientes, onEdit }: ClienteCardGridProps) {
   const [selectedCliente, setSelectedCliente] = useState<ClienteComContratos | null>(null);
   const [contratoModal, setContratoModal] = useState<{ open: boolean; clienteId: string; contrato: Contrato | null }>({ open: false, clienteId: "", contrato: null });
   const [renovarModal, setRenovarModal] = useState<{ open: boolean; contrato: Contrato | null }>({ open: false, contrato: null });
+  const [agendarVisitaOpen, setAgendarVisitaOpen] = useState(false);
 
   const handleContratoFileChange = (clienteId: string, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -332,6 +334,9 @@ export function ClienteCardGrid({ clientes, onEdit }: ClienteCardGridProps) {
                     {uploadContrato.isPending ? "Enviando..." : "Anexar contrato"}
                   </Button>
                 )}
+                <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setAgendarVisitaOpen(true)}>
+                  <CalendarDays className="h-3.5 w-3.5" />Agendar Visita
+                </Button>
                 <Button size="sm" variant="outline" onClick={() => { onEdit(selectedCliente); setSelectedCliente(null); }}>
                   <Pencil className="h-3.5 w-3.5 mr-1.5" />Editar
                 </Button>
@@ -370,6 +375,17 @@ export function ClienteCardGrid({ clientes, onEdit }: ClienteCardGridProps) {
         onOpenChange={(open) => setRenovarModal({ ...renovarModal, open })}
         contrato={renovarModal.contrato}
       />
+      {selectedCliente && (
+        <AgendarVisitaModal
+          open={agendarVisitaOpen}
+          onOpenChange={setAgendarVisitaOpen}
+          clienteId={selectedCliente.id}
+          clienteNome={selectedCliente.nome}
+          proximaVisitaAtual={selectedCliente.proxima_visita ?? null}
+          rotinaVisitas={selectedCliente.rotina_visitas ?? false}
+          frequenciaAtual={selectedCliente.frequencia_visita ?? null}
+        />
+      )}
     </>
   );
 }

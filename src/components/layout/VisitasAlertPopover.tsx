@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { format, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarDays, AlertCircle, Clock, ChevronRight, CheckCircle2, X } from "lucide-react";
+import { CalendarDays, AlertCircle, Clock, ChevronRight, CheckCircle2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -267,8 +267,8 @@ export function VisitasAlertPopover() {
               <Badge
                 variant="destructive"
                 className={cn(
-                  "absolute -top-1 -right-1 h-5 min-w-5 flex items-center justify-center p-0 text-xs font-bold",
-                  atrasadas > 0 ? "bg-red-500 animate-pulse" : "bg-orange-500"
+                  "absolute -top-1 -right-1 h-5 min-w-5 flex items-center justify-center p-0 text-xs font-bold animate-pulse",
+                  atrasadas > 0 ? "bg-red-500" : "bg-orange-500"
                 )}
               >
                 {total > 99 ? "99+" : total}
