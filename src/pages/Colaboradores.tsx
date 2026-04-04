@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   Users,
   Plus,
@@ -23,6 +23,8 @@ import {
   Gift,
   ChevronLeft,
   ChevronRight,
+  History,
+  ArrowRightLeft,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -56,21 +58,104 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   useColaboradores,
   useCreateColaborador,
   useUpdateColaborador,
   useDeleteColaborador,
   useColaboradoresProximosFerias,
+  useColaboradorHistorico,
+  registrarHistoricoColaborador,
   calculateMonthsSinceDate,
   isNearVacation,
   Colaborador,
+  ColaboradorHistorico,
 } from "@/hooks/useColaboradores";
 import { useViaCep } from "@/hooks/useViaCep";
 import { useCurrentProfile } from "@/hooks/useOrganization";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
+
+function ColaboradorHistoricoSection({ colaboradorId, admissao }: { colaboradorId: string; admissao: string | null }) {
+  const { data: historico = [], isLoading } = useColaboradorHistorico(colaboradorId);
+
+  const tipoConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
+    ferias_inicio: {
+      label: "Saiu de Férias",
+      color: "bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800",
+      icon: <Palmtree className="h-3.5 w-3.5 text-blue-500" />,
+    },
+    ferias_retorno: {
+      label: "Retornou de Férias",
+      color: "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800",
+      icon: <UserCheck className="h-3.5 w-3.5 text-emerald-500" />,
+    },
+    admissao: {
+      label: "Admissão",
+      color: "bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-800",
+      icon: <ArrowRightLeft className="h-3.5 w-3.5 text-violet-500" />,
+    },
+  };
+
+  // Evento sintético de admissão para clientes antigos sem registro
+  const syntheticAdmissao: ColaboradorHistorico | null = admissao ? {
+    id: "__admissao__",
+    colaborador_id: colaboradorId,
+    tipo: "admissao",
+    descricao: "Admitido na empresa",
+    data_evento: admissao,
+    registrado_por_email: null,
+    created_at: admissao,
+  } : null;
+
+  const hasAdmissaoRecord = historico.some(h => h.tipo === "admissao");
+  const displayList: ColaboradorHistorico[] = [
+    ...historico,
+    ...(syntheticAdmissao && !hasAdmissaoRecord ? [syntheticAdmissao] : []),
+  ];
+
+  if (isLoading) return null;
+  if (displayList.length === 0) return null;
+
+  return (
+    <div className="space-y-2">
+      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+        <History className="h-3.5 w-3.5" />
+        Histórico
+      </p>
+      <div className="divide-y divide-zinc-100 dark:divide-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-800 overflow-hidden">
+        {displayList.map((item) => {
+          const cfg = tipoConfig[item.tipo] ?? {
+            label: item.tipo,
+            color: "bg-zinc-50 dark:bg-zinc-900 text-zinc-600 border-zinc-200",
+            icon: <History className="h-3.5 w-3.5 text-zinc-400" />,
+          };
+          return (
+            <div key={item.id} className="flex items-center gap-3 px-3 py-2.5 bg-white dark:bg-zinc-900">
+              <div className="shrink-0">{cfg.icon}</div>
+              <div className="flex-1 min-w-0">
+                <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border ${cfg.color} mr-2`}>
+                  {cfg.label}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {format(new Date(item.data_evento + "T00:00:00"), "dd/MM/yyyy", { locale: ptBR })}
+                </span>
+              </div>
+              {item.registrado_por_email && (
+                <span className="text-[10px] text-muted-foreground/60 truncate max-w-[100px] shrink-0">
+                  {item.registrado_por_email.split("@")[0]}
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ElementType }> = {
   Ativo: { label: "Ativo", color: "bg-emerald-500", icon: UserCheck },
@@ -379,14 +464,15 @@ export default function Colaboradores() {
     }
   };
 
+  const todayStr = new Date().toISOString().slice(0, 10);
+
   const feriasAgendadas = colaboradores.filter((c) => {
+    // Em férias confirmado → sempre mostrar
     if (c.status === "Férias") return true;
-    if (c.data_ultima_ferias) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const start = new Date(c.data_ultima_ferias + "T00:00:00");
-      return start >= today;
-    }
+    // Já retornou (status Ativo + data_retorno_ferias preenchida) → NÃO mostrar
+    if (c.status === "Ativo" && c.data_retorno_ferias) return false;
+    // Agendado: status Ativo, sem retorno registrado, data início hoje ou futura
+    if (c.status === "Ativo" && c.data_ultima_ferias && c.data_ultima_ferias >= todayStr) return true;
     return false;
   });
 
@@ -438,25 +524,55 @@ export default function Colaboradores() {
 
       {/* Férias Programadas Banner */}
       {feriasAgendadas.length > 0 && (() => {
-        const col = feriasAgendadas[feriasPage] ?? feriasAgendadas[0];
-        const statusInfo = statusConfig[col.status || "Ativo"];
+        const safeIdx = Math.min(feriasPage, feriasAgendadas.length - 1);
+        const col = feriasAgendadas[safeIdx];
+        const emFerias = col.status === "Férias";
+        const iniciandoHoje = !emFerias && col.data_ultima_ferias === todayStr;
+        const agendadoFuturo = !emFerias && !iniciandoHoje;
+
+        const borderColor = emFerias
+          ? "border-blue-500/40"
+          : iniciandoHoje
+          ? "border-amber-500/50"
+          : "border-blue-500/30";
+        const bgGradient = emFerias
+          ? "from-blue-950/50 via-blue-900/25 to-blue-950/50"
+          : iniciandoHoje
+          ? "from-amber-950/40 via-amber-900/20 to-amber-950/40"
+          : "from-slate-900/60 via-slate-800/30 to-slate-900/60";
+        const accentColor = emFerias ? "text-blue-400" : iniciandoHoje ? "text-amber-400" : "text-slate-400";
+        const arrowBorder = emFerias ? "border-blue-500/30 text-blue-400 hover:bg-blue-500/10" : iniciandoHoje ? "border-amber-500/30 text-amber-400 hover:bg-amber-500/10" : "border-slate-600/40 text-slate-400 hover:bg-slate-500/10";
+        const dotActive = emFerias ? "bg-blue-400" : iniciandoHoje ? "bg-amber-400" : "bg-slate-400";
+        const dotInactive = emFerias ? "bg-blue-600/40 hover:bg-blue-500/60" : iniciandoHoje ? "bg-amber-600/40 hover:bg-amber-500/60" : "bg-slate-600/40 hover:bg-slate-500/60";
+
         return (
-          <div className="rounded-xl border border-blue-500/30 bg-gradient-to-r from-blue-950/40 via-blue-900/20 to-blue-950/40 overflow-hidden">
+          <div className={`rounded-xl border ${borderColor} bg-gradient-to-r ${bgGradient} overflow-hidden`}>
             <style>{`
               @keyframes slideFromRight { from { transform: translateX(32px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
               @keyframes slideFromLeft  { from { transform: translateX(-32px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
             `}</style>
+
+            {/* Alerta de hoje */}
+            {iniciandoHoje && (
+              <div className="flex items-center gap-2 px-4 pt-2.5 pb-0">
+                <AlertTriangle className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                <span className="text-xs font-semibold text-amber-300 uppercase tracking-wide">
+                  Férias iniciam hoje — aguardando confirmação
+                </span>
+              </div>
+            )}
+
             <div className="flex items-center gap-3 px-4 py-3">
-              {/* Left arrow */}
+              {/* Seta esquerda */}
               <button
                 onClick={() => navigateFerias("left")}
                 disabled={feriasAgendadas.length <= 1}
-                className="shrink-0 h-8 w-8 rounded-full flex items-center justify-center border border-blue-500/30 text-blue-400 hover:bg-blue-500/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                className={`shrink-0 h-7 w-7 rounded-full flex items-center justify-center border ${arrowBorder} transition-colors disabled:opacity-30 disabled:cursor-not-allowed`}
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="h-3.5 w-3.5" />
               </button>
 
-              {/* Card content */}
+              {/* Conteúdo animado */}
               <div
                 key={feriasAnimKey}
                 className="flex-1 flex flex-col sm:flex-row sm:items-center justify-between gap-3 min-w-0"
@@ -464,25 +580,25 @@ export default function Colaboradores() {
                   animation: `${feriasAnimDir === "right" ? "slideFromRight" : "slideFromLeft"} 0.3s cubic-bezier(0.16,1,0.3,1)`,
                 }}
               >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="shrink-0">
-                    <Palmtree className="h-5 w-5 text-blue-400" />
-                  </div>
+                {/* Nome e cargo */}
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <Palmtree className={`h-4 w-4 shrink-0 ${accentColor}`} />
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold text-blue-300 uppercase tracking-wider mb-0.5">
-                      Férias Programadas
+                    <p className={`text-[10px] font-semibold uppercase tracking-wider mb-0.5 ${accentColor}`}>
+                      {emFerias ? "Em Férias" : iniciandoHoje ? "Férias Programadas" : "Férias Programadas"}
                     </p>
-                    <p className="font-semibold text-white truncate">{col.nome}</p>
+                    <p className="font-semibold text-white truncate text-sm">{col.nome}</p>
                     {col.cargo && (
-                      <p className="text-xs text-blue-300/70 truncate">{col.cargo}</p>
+                      <p className={`text-xs truncate opacity-60 ${accentColor}`}>{col.cargo}</p>
                     )}
                   </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-4 shrink-0">
+                {/* Datas + ações */}
+                <div className="flex flex-wrap items-center gap-3 shrink-0">
                   {col.data_ultima_ferias && (
                     <div className="text-center">
-                      <p className="text-[10px] text-blue-400 uppercase tracking-wide">Início</p>
+                      <p className={`text-[10px] uppercase tracking-wide ${accentColor}`}>Início</p>
                       <p className="text-sm font-medium text-white">
                         {format(new Date(col.data_ultima_ferias + "T00:00:00"), "dd/MM/yyyy", { locale: ptBR })}
                       </p>
@@ -490,44 +606,125 @@ export default function Colaboradores() {
                   )}
                   {col.data_retorno_ferias && (
                     <>
-                      <ChevronRight className="h-4 w-4 text-blue-500/50" />
+                      <ChevronRight className={`h-3.5 w-3.5 opacity-40 ${accentColor}`} />
                       <div className="text-center">
-                        <p className="text-[10px] text-blue-400 uppercase tracking-wide">Retorno</p>
+                        <p className={`text-[10px] uppercase tracking-wide ${accentColor}`}>Retorno</p>
                         <p className="text-sm font-medium text-white">
                           {format(new Date(col.data_retorno_ferias + "T00:00:00"), "dd/MM/yyyy", { locale: ptBR })}
                         </p>
                       </div>
                     </>
                   )}
-                  <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium text-white ${statusInfo.color}`}>
-                    <Palmtree className="h-3 w-3" />
-                    {statusInfo.label}
-                  </span>
+
+                  {/* Botões de ação */}
+                  {iniciandoHoje && (
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={async () => {
+                          try {
+                            await updateColaborador.mutateAsync({
+                              id: col.id,
+                              status: "Férias",
+                            });
+                            if (profile?.organization_id && col.data_ultima_ferias) {
+                              await registrarHistoricoColaborador(
+                                profile.organization_id,
+                                col.id,
+                                "ferias_inicio",
+                                `Saiu de férias`,
+                                col.data_ultima_ferias
+                              );
+                            }
+                            toast.success(`${col.nome} confirmado em férias!`);
+                          } catch { toast.error("Erro ao confirmar férias"); }
+                        }}
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-medium hover:bg-amber-500/30 transition-colors"
+                      >
+                        <UserCheck className="h-3 w-3" />
+                        Confirmar
+                      </button>
+                      <button
+                        onClick={() => {
+                          setAgendarFeriasCol(col);
+                          setAgendarStart(col.data_ultima_ferias || "");
+                          setAgendarEnd(col.data_retorno_ferias || "");
+                          setAgendarFeriasOpen(true);
+                        }}
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-md border border-slate-600/50 text-slate-400 text-xs font-medium hover:bg-slate-500/10 transition-colors"
+                      >
+                        <Edit className="h-3 w-3" />
+                        Alterar
+                      </button>
+                    </div>
+                  )}
+
+                  {emFerias && (
+                    <button
+                      onClick={async () => {
+                        try {
+                          await updateColaborador.mutateAsync({
+                            id: col.id,
+                            status: "Ativo",
+                            data_retorno_ferias: todayStr,
+                          });
+                          if (profile?.organization_id) {
+                            await registrarHistoricoColaborador(
+                              profile.organization_id,
+                              col.id,
+                              "ferias_retorno",
+                              `Retornou de férias`,
+                              todayStr
+                            );
+                          }
+                          toast.success(`${col.nome} retornou de férias!`);
+                        } catch { toast.error("Erro ao registrar retorno"); }
+                      }}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 text-xs font-medium hover:bg-emerald-500/25 transition-colors"
+                    >
+                      <UserCheck className="h-3 w-3" />
+                      Retornou
+                    </button>
+                  )}
+
+                  {agendadoFuturo && (
+                    <button
+                      onClick={() => {
+                        setAgendarFeriasCol(col);
+                        setAgendarStart(col.data_ultima_ferias || "");
+                        setAgendarEnd(col.data_retorno_ferias || "");
+                        setAgendarFeriasOpen(true);
+                      }}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-md border border-slate-600/50 text-slate-400 text-xs font-medium hover:bg-slate-500/10 transition-colors"
+                    >
+                      <Edit className="h-3 w-3" />
+                      Alterar
+                    </button>
+                  )}
                 </div>
               </div>
 
-              {/* Right arrow */}
+              {/* Seta direita */}
               <button
                 onClick={() => navigateFerias("right")}
                 disabled={feriasAgendadas.length <= 1}
-                className="shrink-0 h-8 w-8 rounded-full flex items-center justify-center border border-blue-500/30 text-blue-400 hover:bg-blue-500/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                className={`shrink-0 h-7 w-7 rounded-full flex items-center justify-center border ${arrowBorder} transition-colors disabled:opacity-30 disabled:cursor-not-allowed`}
               >
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-3.5 w-3.5" />
               </button>
             </div>
 
-            {/* Dots indicator */}
+            {/* Dots */}
             {feriasAgendadas.length > 1 && (
               <div className="flex justify-center gap-1.5 pb-2.5">
                 {feriasAgendadas.map((_, i) => (
                   <button
                     key={i}
                     onClick={() => {
-                      setFeriasAnimDir(i > feriasPage ? "right" : "left");
+                      setFeriasAnimDir(i > safeIdx ? "right" : "left");
                       setFeriasAnimKey((k) => k + 1);
                       setFeriasPage(i);
                     }}
-                    className={`h-1.5 rounded-full transition-all duration-300 ${i === feriasPage ? "w-5 bg-blue-400" : "w-1.5 bg-blue-600/40 hover:bg-blue-500/60"}`}
+                    className={`h-1.5 rounded-full transition-all duration-300 ${i === safeIdx ? `w-5 ${dotActive}` : `w-1.5 ${dotInactive}`}`}
                   />
                 ))}
               </div>
@@ -700,7 +897,7 @@ export default function Colaboradores() {
 
       {/* ── Detail Popup ── */}
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 duration-200">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
           {detailColaborador && (() => {
             const col = detailColaborador;
             const statusInfo = statusConfig[col.status || "Ativo"];
@@ -710,213 +907,167 @@ export default function Colaboradores() {
 
             return (
               <>
-                <DialogHeader>
+                <DialogHeader className="shrink-0">
                   <div className="flex items-center gap-4">
-                    <div
-                      className={`h-14 w-14 rounded-full flex items-center justify-center text-white ${statusInfo.color} shrink-0`}
-                    >
+                    <div className={`h-14 w-14 rounded-full flex items-center justify-center text-white ${statusInfo.color} shrink-0`}>
                       <StatusIcon className="h-7 w-7" />
                     </div>
                     <div>
                       <DialogTitle className="text-xl">{col.nome}</DialogTitle>
                       <div className="flex flex-wrap items-center gap-2 mt-1">
-                        <Badge className={`${statusInfo.color} text-white`}>
-                          {statusInfo.label}
-                        </Badge>
-                        {col.tipo_contrato && (
-                          <Badge variant="outline">{col.tipo_contrato}</Badge>
-                        )}
+                        <Badge className={`${statusInfo.color} text-white`}>{statusInfo.label}</Badge>
+                        {col.tipo_contrato && <Badge variant="outline">{col.tipo_contrato}</Badge>}
                         {col.pcd && (
                           <Badge variant="secondary">
-                            <Accessibility className="h-3 w-3 mr-1" />
-                            PCD
+                            <Accessibility className="h-3 w-3 mr-1" />PCD
                           </Badge>
                         )}
                         {nearVacation && (
-                          <Badge
-                            variant="outline"
-                            className="border-amber-500 text-amber-600 dark:text-amber-400"
-                          >
-                            <Palmtree className="h-3 w-3 mr-1" />
-                            Férias Próximas
+                          <Badge variant="outline" className="border-amber-500 text-amber-600 dark:text-amber-400">
+                            <Palmtree className="h-3 w-3 mr-1" />Férias Próximas
                           </Badge>
                         )}
                       </div>
                     </div>
                   </div>
-                  <DialogDescription className="sr-only">
-                    Detalhes de {col.nome}
-                  </DialogDescription>
+                  <DialogDescription className="sr-only">Detalhes de {col.nome}</DialogDescription>
                 </DialogHeader>
 
-                <div className="grid gap-6 mt-2">
-                  {/* Basic */}
-                  <Section title="Informações Básicas">
-                    <InfoGrid>
-                      <InfoItem label="Código" value={col.codigo_cadastro} />
-                      <InfoItem label="Cargo" value={col.cargo} icon={<Briefcase className="h-4 w-4" />} />
-                      <InfoItem label="Turno" value={col.turno} icon={<Clock className="h-4 w-4" />} />
-                      <InfoItem
-                        label="Admissão"
-                        value={
-                          col.data_admissao
-                            ? format(parseISO(col.data_admissao), "dd/MM/yyyy", { locale: ptBR })
-                            : null
-                        }
-                        icon={<Calendar className="h-4 w-4" />}
-                      />
-                      {col.data_admissao && (
-                        <InfoItem label="Tempo de empresa" value={formatTempoEmpresa(meses)} />
-                      )}
-                      {col.data_ultima_ferias && (
-                        <InfoItem
-                          label="Última saída de férias"
-                          value={format(parseISO(col.data_ultima_ferias), "dd/MM/yyyy", { locale: ptBR })}
-                          icon={<Palmtree className="h-4 w-4" />}
-                        />
-                      )}
-                      {col.data_retorno_ferias && (
-                        <InfoItem
-                          label="Retorno das férias"
-                          value={format(parseISO(col.data_retorno_ferias), "dd/MM/yyyy", { locale: ptBR })}
-                          icon={<Calendar className="h-4 w-4" />}
-                        />
-                      )}
-                    </InfoGrid>
-                  </Section>
+                <Tabs defaultValue="detalhes" className="flex-1 overflow-hidden flex flex-col mt-2">
+                  <TabsList className="grid w-full grid-cols-2 shrink-0">
+                    <TabsTrigger value="detalhes">Detalhes</TabsTrigger>
+                    <TabsTrigger value="historico" className="gap-2">
+                      <History className="h-4 w-4" />
+                      Histórico
+                    </TabsTrigger>
+                  </TabsList>
 
-                  {/* Contact */}
-                  <Section title="Contato">
-                    <InfoGrid>
-                      <InfoItem label="Telefone" value={col.telefone} icon={<Phone className="h-4 w-4" />} />
-                      <InfoItem label="E-mail" value={col.email_pessoal} icon={<Mail className="h-4 w-4" />} />
-                    </InfoGrid>
-                  </Section>
+                  {/* ── Aba Detalhes ── */}
+                  <TabsContent value="detalhes" className="flex-1 overflow-y-auto mt-4">
+                    <div className="grid gap-6">
+                      <Section title="Informações Básicas">
+                        <InfoGrid>
+                          <InfoItem label="Código" value={col.codigo_cadastro} />
+                          <InfoItem label="Cargo" value={col.cargo} icon={<Briefcase className="h-4 w-4" />} />
+                          <InfoItem label="Turno" value={col.turno} icon={<Clock className="h-4 w-4" />} />
+                          <InfoItem
+                            label="Admissão"
+                            value={col.data_admissao ? format(parseISO(col.data_admissao), "dd/MM/yyyy", { locale: ptBR }) : null}
+                            icon={<Calendar className="h-4 w-4" />}
+                          />
+                          {col.data_admissao && <InfoItem label="Tempo de empresa" value={formatTempoEmpresa(meses)} />}
+                          {col.data_ultima_ferias && (
+                            <InfoItem label="Última saída de férias" value={format(parseISO(col.data_ultima_ferias), "dd/MM/yyyy", { locale: ptBR })} icon={<Palmtree className="h-4 w-4" />} />
+                          )}
+                          {col.data_retorno_ferias && (
+                            <InfoItem label="Retorno das férias" value={format(parseISO(col.data_retorno_ferias), "dd/MM/yyyy", { locale: ptBR })} icon={<Calendar className="h-4 w-4" />} />
+                          )}
+                        </InfoGrid>
+                      </Section>
 
-                  {/* Address */}
-                  {(col.cep || col.logradouro || col.cidade) && (
-                    <Section title="Endereço">
-                      <InfoGrid>
-                        <InfoItem label="CEP" value={col.cep} icon={<MapPin className="h-4 w-4" />} />
-                        <InfoItem label="Logradouro" value={col.logradouro} />
-                        <InfoItem label="Número" value={col.numero_endereco} />
-                        <InfoItem label="Complemento" value={col.complemento} />
-                        <InfoItem label="Bairro" value={col.bairro} />
-                        <InfoItem label="Cidade" value={col.cidade} />
-                        <InfoItem label="Estado" value={col.estado} />
-                      </InfoGrid>
-                    </Section>
-                  )}
+                      <Section title="Contato">
+                        <InfoGrid>
+                          <InfoItem label="Telefone" value={col.telefone} icon={<Phone className="h-4 w-4" />} />
+                          <InfoItem label="E-mail" value={col.email_pessoal} icon={<Mail className="h-4 w-4" />} />
+                        </InfoGrid>
+                      </Section>
 
-                  {/* Benefits & CNH */}
-                  <Section title="Benefícios e Habilitação">
-                    <InfoGrid>
-                      {col.beneficios && col.beneficios.length > 0 && (
-                        <div className="col-span-full space-y-1">
-                          <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Benefícios</p>
-                          <div className="flex flex-wrap gap-1">
-                            {col.beneficios.map((b) => (
-                              <Badge key={b} variant="outline" className="gap-1">
-                                <Gift className="h-3 w-3" />
-                                {b}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
+                      {(col.cep || col.logradouro || col.cidade) && (
+                        <Section title="Endereço">
+                          <InfoGrid>
+                            <InfoItem label="CEP" value={col.cep} icon={<MapPin className="h-4 w-4" />} />
+                            <InfoItem label="Logradouro" value={col.logradouro} />
+                            <InfoItem label="Número" value={col.numero_endereco} />
+                            <InfoItem label="Complemento" value={col.complemento} />
+                            <InfoItem label="Bairro" value={col.bairro} />
+                            <InfoItem label="Cidade" value={col.cidade} />
+                            <InfoItem label="Estado" value={col.estado} />
+                          </InfoGrid>
+                        </Section>
                       )}
-                      {col.cnh_tipos && col.cnh_tipos.length > 0 && (
-                        <div className="col-span-full space-y-1">
-                          <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">CNH</p>
-                          <div className="flex flex-wrap gap-1">
-                            {col.cnh_tipos.map((cat) => (
-                              <Badge key={cat} variant="outline" className="gap-1">
-                                <Car className="h-3 w-3" />
-                                {cat}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </InfoGrid>
-                  </Section>
-                </div>
 
-                {/* Actions */}
-                <div className="flex flex-wrap items-center justify-between gap-2 pt-4 border-t border-zinc-200 dark:border-zinc-800">
-                  {/* Vacation actions */}
-                  {(col.status === "Ativo" || col.status === "Férias") && (
-                    <div className="flex flex-wrap gap-2 flex-1">
-                      {col.status === "Ativo" && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="gap-1 text-blue-600 border-blue-400/50 hover:bg-blue-50 dark:hover:bg-blue-950"
-                          onClick={() => {
-                            setAgendarFeriasCol(col);
-                            setAgendarStart(col.data_ultima_ferias || "");
-                            setAgendarEnd(col.data_retorno_ferias || "");
-                            setAgendarFeriasOpen(true);
-                          }}
-                        >
-                          <Palmtree className="h-4 w-4" />
-                          Agendar Férias
-                        </Button>
-                      )}
-                      {col.status === "Ativo" && nearVacation && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="gap-1 text-blue-700 border-blue-500 bg-blue-50 dark:bg-blue-950 hover:bg-blue-100"
-                          onClick={async () => {
-                            try {
-                              await updateColaborador.mutateAsync({ id: col.id, status: "Férias", data_ultima_ferias: new Date().toISOString().slice(0, 10) });
-                              toast.success(`${col.nome} saiu de férias!`);
-                              setIsDetailOpen(false);
-                            } catch { toast.error("Erro ao atualizar status"); }
-                          }}
-                        >
-                          <Palmtree className="h-4 w-4" />
-                          Está em Férias
-                        </Button>
-                      )}
-                      {col.status === "Férias" && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="gap-1 text-emerald-700 border-emerald-500 bg-emerald-50 dark:bg-emerald-950 hover:bg-emerald-100"
-                          onClick={async () => {
-                            try {
-                              await updateColaborador.mutateAsync({ id: col.id, status: "Ativo", data_retorno_ferias: new Date().toISOString().slice(0, 10) });
-                              toast.success(`${col.nome} retornou de férias!`);
-                              setIsDetailOpen(false);
-                            } catch { toast.error("Erro ao atualizar status"); }
-                          }}
-                        >
-                          <UserCheck className="h-4 w-4" />
-                          Retornou de Férias
-                        </Button>
-                      )}
+                      <Section title="Benefícios e Habilitação">
+                        <InfoGrid>
+                          {col.beneficios && col.beneficios.length > 0 && (
+                            <div className="col-span-full space-y-1">
+                              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Benefícios</p>
+                              <div className="flex flex-wrap gap-1">
+                                {col.beneficios.map((b) => (
+                                  <Badge key={b} variant="outline" className="gap-1"><Gift className="h-3 w-3" />{b}</Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {col.cnh_tipos && col.cnh_tipos.length > 0 && (
+                            <div className="col-span-full space-y-1">
+                              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">CNH</p>
+                              <div className="flex flex-wrap gap-1">
+                                {col.cnh_tipos.map((cat) => (
+                                  <Badge key={cat} variant="outline" className="gap-1"><Car className="h-3 w-3" />{cat}</Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </InfoGrid>
+                      </Section>
                     </div>
-                  )}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleOpenForm(col)}
-                    className="gap-1"
-                  >
-                    <Edit className="h-4 w-4" />
-                    Editar
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
-                    onClick={() => handleDeleteRequest(col)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    Excluir
-                  </Button>
-                </div>
+
+                    {/* Actions */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-4 mt-4 border-t border-zinc-200 dark:border-zinc-800">
+                      {(col.status === "Ativo" || col.status === "Férias") && (
+                        <div className="flex flex-wrap gap-2 flex-1">
+                          {col.status === "Ativo" && (
+                            <Button variant="outline" size="sm" className="gap-1 text-blue-600 border-blue-400/50 hover:bg-blue-50 dark:hover:bg-blue-950"
+                              onClick={() => { setAgendarFeriasCol(col); setAgendarStart(col.data_ultima_ferias || ""); setAgendarEnd(col.data_retorno_ferias || ""); setAgendarFeriasOpen(true); }}>
+                              <Palmtree className="h-4 w-4" />Agendar Férias
+                            </Button>
+                          )}
+                          {col.status === "Ativo" && nearVacation && (
+                            <Button variant="outline" size="sm" className="gap-1 text-blue-700 border-blue-500 bg-blue-50 dark:bg-blue-950 hover:bg-blue-100"
+                              onClick={async () => {
+                                try {
+                                  const startDate = new Date().toISOString().slice(0, 10);
+                                  await updateColaborador.mutateAsync({ id: col.id, status: "Férias", data_ultima_ferias: startDate, data_retorno_ferias: null });
+                                  if (profile?.organization_id) await registrarHistoricoColaborador(profile.organization_id, col.id, "ferias_inicio", "Saiu de férias", startDate);
+                                  toast.success(`${col.nome} saiu de férias!`);
+                                  setIsDetailOpen(false);
+                                } catch { toast.error("Erro ao atualizar status"); }
+                              }}>
+                              <Palmtree className="h-4 w-4" />Está em Férias
+                            </Button>
+                          )}
+                          {col.status === "Férias" && (
+                            <Button variant="outline" size="sm" className="gap-1 text-emerald-700 border-emerald-500 bg-emerald-50 dark:bg-emerald-950 hover:bg-emerald-100"
+                              onClick={async () => {
+                                try {
+                                  const returnDate = new Date().toISOString().slice(0, 10);
+                                  await updateColaborador.mutateAsync({ id: col.id, status: "Ativo", data_retorno_ferias: returnDate });
+                                  if (profile?.organization_id) await registrarHistoricoColaborador(profile.organization_id, col.id, "ferias_retorno", "Retornou de férias", returnDate);
+                                  toast.success(`${col.nome} retornou de férias!`);
+                                  setIsDetailOpen(false);
+                                } catch { toast.error("Erro ao atualizar status"); }
+                              }}>
+                              <UserCheck className="h-4 w-4" />Retornou de Férias
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                      <Button variant="outline" size="sm" onClick={() => handleOpenForm(col)} className="gap-1">
+                        <Edit className="h-4 w-4" />Editar
+                      </Button>
+                      <Button variant="outline" size="sm" className="gap-1 text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => handleDeleteRequest(col)}>
+                        <Trash2 className="h-4 w-4" />Excluir
+                      </Button>
+                    </div>
+                  </TabsContent>
+
+                  {/* ── Aba Histórico ── */}
+                  <TabsContent value="historico" className="flex-1 overflow-hidden mt-4">
+                    <ScrollArea className="h-full pr-2">
+                      <ColaboradorHistoricoSection colaboradorId={col.id} admissao={col.data_admissao} />
+                    </ScrollArea>
+                  </TabsContent>
+                </Tabs>
               </>
             );
           })()}

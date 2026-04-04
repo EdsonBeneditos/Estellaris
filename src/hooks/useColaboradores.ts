@@ -1,6 +1,52 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+export interface ColaboradorHistorico {
+  id: string;
+  colaborador_id: string;
+  tipo: string;
+  descricao: string;
+  data_evento: string;
+  registrado_por_email: string | null;
+  created_at: string;
+}
+
+export async function registrarHistoricoColaborador(
+  organizationId: string,
+  colaboradorId: string,
+  tipo: string,
+  descricao: string,
+  dataEvento: string
+) {
+  const { data: userData } = await supabase.auth.getUser();
+  const { error } = await supabase.from("colaboradores_historico").insert({
+    organization_id: organizationId,
+    colaborador_id: colaboradorId,
+    tipo,
+    descricao,
+    data_evento: dataEvento,
+    registrado_por_email: userData.user?.email ?? null,
+  });
+  if (error) console.error("Erro ao registrar histórico:", error);
+}
+
+export function useColaboradorHistorico(colaboradorId: string | null) {
+  return useQuery({
+    queryKey: ["colaborador-historico", colaboradorId],
+    queryFn: async () => {
+      if (!colaboradorId) return [];
+      const { data, error } = await supabase
+        .from("colaboradores_historico")
+        .select("*")
+        .eq("colaborador_id", colaboradorId)
+        .order("data_evento", { ascending: false });
+      if (error) throw error;
+      return data as ColaboradorHistorico[];
+    },
+    enabled: !!colaboradorId,
+  });
+}
+
 export interface Colaborador {
   id: string;
   organization_id: string | null;
