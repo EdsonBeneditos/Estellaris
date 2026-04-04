@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
-import { Printer, Download } from "lucide-react";
+import { Printer, Download, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DanfePreview } from "./DanfePreview";
@@ -62,7 +62,7 @@ export function DanfeViewModal({ nota, open, onOpenChange }: DanfeViewModalProps
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[900px] max-h-[95vh] overflow-hidden p-0">
+      <DialogContent className="max-w-[900px] max-h-[95vh] overflow-hidden p-0 [&>button]:hidden">
         <DialogHeader className="flex flex-row items-center justify-between border-b px-6 py-4 print:hidden">
           <DialogTitle>
             DANFE - NF-e #{String(nota.numero_nota).padStart(6, "0")}
@@ -75,6 +75,9 @@ export function DanfeViewModal({ nota, open, onOpenChange }: DanfeViewModalProps
             <Button size="sm" onClick={handleGeneratePdf} className="gap-2">
               <Download className="h-4 w-4" />
               Baixar PDF
+            </Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onOpenChange(false)}>
+              <X className="h-4 w-4" />
             </Button>
           </div>
         </DialogHeader>

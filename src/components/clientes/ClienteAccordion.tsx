@@ -1,12 +1,12 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Phone, Mail, MapPin, RefreshCw, FileText, Plus, Pencil, Trash2, History, CalendarDays } from "lucide-react";
+import { Phone, Mail, MapPin, RefreshCw, FileText, Plus, Pencil, Trash2, History, CalendarDays, Paperclip, ExternalLink, X } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ClienteComContratos, Contrato, calcularFidelidade, diasAteVencimento, useDeleteCliente } from "@/hooks/useClientes";
+import { ClienteComContratos, Contrato, calcularFidelidade, diasAteVencimento, useDeleteCliente, useUploadContratoPdf, useRemoveContratoPdf } from "@/hooks/useClientes";
 import { ContratoModal } from "./ContratoModal";
 import { RenovarContratoModal } from "./RenovarContratoModal";
 import { ClienteTimeline } from "./ClienteTimeline";
@@ -131,7 +131,10 @@ function VisitaStatusBadge({ dataVisita }: { dataVisita: string | null }) {
 
 export function ClienteAccordion({ clientes, onEdit }: ClienteAccordionProps) {
   const deleteCliente = useDeleteCliente();
+  const uploadContrato = useUploadContratoPdf();
+  const removeContrato = useRemoveContratoPdf();
   const [searchParams, setSearchParams] = useSearchParams();
+  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const [expandedCliente, setExpandedCliente] = useState<string | undefined>(undefined);
   
   const [contratoModal, setContratoModal] = useState<{ open: boolean; clienteId: string; contrato: Contrato | null }>({
@@ -186,6 +189,17 @@ export function ClienteAccordion({ clientes, onEdit }: ClienteAccordionProps) {
     });
   };
 
+  const handleContratoFileChange = (clienteId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.type !== "application/pdf") {
+      toast.error("Apenas arquivos PDF são aceitos.");
+      return;
+    }
+    uploadContrato.mutate({ clienteId, file });
+    e.target.value = "";
+  };
+
   if (clientes.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
@@ -212,7 +226,7 @@ export function ClienteAccordion({ clientes, onEdit }: ClienteAccordionProps) {
               key={cliente.id}
               id={`cliente-${cliente.id}`}
               value={cliente.id}
-              className="border rounded-lg overflow-hidden bg-card transition-all duration-200 hover:scale-[1.01] hover:shadow-md hover:border-primary/30"
+              className="border rounded-lg overflow-hidden bg-card transition-all duration-200 hover:shadow-sm hover:border-primary/30 hover:bg-primary/[0.02]"
             >
               <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-accent/50 data-[state=open]:bg-accent/50">
                 <div className="flex items-center justify-between w-full pr-4">
@@ -342,12 +356,65 @@ export function ClienteAccordion({ clientes, onEdit }: ClienteAccordionProps) {
                     </TabsContent>
 
                     <TabsContent value="historico" className="mt-4">
-                      <ClienteTimeline clienteId={cliente.id} />
+                      <ClienteTimeline clienteId={cliente.id} createdAt={cliente.created_at} />
                     </TabsContent>
                   </Tabs>
 
                   {/* Actions */}
-                  <div className="flex justify-end gap-2 pt-4 border-t border-border/50">
+                  <div className="flex flex-wrap justify-end gap-2 pt-4 border-t border-border/50">
+                    {/* Contrato PDF */}
+                    <input
+                      type="file"
+                      accept="application/pdf"
+                      className="hidden"
+                      ref={(el) => { fileInputRefs.current[cliente.id] = el; }}
+                      onChange={(e) => handleContratoFileChange(cliente.id, e)}
+                    />
+                    {cliente.contrato_pdf_url ? (
+                      <div className="flex items-center gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-1 text-primary border-primary/40 hover:bg-primary/5"
+                          onClick={() => window.open(cliente.contrato_pdf_url!, "_blank")}
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                          Ver contrato
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-1"
+                          disabled={uploadContrato.isPending}
+                          onClick={() => fileInputRefs.current[cliente.id]?.click()}
+                          title="Substituir PDF"
+                        >
+                          <Paperclip className="h-4 w-4" />
+                          Substituir
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10 px-2"
+                          disabled={removeContrato.isPending}
+                          onClick={() => removeContrato.mutate(cliente.id)}
+                          title="Remover contrato"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1"
+                        disabled={uploadContrato.isPending}
+                        onClick={() => fileInputRefs.current[cliente.id]?.click()}
+                      >
+                        <Paperclip className="h-4 w-4" />
+                        {uploadContrato.isPending ? "Enviando..." : "Anexar contrato"}
+                      </Button>
+                    )}
                     <Button size="sm" variant="outline" onClick={() => onEdit(cliente)}>
                       <Pencil className="h-4 w-4 mr-1" />
                       Editar Cliente

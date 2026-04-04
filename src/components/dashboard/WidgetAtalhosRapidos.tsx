@@ -74,7 +74,7 @@ export function WidgetAtalhosRapidos({ enabled, onNewLead }: WidgetAtalhosRapido
   ];
 
   return (
-    <Card className="relative bg-gradient-to-br from-slate-50 to-zinc-100 dark:from-zinc-900 dark:to-slate-900 border-slate-200 dark:border-zinc-800 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:border-primary/40 hover:z-50">
+    <Card className="relative bg-gradient-to-br from-slate-50 to-zinc-100 dark:from-zinc-900 dark:to-slate-900 border-slate-200 dark:border-zinc-800 transition-all duration-300 hover:shadow-md hover:border-primary/30 hover:bg-primary/[0.02] hover:z-50">
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-lg font-semibold text-slate-700 dark:text-zinc-200">
           <Settings className="h-5 w-5 text-slate-600" />
@@ -88,7 +88,7 @@ export function WidgetAtalhosRapidos({ enabled, onNewLead }: WidgetAtalhosRapido
               key={shortcut.label}
               variant="ghost"
               onClick={shortcut.action}
-              className={`flex flex-col items-center justify-center h-auto py-3 px-2 gap-1 ${shortcut.color} text-white rounded-lg transition-all hover:scale-105`}
+              className={`flex flex-col items-center justify-center h-auto py-3 px-2 gap-1 ${shortcut.color} text-white rounded-lg transition-all`}
             >
               <shortcut.icon className="h-5 w-5" />
               <span className="text-[10px] font-medium text-center leading-tight">

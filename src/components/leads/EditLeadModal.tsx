@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon, History, MessageSquare, ArrowRight, Trash2 } from "lucide-react";
+import { CalendarIcon, History, MessageSquare, ArrowRight, Trash2, PlusCircle } from "lucide-react";
 
 import {
   Dialog,
@@ -594,70 +594,97 @@ export function EditLeadModal({ lead, open, onOpenChange }: EditLeadModalProps) 
                 <div className="flex items-center justify-center py-8">
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
                 </div>
-              ) : interacoes.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <History className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p>Nenhuma interação registrada</p>
-                </div>
               ) : (
-                <div className="space-y-4">
-                  {interacoes.map((interacao, index) => (
-                    <div key={interacao.id}>
-                      <div className="flex gap-3">
-                        <div className="flex flex-col items-center">
-                          <div
-                            className={cn(
-                              "w-8 h-8 rounded-full flex items-center justify-center",
-                              interacao.tipo === "status_change"
-                                ? "bg-primary/10 text-primary"
-                                : "bg-muted text-muted-foreground"
-                            )}
-                          >
-                            {interacao.tipo === "status_change" ? (
-                              <ArrowRight className="h-4 w-4" />
-                            ) : (
-                              <MessageSquare className="h-4 w-4" />
-                            )}
-                          </div>
-                          {index < interacoes.length - 1 && (
-                            <div className="w-px flex-1 bg-border mt-2" />
-                          )}
-                        </div>
-                        <div className="flex-1 pb-4">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Badge
-                              variant={
-                                interacao.tipo === "status_change"
-                                  ? "default"
-                                  : "secondary"
-                              }
-                              className="text-xs"
-                            >
-                              {interacao.tipo === "status_change"
-                                ? "Mudança de Status"
-                                : "Observação"}
-                            </Badge>
-                            <span className="text-xs text-muted-foreground">
-                              {format(
-                                new Date(interacao.created_at),
-                                "dd/MM/yyyy 'às' HH:mm",
-                                { locale: ptBR }
+                (() => {
+                  const hasCriacaoRecord = interacoes.some(i => i.tipo === "criacao");
+                  const displayList = hasCriacaoRecord
+                    ? interacoes
+                    : [
+                        ...interacoes,
+                        {
+                          id: "__criacao__",
+                          lead_id: lead.id,
+                          organization_id: null,
+                          tipo: "criacao",
+                          descricao: "Lead criado",
+                          status_anterior: null,
+                          status_novo: null,
+                          created_at: lead.created_at,
+                        },
+                      ];
+
+                  return (
+                    <div className="space-y-4">
+                      {displayList.map((interacao, index) => (
+                        <div key={interacao.id}>
+                          <div className="flex gap-3">
+                            <div className="flex flex-col items-center">
+                              <div
+                                className={cn(
+                                  "w-8 h-8 rounded-full flex items-center justify-center",
+                                  interacao.tipo === "criacao"
+                                    ? "bg-green-500/10 text-green-600"
+                                    : interacao.tipo === "status_change"
+                                    ? "bg-primary/10 text-primary"
+                                    : "bg-muted text-muted-foreground"
+                                )}
+                              >
+                                {interacao.tipo === "criacao" ? (
+                                  <PlusCircle className="h-4 w-4" />
+                                ) : interacao.tipo === "status_change" ? (
+                                  <ArrowRight className="h-4 w-4" />
+                                ) : (
+                                  <MessageSquare className="h-4 w-4" />
+                                )}
+                              </div>
+                              {index < displayList.length - 1 && (
+                                <div className="w-px flex-1 bg-border mt-2" />
                               )}
-                            </span>
-                          </div>
-                          <p className="text-sm">{interacao.descricao}</p>
-                          {interacao.status_anterior && interacao.status_novo && (
-                            <div className="flex items-center gap-2 mt-2 text-xs">
-                              <Badge variant="outline">{interacao.status_anterior}</Badge>
-                              <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                              <Badge variant="outline">{interacao.status_novo}</Badge>
                             </div>
-                          )}
+                            <div className="flex-1 pb-4">
+                              <div className="flex items-center gap-2 mb-1">
+                                <Badge
+                                  variant={
+                                    interacao.tipo === "criacao"
+                                      ? "outline"
+                                      : interacao.tipo === "status_change"
+                                      ? "default"
+                                      : "secondary"
+                                  }
+                                  className={cn(
+                                    "text-xs",
+                                    interacao.tipo === "criacao" && "border-green-500/50 text-green-600"
+                                  )}
+                                >
+                                  {interacao.tipo === "criacao"
+                                    ? "Criação"
+                                    : interacao.tipo === "status_change"
+                                    ? "Mudança de Status"
+                                    : "Observação"}
+                                </Badge>
+                                <span className="text-xs text-muted-foreground">
+                                  {format(
+                                    new Date(interacao.created_at),
+                                    "dd/MM/yyyy 'às' HH:mm",
+                                    { locale: ptBR }
+                                  )}
+                                </span>
+                              </div>
+                              <p className="text-sm">{interacao.descricao}</p>
+                              {interacao.status_anterior && interacao.status_novo && (
+                                <div className="flex items-center gap-2 mt-2 text-xs">
+                                  <Badge variant="outline">{interacao.status_anterior}</Badge>
+                                  <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                                  <Badge variant="outline">{interacao.status_novo}</Badge>
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                      </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  );
+                })()
               )}
             </ScrollArea>
           </TabsContent>

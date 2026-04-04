@@ -21,6 +21,8 @@ import {
   MapPin,
   FileText,
   Gift,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -102,6 +104,16 @@ function isTelefoneValido(value: string): boolean {
   return digits.length === 10 || digits.length === 11;
 }
 
+function formatTempoEmpresa(meses: number): string {
+  if (meses <= 0) return "< 1 mês";
+  if (meses < 12) return `${meses} ${meses === 1 ? "mês" : "meses"}`;
+  const anos = Math.floor(meses / 12);
+  const m = meses % 12;
+  const anosStr = `${anos} ${anos === 1 ? "ano" : "anos"}`;
+  if (m === 0) return anosStr;
+  return `${anosStr} e ${m} ${m === 1 ? "mês" : "meses"}`;
+}
+
 const emptyForm = {
   nome: "",
   codigo_cadastro: "",
@@ -151,6 +163,17 @@ export default function Colaboradores() {
   // Delete confirmation
   const [deleteTarget, setDeleteTarget] = useState<Colaborador | null>(null);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+
+  // Agendar férias
+  const [agendarFeriasOpen, setAgendarFeriasOpen] = useState(false);
+  const [agendarFeriasCol, setAgendarFeriasCol] = useState<Colaborador | null>(null);
+  const [agendarStart, setAgendarStart] = useState("");
+  const [agendarEnd, setAgendarEnd] = useState("");
+
+  // Banner férias programadas
+  const [feriasPage, setFeriasPage] = useState(0);
+  const [feriasAnimDir, setFeriasAnimDir] = useState<"right" | "left">("right");
+  const [feriasAnimKey, setFeriasAnimKey] = useState(0);
 
   const [formData, setFormData] = useState({ ...emptyForm });
 
@@ -279,6 +302,19 @@ export default function Colaboradores() {
       return;
     }
 
+    // Check for duplicate codigo_cadastro
+    if (formData.codigo_cadastro) {
+      const normalizedNew = formData.codigo_cadastro.trim().toLowerCase();
+      const duplicate = colaboradores.find(c =>
+        c.id !== editingColaborador?.id &&
+        c.codigo_cadastro?.trim().toLowerCase() === normalizedNew
+      );
+      if (duplicate) {
+        toast.error(`Código "${formData.codigo_cadastro}" já está em uso por ${duplicate.nome}`);
+        return;
+      }
+    }
+
     const payload = {
       nome: formData.nome,
       codigo_cadastro: formData.codigo_cadastro || null,
@@ -321,6 +357,49 @@ export default function Colaboradores() {
     }
   };
 
+  const handleAgendarFerias = async () => {
+    if (!agendarFeriasCol || !agendarStart) {
+      toast.error("Selecione ao menos a data de início das férias");
+      return;
+    }
+    try {
+      await updateColaborador.mutateAsync({
+        id: agendarFeriasCol.id,
+        data_ultima_ferias: agendarStart,
+        data_retorno_ferias: agendarEnd || null,
+      });
+      toast.success(`Férias de ${agendarFeriasCol.nome} agendadas!`);
+      setAgendarFeriasOpen(false);
+      setAgendarFeriasCol(null);
+      setAgendarStart("");
+      setAgendarEnd("");
+      setIsDetailOpen(false);
+    } catch {
+      toast.error("Erro ao agendar férias");
+    }
+  };
+
+  const feriasAgendadas = colaboradores.filter((c) => {
+    if (c.status === "Férias") return true;
+    if (c.data_ultima_ferias) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const start = new Date(c.data_ultima_ferias + "T00:00:00");
+      return start >= today;
+    }
+    return false;
+  });
+
+  const navigateFerias = (dir: "left" | "right") => {
+    const total = feriasAgendadas.length;
+    const next = dir === "right"
+      ? (feriasPage + 1) % total
+      : (feriasPage - 1 + total) % total;
+    setFeriasAnimDir(dir);
+    setFeriasAnimKey((k) => k + 1);
+    setFeriasPage(next);
+  };
+
   const filteredColaboradores = colaboradores.filter((c) => {
     const matchesSearch =
       c.nome.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -357,6 +436,106 @@ export default function Colaboradores() {
         </Button>
       </div>
 
+      {/* Férias Programadas Banner */}
+      {feriasAgendadas.length > 0 && (() => {
+        const col = feriasAgendadas[feriasPage] ?? feriasAgendadas[0];
+        const statusInfo = statusConfig[col.status || "Ativo"];
+        return (
+          <div className="rounded-xl border border-blue-500/30 bg-gradient-to-r from-blue-950/40 via-blue-900/20 to-blue-950/40 overflow-hidden">
+            <style>{`
+              @keyframes slideFromRight { from { transform: translateX(32px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+              @keyframes slideFromLeft  { from { transform: translateX(-32px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+            `}</style>
+            <div className="flex items-center gap-3 px-4 py-3">
+              {/* Left arrow */}
+              <button
+                onClick={() => navigateFerias("left")}
+                disabled={feriasAgendadas.length <= 1}
+                className="shrink-0 h-8 w-8 rounded-full flex items-center justify-center border border-blue-500/30 text-blue-400 hover:bg-blue-500/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+
+              {/* Card content */}
+              <div
+                key={feriasAnimKey}
+                className="flex-1 flex flex-col sm:flex-row sm:items-center justify-between gap-3 min-w-0"
+                style={{
+                  animation: `${feriasAnimDir === "right" ? "slideFromRight" : "slideFromLeft"} 0.3s cubic-bezier(0.16,1,0.3,1)`,
+                }}
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="shrink-0">
+                    <Palmtree className="h-5 w-5 text-blue-400" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-blue-300 uppercase tracking-wider mb-0.5">
+                      Férias Programadas
+                    </p>
+                    <p className="font-semibold text-white truncate">{col.nome}</p>
+                    {col.cargo && (
+                      <p className="text-xs text-blue-300/70 truncate">{col.cargo}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-4 shrink-0">
+                  {col.data_ultima_ferias && (
+                    <div className="text-center">
+                      <p className="text-[10px] text-blue-400 uppercase tracking-wide">Início</p>
+                      <p className="text-sm font-medium text-white">
+                        {format(new Date(col.data_ultima_ferias + "T00:00:00"), "dd/MM/yyyy", { locale: ptBR })}
+                      </p>
+                    </div>
+                  )}
+                  {col.data_retorno_ferias && (
+                    <>
+                      <ChevronRight className="h-4 w-4 text-blue-500/50" />
+                      <div className="text-center">
+                        <p className="text-[10px] text-blue-400 uppercase tracking-wide">Retorno</p>
+                        <p className="text-sm font-medium text-white">
+                          {format(new Date(col.data_retorno_ferias + "T00:00:00"), "dd/MM/yyyy", { locale: ptBR })}
+                        </p>
+                      </div>
+                    </>
+                  )}
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium text-white ${statusInfo.color}`}>
+                    <Palmtree className="h-3 w-3" />
+                    {statusInfo.label}
+                  </span>
+                </div>
+              </div>
+
+              {/* Right arrow */}
+              <button
+                onClick={() => navigateFerias("right")}
+                disabled={feriasAgendadas.length <= 1}
+                className="shrink-0 h-8 w-8 rounded-full flex items-center justify-center border border-blue-500/30 text-blue-400 hover:bg-blue-500/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Dots indicator */}
+            {feriasAgendadas.length > 1 && (
+              <div className="flex justify-center gap-1.5 pb-2.5">
+                {feriasAgendadas.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => {
+                      setFeriasAnimDir(i > feriasPage ? "right" : "left");
+                      setFeriasAnimKey((k) => k + 1);
+                      setFeriasPage(i);
+                    }}
+                    className={`h-1.5 rounded-full transition-all duration-300 ${i === feriasPage ? "w-5 bg-blue-400" : "w-1.5 bg-blue-600/40 hover:bg-blue-500/60"}`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
       {/* Vacation Alert */}
       {proximosFerias.length > 0 && (
         <Alert className="border-amber-500/50 bg-amber-500/10">
@@ -379,7 +558,7 @@ export default function Colaboradores() {
           return (
             <Card
               key={status}
-              className="relative border-zinc-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:border-primary/30 hover:z-10 cursor-pointer"
+              className="relative border-zinc-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 transition-all duration-200 hover:shadow-sm hover:border-primary/30 hover:bg-primary/[0.02] cursor-pointer"
             >
               <CardContent className="flex items-center gap-4 p-4">
                 <div className={`p-2 rounded-lg ${config.color}`}>
@@ -436,22 +615,20 @@ export default function Colaboradores() {
             </p>
           ) : (
             <div
-              className="space-y-2 overflow-y-auto pr-1"
+              className="space-y-2 overflow-y-auto overflow-x-hidden pr-1"
               style={{ maxHeight: "calc(6 * 5rem + 5 * 0.5rem)" }}
             >
               {filteredColaboradores.map((colaborador) => {
                 const statusInfo = statusConfig[colaborador.status || "Ativo"];
                 const StatusIcon = statusInfo.icon;
                 const nearVacation = isNearVacation(colaborador);
-                const refDate =
-                  colaborador.data_retorno_ferias || colaborador.data_admissao;
-                const meses = calculateMonthsSinceDate(refDate);
+                const meses = calculateMonthsSinceDate(colaborador.data_admissao);
 
                 return (
                   <button
                     key={colaborador.id}
                     onClick={() => handleCardClick(colaborador)}
-                    className="w-full text-left border border-zinc-200 dark:border-zinc-800 rounded-lg px-4 py-3 transition-all duration-150 hover:scale-[1.01] hover:shadow-md hover:border-primary/40 bg-white dark:bg-zinc-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    className="w-full text-left border border-zinc-200 dark:border-zinc-800 rounded-lg px-4 py-3 transition-all duration-150 hover:shadow-md hover:border-primary/40 bg-white dark:bg-zinc-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                   >
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-3 min-w-0">
@@ -463,6 +640,9 @@ export default function Colaboradores() {
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="font-medium text-zinc-950 dark:text-zinc-50 truncate">
+                              {colaborador.codigo_cadastro && (
+                                <span className="text-xs text-muted-foreground font-normal mr-1.5">#{colaborador.codigo_cadastro}</span>
+                              )}
                               {colaborador.nome}
                             </span>
                             {nearVacation && (
@@ -500,8 +680,8 @@ export default function Colaboradores() {
                                 {colaborador.telefone}
                               </span>
                             )}
-                            {refDate && (
-                              <span className="text-xs opacity-70">{meses}m empresa</span>
+                            {colaborador.data_admissao && (
+                              <span className="text-xs opacity-70">{formatTempoEmpresa(meses)} empresa</span>
                             )}
                           </div>
                         </div>
@@ -526,8 +706,7 @@ export default function Colaboradores() {
             const statusInfo = statusConfig[col.status || "Ativo"];
             const StatusIcon = statusInfo.icon;
             const nearVacation = isNearVacation(col);
-            const refDate = col.data_retorno_ferias || col.data_admissao;
-            const meses = calculateMonthsSinceDate(refDate);
+            const meses = calculateMonthsSinceDate(col.data_admissao);
 
             return (
               <>
@@ -586,8 +765,8 @@ export default function Colaboradores() {
                         }
                         icon={<Calendar className="h-4 w-4" />}
                       />
-                      {refDate && (
-                        <InfoItem label="Tempo de empresa" value={`${meses} meses`} />
+                      {col.data_admissao && (
+                        <InfoItem label="Tempo de empresa" value={formatTempoEmpresa(meses)} />
                       )}
                       {col.data_ultima_ferias && (
                         <InfoItem
@@ -663,7 +842,62 @@ export default function Colaboradores() {
                 </div>
 
                 {/* Actions */}
-                <div className="flex justify-end gap-2 pt-4 border-t border-zinc-200 dark:border-zinc-800">
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-4 border-t border-zinc-200 dark:border-zinc-800">
+                  {/* Vacation actions */}
+                  {(col.status === "Ativo" || col.status === "Férias") && (
+                    <div className="flex flex-wrap gap-2 flex-1">
+                      {col.status === "Ativo" && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1 text-blue-600 border-blue-400/50 hover:bg-blue-50 dark:hover:bg-blue-950"
+                          onClick={() => {
+                            setAgendarFeriasCol(col);
+                            setAgendarStart(col.data_ultima_ferias || "");
+                            setAgendarEnd(col.data_retorno_ferias || "");
+                            setAgendarFeriasOpen(true);
+                          }}
+                        >
+                          <Palmtree className="h-4 w-4" />
+                          Agendar Férias
+                        </Button>
+                      )}
+                      {col.status === "Ativo" && nearVacation && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1 text-blue-700 border-blue-500 bg-blue-50 dark:bg-blue-950 hover:bg-blue-100"
+                          onClick={async () => {
+                            try {
+                              await updateColaborador.mutateAsync({ id: col.id, status: "Férias", data_ultima_ferias: new Date().toISOString().slice(0, 10) });
+                              toast.success(`${col.nome} saiu de férias!`);
+                              setIsDetailOpen(false);
+                            } catch { toast.error("Erro ao atualizar status"); }
+                          }}
+                        >
+                          <Palmtree className="h-4 w-4" />
+                          Está em Férias
+                        </Button>
+                      )}
+                      {col.status === "Férias" && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1 text-emerald-700 border-emerald-500 bg-emerald-50 dark:bg-emerald-950 hover:bg-emerald-100"
+                          onClick={async () => {
+                            try {
+                              await updateColaborador.mutateAsync({ id: col.id, status: "Ativo", data_retorno_ferias: new Date().toISOString().slice(0, 10) });
+                              toast.success(`${col.nome} retornou de férias!`);
+                              setIsDetailOpen(false);
+                            } catch { toast.error("Erro ao atualizar status"); }
+                          }}
+                        >
+                          <UserCheck className="h-4 w-4" />
+                          Retornou de Férias
+                        </Button>
+                      )}
+                    </div>
+                  )}
                   <Button
                     variant="outline"
                     size="sm"
@@ -686,6 +920,55 @@ export default function Colaboradores() {
               </>
             );
           })()}
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Agendar Férias Dialog ── */}
+      <Dialog open={agendarFeriasOpen} onOpenChange={setAgendarFeriasOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Palmtree className="h-5 w-5 text-blue-500" />
+              Agendar Férias
+            </DialogTitle>
+            <DialogDescription>
+              {agendarFeriasCol?.nome}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="ferias-start">Data de início *</Label>
+              <Input
+                id="ferias-start"
+                type="date"
+                value={agendarStart}
+                onChange={(e) => setAgendarStart(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="ferias-end">Data de retorno</Label>
+              <Input
+                id="ferias-end"
+                type="date"
+                value={agendarEnd}
+                min={agendarStart}
+                onChange={(e) => setAgendarEnd(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setAgendarFeriasOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleAgendarFerias}
+              disabled={!agendarStart || updateColaborador.isPending}
+              className="gap-1"
+            >
+              <Calendar className="h-4 w-4" />
+              {updateColaborador.isPending ? "Salvando..." : "Confirmar"}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 

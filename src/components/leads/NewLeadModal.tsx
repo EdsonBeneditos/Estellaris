@@ -36,6 +36,8 @@ import {
 } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 import { useCreateLead } from "@/hooks/useLeads";
+import { useCreateInteracao } from "@/hooks/useLeadInteracoes";
+import { supabase } from "@/integrations/supabase/client";
 import {
   useActiveVendedores,
   useActiveTiposServico,
@@ -78,6 +80,7 @@ interface NewLeadModalProps {
 
 export function NewLeadModal({ open, onOpenChange }: NewLeadModalProps) {
   const createLead = useCreateLead();
+  const createInteracao = useCreateInteracao();
   const { data: vendedores = [] } = useActiveVendedores();
   const { data: tiposServico = [] } = useActiveTiposServico();
   const { data: origens = [] } = useActiveOrigens();
@@ -118,10 +121,22 @@ export function NewLeadModal({ open, onOpenChange }: NewLeadModalProps) {
 
   const onSubmit = async (data: FormData) => {
     try {
-      await createLead.mutateAsync({
+      const newLead = await createLead.mutateAsync({
         ...data,
         data_retorno: data.data_retorno?.toISOString() || null,
       });
+
+      // Register creation event in history
+      if (newLead?.id) {
+        const { data: userData } = await supabase.auth.getUser();
+        const email = userData.user?.email;
+        await createInteracao.mutateAsync({
+          lead_id: newLead.id,
+          tipo: "criacao",
+          descricao: email ? `Lead criado por ${email}` : "Lead criado",
+        });
+      }
+
       toast.success("Lead criado com sucesso!");
       form.reset();
       setCnpjValue("");

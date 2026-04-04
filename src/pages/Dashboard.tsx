@@ -163,10 +163,6 @@ export default function Dashboard() {
             onReset={resetToDefaults}
             activeCount={activeWidgetCount}
           />
-          <Button onClick={() => setIsModalOpen(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Novo Lead
-          </Button>
         </div>
       </div>
 

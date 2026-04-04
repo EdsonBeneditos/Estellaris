@@ -193,7 +193,7 @@ export function NotasFiscaisList({ onNewNota, onEditNota, onViewNota, onGenerate
             const StatusIcon = statusInfo.icon;
 
             return (
-              <Card key={nota.id} className="transition-colors hover:bg-muted/30 border-transparent hover:border-border/50">
+              <Card key={nota.id} className="transition-colors hover:bg-muted/30 border-transparent hover:border-border/50 cursor-pointer" onClick={() => onViewNota(nota)}>
                 <CardContent className="px-4 py-2.5">
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -218,7 +218,7 @@ export function NotasFiscaisList({ onNewNota, onEditNota, onViewNota, onGenerate
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 shrink-0">
+                    <div className="flex items-center gap-3 shrink-0" onClick={(e) => e.stopPropagation()}>
                       <span className="text-sm font-bold text-foreground whitespace-nowrap">
                         {formatCurrency(nota.valor_total)}
                       </span>

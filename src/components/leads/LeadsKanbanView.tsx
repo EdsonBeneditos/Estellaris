@@ -17,37 +17,37 @@ const STATUS_COLUMNS = [
 
 const statusColors: Record<string, { header: string; card: string; badge: string }> = {
   Novo: {
-    header: "bg-blue-500",
+    header: "bg-blue-900 dark:bg-blue-950",
     card: "border-blue-200 dark:border-blue-800/40",
     badge: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
   },
   "Em Contato": {
-    header: "bg-amber-500",
+    header: "bg-amber-800 dark:bg-amber-950",
     card: "border-amber-200 dark:border-amber-800/40",
     badge: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
   },
   Qualificado: {
-    header: "bg-emerald-500",
+    header: "bg-emerald-900 dark:bg-emerald-950",
     card: "border-emerald-200 dark:border-emerald-800/40",
     badge: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
   },
   "Proposta Enviada": {
-    header: "bg-violet-500",
+    header: "bg-violet-900 dark:bg-violet-950",
     card: "border-violet-200 dark:border-violet-800/40",
     badge: "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300",
   },
   Negociação: {
-    header: "bg-cyan-500",
+    header: "bg-cyan-900 dark:bg-cyan-950",
     card: "border-cyan-200 dark:border-cyan-800/40",
     badge: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300",
   },
   Convertido: {
-    header: "bg-green-600",
+    header: "bg-green-900 dark:bg-green-950",
     card: "border-green-200 dark:border-green-800/40",
     badge: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
   },
   Perdido: {
-    header: "bg-rose-500",
+    header: "bg-rose-900 dark:bg-rose-950",
     card: "border-rose-200 dark:border-rose-800/40",
     badge: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300",
   },
@@ -109,7 +109,7 @@ export function LeadsKanbanView({ leads, isLoading }: LeadsKanbanViewProps) {
                         setSelectedLead(lead);
                         setIsEditModalOpen(true);
                       }}
-                      className={`w-full text-left rounded-lg border p-3 bg-card transition-all duration-200 hover:shadow-md hover:scale-[1.02] hover:border-primary/30 space-y-2 ${colors.card}`}
+                      className={`w-full text-left rounded-lg border p-3 bg-card transition-all duration-200 hover:shadow-sm hover:bg-primary/[0.03] hover:border-primary/30 space-y-2 ${colors.card}`}
                     >
                       {/* Company */}
                       <div className="flex items-start gap-1.5">

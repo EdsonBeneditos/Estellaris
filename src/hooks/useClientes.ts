@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useCurrentProfile } from "./useOrganization";
+import { registrarAtividadeSistema } from "./useAtividadesCliente";
 
 export interface Cliente {
   id: string;
@@ -20,6 +21,29 @@ export interface Cliente {
   proxima_visita: string | null;
   observacoes: string | null;
   ativo: boolean;
+  contrato_pdf_url: string | null;
+  // Contato
+  nome_contato: string | null;
+  whatsapp: string | null;
+  site: string | null;
+  // Comercial
+  segmento: string | null;
+  porte_empresa: string | null;
+  responsavel_comercial: string | null;
+  origem_lead: string | null;
+  // Financeiro
+  limite_credito: number | null;
+  forma_pagamento: string | null;
+  status_financeiro: string | null;
+  // Endereço completo
+  logradouro: string | null;
+  numero: string | null;
+  complemento: string | null;
+  bairro: string | null;
+  // CRM
+  tags: string[] | null;
+  score_satisfacao: number | null;
+  observacoes_internas: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -126,11 +150,25 @@ export function useCreateCliente() {
         organization_id: profile.organization_id,
       } as any;
 
-      const { error } = await supabase.from("clientes").insert(insertData);
+      const { data: created, error } = await supabase
+        .from("clientes")
+        .insert(insertData)
+        .select("id")
+        .single();
 
       if (error) throw error;
+      return { id: created?.id as string, organizationId: profile.organization_id };
     },
-    onSuccess: () => {
+    onSuccess: async (result) => {
+      if (result?.id) {
+        const { data: userData } = await supabase.auth.getUser();
+        const email = userData.user?.email;
+        await registrarAtividadeSistema(
+          result.organizationId,
+          result.id,
+          email ? `Cliente cadastrado por ${email}` : "Cliente cadastrado"
+        );
+      }
       queryClient.invalidateQueries({ queryKey: ["clientes"] });
       queryClient.invalidateQueries({ queryKey: ["clientes-com-contratos"] });
       toast.success("Cliente cadastrado com sucesso!");
@@ -274,6 +312,67 @@ export function useRenovarContrato() {
     },
     onError: (error) => {
       toast.error("Erro ao renovar contrato", { description: error.message });
+    },
+  });
+}
+
+export function useUploadContratoPdf() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ clienteId, file }: { clienteId: string; file: File }) => {
+      const ext = file.name.split(".").pop();
+      const path = `${clienteId}/contrato.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("contratos-clientes")
+        .upload(path, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("contratos-clientes")
+        .getPublicUrl(path);
+
+      const { error: updateError } = await supabase
+        .from("clientes")
+        .update({ contrato_pdf_url: publicUrl } as any)
+        .eq("id", clienteId);
+
+      if (updateError) throw updateError;
+
+      return publicUrl;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["clientes"] });
+      queryClient.invalidateQueries({ queryKey: ["clientes-com-contratos"] });
+      toast.success("Contrato anexado com sucesso!");
+    },
+    onError: (error: any) => {
+      toast.error("Erro ao anexar contrato", { description: error.message });
+    },
+  });
+}
+
+export function useRemoveContratoPdf() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (clienteId: string) => {
+      const { error: updateError } = await supabase
+        .from("clientes")
+        .update({ contrato_pdf_url: null } as any)
+        .eq("id", clienteId);
+
+      if (updateError) throw updateError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["clientes"] });
+      queryClient.invalidateQueries({ queryKey: ["clientes-com-contratos"] });
+      toast.success("Contrato removido.");
+    },
+    onError: (error: any) => {
+      toast.error("Erro ao remover contrato", { description: error.message });
     },
   });
 }

@@ -24,7 +24,7 @@ export function ReturnBadge({ date }: ReturnBadgeProps) {
 
   if (isToday(parsedDate)) {
     return (
-      <Badge className="bg-warning text-warning-foreground hover:bg-warning/90 font-medium">
+      <Badge className="bg-amber-100 text-amber-700 border border-amber-300 hover:bg-amber-100/80 font-medium dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700">
         {formattedDate}
       </Badge>
     );

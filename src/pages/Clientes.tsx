@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Plus, Search, Upload } from "lucide-react";
+import { Plus, Search, Upload, LayoutList, LayoutGrid } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ClienteAccordion } from "@/components/clientes/ClienteAccordion";
+import { ClienteCardGrid } from "@/components/clientes/ClienteCardGrid";
 import { ClienteModal } from "@/components/clientes/ClienteModal";
 import { ImportClientesModal } from "@/components/clientes/ImportClientesModal";
 import { useClientesComContratos, ClienteComContratos } from "@/hooks/useClientes";
@@ -11,6 +12,7 @@ import { useClientesComContratos, ClienteComContratos } from "@/hooks/useCliente
 export default function Clientes() {
   const { data: clientes = [], isLoading } = useClientesComContratos();
   const [search, setSearch] = useState("");
+  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [modalOpen, setModalOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [editingCliente, setEditingCliente] = useState<ClienteComContratos | null>(null);
@@ -74,25 +76,25 @@ export default function Clientes() {
 
       {/* Stats - Grid with padding for hover effects */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-1 -m-1">
-        <Card className="relative transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:border-primary/30 hover:z-10 cursor-pointer">
+        <Card className="relative transition-all duration-200 hover:shadow-sm hover:border-primary/30 hover:bg-primary/[0.02]">
           <CardContent className="pt-4">
             <div className="text-2xl font-bold text-foreground">{totalClientes}</div>
             <p className="text-xs text-muted-foreground">Total de Clientes</p>
           </CardContent>
         </Card>
-        <Card className="relative transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:border-primary/30 hover:z-10 cursor-pointer">
+        <Card className="relative transition-all duration-200 hover:shadow-sm hover:border-primary/30 hover:bg-primary/[0.02]">
           <CardContent className="pt-4">
             <div className="text-2xl font-bold text-foreground">{clientesComContrato}</div>
             <p className="text-xs text-muted-foreground">Com Contrato Ativo</p>
           </CardContent>
         </Card>
-        <Card className="relative transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:border-primary/30 hover:z-10 cursor-pointer">
+        <Card className="relative transition-all duration-200 hover:shadow-sm hover:border-primary/30 hover:bg-primary/[0.02]">
           <CardContent className="pt-4">
             <div className="text-2xl font-bold text-amber-600">{renovacoesProximas}</div>
             <p className="text-xs text-muted-foreground">Renovações Próximas</p>
           </CardContent>
         </Card>
-        <Card className="relative transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:border-primary/30 hover:z-10 cursor-pointer">
+        <Card className="relative transition-all duration-200 hover:shadow-sm hover:border-primary/30 hover:bg-primary/[0.02]">
           <CardContent className="pt-4">
             <div className="text-2xl font-bold text-green-600">{clientesAtivos}</div>
             <p className="text-xs text-muted-foreground">Clientes Ativos</p>
@@ -100,24 +102,46 @@ export default function Clientes() {
         </Card>
       </div>
 
-      {/* Search */}
+      {/* Search + Toggle */}
       <Card>
         <CardHeader className="pb-3">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <CardTitle className="text-lg">Lista de Clientes</CardTitle>
               <CardDescription>
-                Clique em um cliente para expandir os detalhes
+                {viewMode === "list" ? "Clique em um cliente para expandir os detalhes" : "Clique em um card para ver os detalhes"}
               </CardDescription>
             </div>
-            <div className="relative w-full md:w-72">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por nome, CNPJ ou email..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9"
-              />
+            <div className="flex items-center gap-2">
+              <div className="relative w-full md:w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por nome, CNPJ ou email..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              <div className="flex items-center border border-border rounded-md overflow-hidden shrink-0">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={`h-9 w-9 rounded-none ${viewMode === "list" ? "bg-accent text-foreground" : "text-muted-foreground"}`}
+                  onClick={() => setViewMode("list")}
+                  title="Visualização em lista"
+                >
+                  <LayoutList className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={`h-9 w-9 rounded-none ${viewMode === "grid" ? "bg-accent text-foreground" : "text-muted-foreground"}`}
+                  onClick={() => setViewMode("grid")}
+                  title="Visualização em grade"
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
         </CardHeader>
@@ -126,6 +150,8 @@ export default function Clientes() {
             <div className="text-center py-12 text-muted-foreground">
               Carregando...
             </div>
+          ) : viewMode === "grid" ? (
+            <ClienteCardGrid clientes={filteredClientes} onEdit={handleEdit} />
           ) : (
             <ClienteAccordion clientes={filteredClientes} onEdit={handleEdit} />
           )}

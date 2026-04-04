@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { Cliente, useCreateCliente, useUpdateCliente } from "@/hooks/useClientes";
 import { applyCNPJMask, applyPhoneMask, applyCEPMask } from "@/lib/masks";
 import { PENDENTE_CADASTRO_MARKER } from "@/hooks/usePendingClientesCount";
@@ -14,6 +15,7 @@ import { useCreateAtividade } from "@/hooks/useAtividadesCliente";
 import { useViaCep } from "@/hooks/useViaCep";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { X } from "lucide-react";
 
 interface ClienteModalProps {
   open: boolean;
@@ -30,10 +32,61 @@ const FREQUENCIAS_VISITA = [
 ];
 
 const UFS = [
-  "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA",
-  "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN",
-  "RS", "RO", "RR", "SC", "SP", "SE", "TO"
+  "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA",
+  "MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN",
+  "RS","RO","RR","SC","SP","SE","TO"
 ];
+
+const PORTES = ["MEI", "Microempresa", "Pequeno", "Médio", "Grande"];
+const FORMAS_PAGAMENTO = ["Boleto", "PIX", "Cartão de crédito", "Cartão de débito", "Dinheiro", "Transferência"];
+const STATUS_FINANCEIRO = ["Em dia", "Inadimplente", "Em negociação"];
+const TAGS_OPTIONS = ["VIP", "Em risco", "Novo", "Inativo", "Fidelizado", "Atenção"];
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b border-border pb-2 mb-4">
+      {children}
+    </h3>
+  );
+}
+
+const emptyForm = {
+  nome: "",
+  cnpj: "",
+  email: "",
+  telefone: "",
+  endereco: "",
+  cidade: "",
+  uf: "",
+  cep: "",
+  rotina_visitas: false,
+  frequencia_visita: "",
+  ultima_visita: "",
+  proxima_visita: "",
+  observacoes: "",
+  // Contato
+  nome_contato: "",
+  whatsapp: "",
+  site: "",
+  // Comercial
+  segmento: "",
+  porte_empresa: "",
+  responsavel_comercial: "",
+  origem_lead: "",
+  // Financeiro
+  limite_credito: "",
+  forma_pagamento: "",
+  status_financeiro: "Em dia",
+  // Endereço completo
+  logradouro: "",
+  numero: "",
+  complemento: "",
+  bairro: "",
+  // CRM
+  tags: [] as string[],
+  score_satisfacao: "",
+  observacoes_internas: "",
+};
 
 export function ClienteModal({ open, onOpenChange, cliente }: ClienteModalProps) {
   const createCliente = useCreateCliente();
@@ -46,43 +99,21 @@ export function ClienteModal({ open, onOpenChange, cliente }: ClienteModalProps)
     if (result) {
       setFormData(prev => ({
         ...prev,
-        endereco: result.logradouro || prev.endereco,
+        logradouro: result.logradouro || prev.logradouro,
+        bairro: result.bairro || prev.bairro,
         cidade: result.localidade || prev.cidade,
         uf: result.uf || prev.uf,
       }));
     }
   };
-  
-  const [formData, setFormData] = useState({
-    nome: "",
-    cnpj: "",
-    email: "",
-    telefone: "",
-    endereco: "",
-    cidade: "",
-    uf: "",
-    cep: "",
-    rotina_visitas: false,
-    frequencia_visita: "",
-    ultima_visita: "",
-    proxima_visita: "",
-    observacoes: "",
-  });
 
-  // Estado para diálogo de confirmação de visita
+  const [formData, setFormData] = useState({ ...emptyForm });
   const [visitaConfirmDialog, setVisitaConfirmDialog] = useState<{
-    open: boolean;
-    dataAnterior: string;
-    pendingData: any;
-  }>({
-    open: false,
-    dataAnterior: "",
-    pendingData: null,
-  });
+    open: boolean; dataAnterior: string; pendingData: any;
+  }>({ open: false, dataAnterior: "", pendingData: null });
 
   useEffect(() => {
     if (cliente) {
-      // Strip the pending registration marker from observacoes display
       const rawObs = cliente.observacoes || "";
       const displayObs = rawObs.startsWith(PENDENTE_CADASTRO_MARKER)
         ? rawObs.slice(PENDENTE_CADASTRO_MARKER.length).trim()
@@ -102,31 +133,39 @@ export function ClienteModal({ open, onOpenChange, cliente }: ClienteModalProps)
         ultima_visita: cliente.ultima_visita || "",
         proxima_visita: cliente.proxima_visita || "",
         observacoes: displayObs,
+        nome_contato: cliente.nome_contato || "",
+        whatsapp: applyPhoneMask(cliente.whatsapp || ""),
+        site: cliente.site || "",
+        segmento: cliente.segmento || "",
+        porte_empresa: cliente.porte_empresa || "",
+        responsavel_comercial: cliente.responsavel_comercial || "",
+        origem_lead: cliente.origem_lead || "",
+        limite_credito: cliente.limite_credito?.toString() || "",
+        forma_pagamento: cliente.forma_pagamento || "",
+        status_financeiro: cliente.status_financeiro || "Em dia",
+        logradouro: cliente.logradouro || "",
+        numero: cliente.numero || "",
+        complemento: cliente.complemento || "",
+        bairro: cliente.bairro || "",
+        tags: cliente.tags || [],
+        score_satisfacao: cliente.score_satisfacao?.toString() || "",
+        observacoes_internas: cliente.observacoes_internas || "",
       });
     } else {
-      setFormData({
-        nome: "",
-        cnpj: "",
-        email: "",
-        telefone: "",
-        endereco: "",
-        cidade: "",
-        uf: "",
-        cep: "",
-        rotina_visitas: false,
-        frequencia_visita: "",
-        ultima_visita: "",
-        proxima_visita: "",
-        observacoes: "",
-      });
+      setFormData({ ...emptyForm });
     }
   }, [cliente, open]);
+
+  const toggleTag = (tag: string) => {
+    setFormData(prev => ({
+      ...prev,
+      tags: prev.tags.includes(tag) ? prev.tags.filter(t => t !== tag) : [...prev.tags, tag],
+    }));
+  };
 
   const executeSave = async (data: any, registrarVisitaConcluida: boolean) => {
     if (cliente) {
       await updateCliente.mutateAsync({ id: cliente.id, data });
-      
-      // Se confirmou registrar visita concluída, inserir na timeline
       if (registrarVisitaConcluida && visitaConfirmDialog.dataAnterior) {
         const dataFormatada = format(new Date(visitaConfirmDialog.dataAnterior), "dd/MM/yyyy", { locale: ptBR });
         await createAtividade.mutateAsync({
@@ -138,42 +177,51 @@ export function ClienteModal({ open, onOpenChange, cliente }: ClienteModalProps)
     } else {
       await createCliente.mutateAsync(data);
     }
-    
     onOpenChange(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const data = {
-      ...formData,
-      frequencia_visita: formData.rotina_visitas ? formData.frequencia_visita : null,
+      nome: formData.nome,
+      cnpj: formData.cnpj || null,
+      email: formData.email || null,
+      telefone: formData.telefone || null,
+      endereco: formData.endereco || null,
+      cidade: formData.cidade || null,
+      uf: formData.uf || null,
+      cep: formData.cep || null,
+      rotina_visitas: formData.rotina_visitas,
+      frequencia_visita: formData.rotina_visitas ? formData.frequencia_visita || null : null,
       ultima_visita: formData.rotina_visitas && formData.ultima_visita ? formData.ultima_visita : null,
       proxima_visita: formData.rotina_visitas && formData.proxima_visita ? formData.proxima_visita : null,
+      observacoes: formData.observacoes || null,
+      nome_contato: formData.nome_contato || null,
+      whatsapp: formData.whatsapp || null,
+      site: formData.site || null,
+      segmento: formData.segmento || null,
+      porte_empresa: formData.porte_empresa || null,
+      responsavel_comercial: formData.responsavel_comercial || null,
+      origem_lead: formData.origem_lead || null,
+      limite_credito: formData.limite_credito ? parseFloat(formData.limite_credito) : null,
+      forma_pagamento: formData.forma_pagamento || null,
+      status_financeiro: formData.status_financeiro || null,
+      logradouro: formData.logradouro || null,
+      numero: formData.numero || null,
+      complemento: formData.complemento || null,
+      bairro: formData.bairro || null,
+      tags: formData.tags.length > 0 ? formData.tags : null,
+      score_satisfacao: formData.score_satisfacao ? parseInt(formData.score_satisfacao) : null,
+      observacoes_internas: formData.observacoes_internas || null,
     };
 
-    // Verificar se estamos editando e se a próxima visita mudou
     if (cliente && cliente.proxima_visita && formData.proxima_visita !== cliente.proxima_visita) {
-      // Mostrar diálogo de confirmação
-      setVisitaConfirmDialog({
-        open: true,
-        dataAnterior: cliente.proxima_visita,
-        pendingData: data,
-      });
+      setVisitaConfirmDialog({ open: true, dataAnterior: cliente.proxima_visita, pendingData: data });
       return;
     }
 
     await executeSave(data, false);
-  };
-
-  const handleConfirmVisita = async () => {
-    setVisitaConfirmDialog((prev) => ({ ...prev, open: false }));
-    await executeSave(visitaConfirmDialog.pendingData, true);
-  };
-
-  const handleSkipVisita = async () => {
-    setVisitaConfirmDialog((prev) => ({ ...prev, open: false }));
-    await executeSave(visitaConfirmDialog.pendingData, false);
   };
 
   const isLoading = createCliente.isPending || updateCliente.isPending || createAtividade.isPending;
@@ -182,209 +230,244 @@ export function ClienteModal({ open, onOpenChange, cliente }: ClienteModalProps)
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl font-semibold text-zinc-950">
+          <DialogTitle className="text-xl font-semibold">
             {cliente ? "Editar Cliente" : "Novo Cliente"}
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Dados Básicos */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-medium text-zinc-700 border-b pb-2">Dados Básicos</h3>
-            
+        <form onSubmit={handleSubmit} className="space-y-8 py-2">
+
+          {/* ── Dados Básicos ── */}
+          <div>
+            <SectionTitle>Dados Básicos</SectionTitle>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
                 <Label htmlFor="nome">Nome *</Label>
-                <Input
-                  id="nome"
-                  value={formData.nome}
-                  onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                  required
-                  placeholder="Nome do cliente"
-                />
+                <Input id="nome" value={formData.nome} onChange={e => setFormData({ ...formData, nome: e.target.value })} required placeholder="Nome do cliente" />
               </div>
-
               <div>
                 <Label htmlFor="cnpj">CNPJ</Label>
-                <Input
-                  id="cnpj"
-                  value={formData.cnpj}
-                  onChange={(e) => setFormData({ ...formData, cnpj: applyCNPJMask(e.target.value) })}
-                  placeholder="00.000.000/0000-00"
-                />
+                <Input id="cnpj" value={formData.cnpj} onChange={e => setFormData({ ...formData, cnpj: applyCNPJMask(e.target.value) })} placeholder="00.000.000/0000-00" />
               </div>
-
               <div>
-                <Label htmlFor="telefone">Telefone</Label>
-                <Input
-                  id="telefone"
-                  value={formData.telefone}
-                  onChange={(e) => setFormData({ ...formData, telefone: applyPhoneMask(e.target.value) })}
-                  placeholder="(00) 00000-0000"
-                />
+                <Label htmlFor="email">E-mail</Label>
+                <Input id="email" type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} placeholder="email@empresa.com" />
               </div>
-
-              <div className="md:col-span-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="email@empresa.com"
-                />
+              <div>
+                <Label htmlFor="telefone">Telefone Fixo</Label>
+                <Input id="telefone" value={formData.telefone} onChange={e => setFormData({ ...formData, telefone: applyPhoneMask(e.target.value) })} placeholder="(00) 0000-0000" />
+              </div>
+              <div>
+                <Label htmlFor="site">Site / Redes Sociais</Label>
+                <Input id="site" value={formData.site} onChange={e => setFormData({ ...formData, site: e.target.value })} placeholder="www.empresa.com.br" />
               </div>
             </div>
           </div>
 
-          {/* Endereço */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-medium text-zinc-700 border-b pb-2">Endereço</h3>
-            
+          {/* ── Contato Principal ── */}
+          <div>
+            <SectionTitle>Contato Principal</SectionTitle>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="md:col-span-2">
-                <Label htmlFor="endereco">Endereço</Label>
-                <Input
-                  id="endereco"
-                  value={formData.endereco}
-                  onChange={(e) => setFormData({ ...formData, endereco: e.target.value })}
-                  placeholder="Rua, número, complemento"
-                />
-              </div>
-
               <div>
-                <Label htmlFor="cidade">Cidade</Label>
-                <Input
-                  id="cidade"
-                  value={formData.cidade}
-                  onChange={(e) => setFormData({ ...formData, cidade: e.target.value })}
-                  placeholder="Cidade"
-                />
+                <Label htmlFor="nome_contato">Nome do Responsável</Label>
+                <Input id="nome_contato" value={formData.nome_contato} onChange={e => setFormData({ ...formData, nome_contato: e.target.value })} placeholder="Nome da pessoa de contato" />
               </div>
+              <div>
+                <Label htmlFor="whatsapp">WhatsApp</Label>
+                <Input id="whatsapp" value={formData.whatsapp} onChange={e => setFormData({ ...formData, whatsapp: applyPhoneMask(e.target.value) })} placeholder="(00) 00000-0000" />
+              </div>
+            </div>
+          </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <Label htmlFor="uf">UF</Label>
-                  <Select
-                    value={formData.uf}
-                    onValueChange={(value) => setFormData({ ...formData, uf: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="UF" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {UFS.map((uf) => (
-                        <SelectItem key={uf} value={uf}>{uf}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+          {/* ── Dados Comerciais ── */}
+          <div>
+            <SectionTitle>Dados Comerciais</SectionTitle>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="segmento">Segmento / Ramo</Label>
+                <Input id="segmento" value={formData.segmento} onChange={e => setFormData({ ...formData, segmento: e.target.value })} placeholder="Ex: Padaria, Mercado, Restaurante" />
+              </div>
+              <div>
+                <Label htmlFor="porte_empresa">Porte da Empresa</Label>
+                <Select value={formData.porte_empresa} onValueChange={v => setFormData({ ...formData, porte_empresa: v })}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>{PORTES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="responsavel_comercial">Responsável Comercial</Label>
+                <Input id="responsavel_comercial" value={formData.responsavel_comercial} onChange={e => setFormData({ ...formData, responsavel_comercial: e.target.value })} placeholder="Vendedor / Representante" />
+              </div>
+              <div>
+                <Label htmlFor="origem_lead">Origem do Lead</Label>
+                <Input id="origem_lead" value={formData.origem_lead} onChange={e => setFormData({ ...formData, origem_lead: e.target.value })} placeholder="Ex: Indicação, Prospecção, Redes sociais" />
+              </div>
+            </div>
+          </div>
 
-                <div>
+          {/* ── Financeiro ── */}
+          <div>
+            <SectionTitle>Financeiro</SectionTitle>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="limite_credito">Limite de Crédito (R$)</Label>
+                <Input id="limite_credito" type="number" step="0.01" min="0" value={formData.limite_credito} onChange={e => setFormData({ ...formData, limite_credito: e.target.value })} placeholder="0,00" />
+              </div>
+              <div>
+                <Label htmlFor="forma_pagamento">Forma de Pagamento</Label>
+                <Select value={formData.forma_pagamento} onValueChange={v => setFormData({ ...formData, forma_pagamento: v })}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>{FORMAS_PAGAMENTO.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="status_financeiro">Status Financeiro</Label>
+                <Select value={formData.status_financeiro} onValueChange={v => setFormData({ ...formData, status_financeiro: v })}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>{STATUS_FINANCEIRO.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Endereço ── */}
+          <div>
+            <SectionTitle>Endereço</SectionTitle>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-2 md:col-span-2">
+                <div className="col-span-2">
                   <Label htmlFor="cep">CEP</Label>
-                  <Input
-                    id="cep"
-                    value={formData.cep}
-                    onChange={(e) => setFormData({ ...formData, cep: applyCEPMask(e.target.value) })}
-                    onBlur={handleCepBlur}
-                    placeholder="00000-000"
-                  />
+                  <Input id="cep" value={formData.cep} onChange={e => setFormData({ ...formData, cep: applyCEPMask(e.target.value) })} onBlur={handleCepBlur} placeholder="00000-000" />
                   {isLoadingCep && <span className="text-xs text-muted-foreground">Buscando...</span>}
                 </div>
+                <div>
+                  <Label htmlFor="uf">UF</Label>
+                  <Select value={formData.uf} onValueChange={v => setFormData({ ...formData, uf: v })}>
+                    <SelectTrigger><SelectValue placeholder="UF" /></SelectTrigger>
+                    <SelectContent>{UFS.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="md:col-span-2">
+                <Label htmlFor="logradouro">Logradouro (Rua/Av.)</Label>
+                <Input id="logradouro" value={formData.logradouro} onChange={e => setFormData({ ...formData, logradouro: e.target.value })} placeholder="Rua / Avenida" />
+              </div>
+              <div>
+                <Label htmlFor="numero">Número</Label>
+                <Input id="numero" value={formData.numero} onChange={e => setFormData({ ...formData, numero: e.target.value })} placeholder="Nº" />
+              </div>
+              <div>
+                <Label htmlFor="complemento">Complemento</Label>
+                <Input id="complemento" value={formData.complemento} onChange={e => setFormData({ ...formData, complemento: e.target.value })} placeholder="Apto, Sala, Bloco..." />
+              </div>
+              <div>
+                <Label htmlFor="bairro">Bairro</Label>
+                <Input id="bairro" value={formData.bairro} onChange={e => setFormData({ ...formData, bairro: e.target.value })} placeholder="Bairro" />
+              </div>
+              <div>
+                <Label htmlFor="cidade">Cidade</Label>
+                <Input id="cidade" value={formData.cidade} onChange={e => setFormData({ ...formData, cidade: e.target.value })} placeholder="Cidade" />
               </div>
             </div>
           </div>
 
-          {/* Rotina de Visitas */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-medium text-zinc-700 border-b pb-2">Rotina de Visitas</h3>
-            
-            <div className="flex items-center space-x-3">
-              <Switch
-                id="rotina_visitas"
-                checked={formData.rotina_visitas}
-                onCheckedChange={(checked) => setFormData({ ...formData, rotina_visitas: checked })}
-              />
-              <Label htmlFor="rotina_visitas" className="cursor-pointer">
-                Cliente possui rotina de visitas
-              </Label>
+          {/* ── Rotina de Visitas ── */}
+          <div>
+            <SectionTitle>Rotina de Visitas</SectionTitle>
+            <div className="flex items-center space-x-3 mb-4">
+              <Switch id="rotina_visitas" checked={formData.rotina_visitas} onCheckedChange={checked => setFormData({ ...formData, rotina_visitas: checked })} />
+              <Label htmlFor="rotina_visitas" className="cursor-pointer">Cliente possui rotina de visitas</Label>
             </div>
-
             {formData.rotina_visitas && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-in fade-in slide-in-from-top-2 duration-200">
                 <div>
-                  <Label htmlFor="frequencia_visita">Frequência</Label>
-                  <Select
-                    value={formData.frequencia_visita}
-                    onValueChange={(value) => setFormData({ ...formData, frequencia_visita: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a frequência" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {FREQUENCIAS_VISITA.map((freq) => (
-                        <SelectItem key={freq.value} value={freq.value}>
-                          {freq.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
+                  <Label>Frequência</Label>
+                  <Select value={formData.frequencia_visita} onValueChange={v => setFormData({ ...formData, frequencia_visita: v })}>
+                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectContent>{FREQUENCIAS_VISITA.map(f => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-
                 <div>
                   <Label htmlFor="ultima_visita">Última Visita</Label>
-                  <Input
-                    id="ultima_visita"
-                    type="date"
-                    value={formData.ultima_visita}
-                    onChange={(e) => setFormData({ ...formData, ultima_visita: e.target.value })}
-                  />
+                  <Input id="ultima_visita" type="date" value={formData.ultima_visita} onChange={e => setFormData({ ...formData, ultima_visita: e.target.value })} />
                 </div>
-
                 <div>
                   <Label htmlFor="proxima_visita">Próxima Visita</Label>
-                  <Input
-                    id="proxima_visita"
-                    type="date"
-                    value={formData.proxima_visita}
-                    onChange={(e) => setFormData({ ...formData, proxima_visita: e.target.value })}
-                  />
+                  <Input id="proxima_visita" type="date" value={formData.proxima_visita} onChange={e => setFormData({ ...formData, proxima_visita: e.target.value })} />
                 </div>
               </div>
             )}
           </div>
 
-          {/* Observações */}
+          {/* ── CRM / Relacionamento ── */}
           <div>
-            <Label htmlFor="observacoes">Observações</Label>
-            <Textarea
-              id="observacoes"
-              value={formData.observacoes}
-              onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
-              placeholder="Observações gerais sobre o cliente..."
-              rows={3}
-            />
+            <SectionTitle>CRM / Relacionamento</SectionTitle>
+            <div className="space-y-4">
+              <div>
+                <Label>Tags / Categorias</Label>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {TAGS_OPTIONS.map(tag => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => toggleTag(tag)}
+                      className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${
+                        formData.tags.includes(tag)
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "border-border text-muted-foreground hover:border-primary/50"
+                      }`}
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="score_satisfacao">Score de Satisfação (1-5)</Label>
+                <div className="flex gap-2 mt-2">
+                  {[1,2,3,4,5].map(n => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, score_satisfacao: formData.score_satisfacao === n.toString() ? "" : n.toString() })}
+                      className={`h-9 w-9 rounded-full border text-sm font-semibold transition-all ${
+                        formData.score_satisfacao === n.toString()
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "border-border text-muted-foreground hover:border-primary/50"
+                      }`}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="observacoes_internas">Observações Internas</Label>
+                <Textarea id="observacoes_internas" value={formData.observacoes_internas} onChange={e => setFormData({ ...formData, observacoes_internas: e.target.value })} placeholder="Notas internas da equipe sobre este cliente..." rows={3} />
+              </div>
+            </div>
+          </div>
+
+          {/* ── Observações Gerais ── */}
+          <div>
+            <SectionTitle>Observações Gerais</SectionTitle>
+            <Textarea id="observacoes" value={formData.observacoes} onChange={e => setFormData({ ...formData, observacoes: e.target.value })} placeholder="Observações gerais sobre o cliente..." rows={3} />
           </div>
 
           {/* Actions */}
           <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? "Salvando..." : cliente ? "Salvar" : "Cadastrar"}
-            </Button>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+            <Button type="submit" disabled={isLoading}>{isLoading ? "Salvando..." : cliente ? "Salvar" : "Cadastrar"}</Button>
           </div>
         </form>
       </DialogContent>
 
-      {/* Diálogo de confirmação de visita concluída */}
       <VisitaConfirmDialog
         open={visitaConfirmDialog.open}
-        onOpenChange={(open) => setVisitaConfirmDialog((prev) => ({ ...prev, open }))}
+        onOpenChange={open => setVisitaConfirmDialog(prev => ({ ...prev, open }))}
         dataAnterior={visitaConfirmDialog.dataAnterior}
-        onConfirm={handleConfirmVisita}
-        onSkip={handleSkipVisita}
+        onConfirm={async () => { setVisitaConfirmDialog(prev => ({ ...prev, open: false })); await executeSave(visitaConfirmDialog.pendingData, true); }}
+        onSkip={async () => { setVisitaConfirmDialog(prev => ({ ...prev, open: false })); await executeSave(visitaConfirmDialog.pendingData, false); }}
       />
     </Dialog>
   );

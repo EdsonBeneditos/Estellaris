@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Printer, FileDown, Loader2 } from "lucide-react";
+import { Printer, FileDown, Loader2, X } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { Button } from "@/components/ui/button";
@@ -69,7 +69,7 @@ export function OrcamentoViewModal({ orcamento, open, onOpenChange }: OrcamentoV
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[95vh] max-w-4xl overflow-hidden p-0 print:max-w-none print:border-none print:shadow-none">
+      <DialogContent className="max-h-[95vh] max-w-4xl overflow-hidden p-0 print:max-w-none print:border-none print:shadow-none [&>button]:hidden">
         <DialogHeader className="flex flex-row items-center justify-between border-b px-6 py-4 print:hidden">
           <DialogTitle>Visualizar Orçamento</DialogTitle>
           <div className="flex items-center gap-2">
@@ -89,6 +89,9 @@ export function OrcamentoViewModal({ orcamento, open, onOpenChange }: OrcamentoV
                 <FileDown className="h-4 w-4" />
               )}
               Gerar PDF
+            </Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onOpenChange(false)}>
+              <X className="h-4 w-4" />
             </Button>
           </div>
         </DialogHeader>

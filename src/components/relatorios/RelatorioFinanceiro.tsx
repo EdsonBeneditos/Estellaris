@@ -309,7 +309,7 @@ export function RelatorioFinanceiro() {
       </Card>
 
       {/* Projeção */}
-      <Card className="relative overflow-visible border-primary/20 bg-gradient-to-br from-primary/5 via-background to-background transition-all duration-300 hover:scale-[1.01] hover:shadow-xl hover:border-primary/40">
+      <Card className="relative overflow-visible border-primary/20 bg-gradient-to-br from-primary/5 via-background to-background transition-all duration-300 hover:shadow-md hover:border-primary/30 hover:bg-primary/[0.02]">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-lg">
             <Target className="h-5 w-5 text-primary" />
@@ -339,21 +339,21 @@ export function RelatorioFinanceiro() {
 
       {/* Totais */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-1 -m-1 overflow-visible">
-        <Card className="relative overflow-visible transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:border-emerald-400/50 hover:z-10">
+        <Card className="relative overflow-visible transition-all duration-200 hover:shadow-md hover:border-primary/30 hover:bg-primary/[0.02] hover:z-10">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Entradas (Período)</CardTitle>
             <ArrowUpCircle className="h-5 w-5 text-emerald-500" />
           </CardHeader>
           <CardContent><div className="text-2xl font-bold text-emerald-600">{formatCurrency(totais.totalEntradas)}</div></CardContent>
         </Card>
-        <Card className="relative overflow-visible transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:border-rose-400/50 hover:z-10">
+        <Card className="relative overflow-visible transition-all duration-200 hover:shadow-md hover:border-primary/30 hover:bg-primary/[0.02] hover:z-10">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Saídas (Período)</CardTitle>
             <ArrowDownCircle className="h-5 w-5 text-rose-500" />
           </CardHeader>
           <CardContent><div className="text-2xl font-bold text-rose-600">{formatCurrency(totais.totalSaidas)}</div></CardContent>
         </Card>
-        <Card className="relative overflow-visible transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:border-primary/50 hover:z-10">
+        <Card className="relative overflow-visible transition-all duration-200 hover:shadow-md hover:border-primary/30 hover:bg-primary/[0.02] hover:z-10">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Saldo Líquido (Período)</CardTitle>
             <Wallet className="h-5 w-5 text-primary" />

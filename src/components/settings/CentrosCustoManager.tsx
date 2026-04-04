@@ -131,7 +131,7 @@ export function CentrosCustoManager() {
             centrosCusto.map((item) => (
               <div
                 key={item.id}
-                className="flex items-center justify-between p-3 rounded-lg border bg-muted/50 border-border transition-all duration-200 hover:scale-[1.01] hover:shadow-sm"
+                className="flex items-center justify-between p-3 rounded-lg border bg-muted/50 border-border transition-all duration-200 hover:shadow-md hover:border-primary/30 hover:bg-primary/[0.02]"
               >
                 {editingId === item.id ? (
                   <div className="flex items-center gap-2 flex-1">
