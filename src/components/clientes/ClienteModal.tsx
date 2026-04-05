@@ -16,6 +16,7 @@ import { useViaCep } from "@/hooks/useViaCep";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { X } from "lucide-react";
+import { CurrencyInput } from "@/components/ui/currency-input";
 
 interface ClienteModalProps {
   open: boolean;
@@ -74,7 +75,7 @@ const emptyForm = {
   responsavel_comercial: "",
   origem_lead: "",
   // Financeiro
-  limite_credito: "",
+  limite_credito: 0 as number,
   forma_pagamento: "",
   status_financeiro: "Em dia",
   // Endereço completo
@@ -140,7 +141,7 @@ export function ClienteModal({ open, onOpenChange, cliente }: ClienteModalProps)
         porte_empresa: cliente.porte_empresa || "",
         responsavel_comercial: cliente.responsavel_comercial || "",
         origem_lead: cliente.origem_lead || "",
-        limite_credito: cliente.limite_credito?.toString() || "",
+        limite_credito: cliente.limite_credito || 0,
         forma_pagamento: cliente.forma_pagamento || "",
         status_financeiro: cliente.status_financeiro || "Em dia",
         logradouro: cliente.logradouro || "",
@@ -204,7 +205,7 @@ export function ClienteModal({ open, onOpenChange, cliente }: ClienteModalProps)
       porte_empresa: formData.porte_empresa || null,
       responsavel_comercial: formData.responsavel_comercial || null,
       origem_lead: formData.origem_lead || null,
-      limite_credito: formData.limite_credito ? parseFloat(formData.limite_credito) : null,
+      limite_credito: formData.limite_credito || null,
       forma_pagamento: formData.forma_pagamento || null,
       status_financeiro: formData.status_financeiro || null,
       logradouro: formData.logradouro || null,
@@ -311,7 +312,7 @@ export function ClienteModal({ open, onOpenChange, cliente }: ClienteModalProps)
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <Label htmlFor="limite_credito">Limite de Crédito (R$)</Label>
-                <Input id="limite_credito" type="number" step="0.01" min="0" value={formData.limite_credito} onChange={e => setFormData({ ...formData, limite_credito: e.target.value })} placeholder="0,00" />
+                <CurrencyInput id="limite_credito" value={formData.limite_credito} onChange={v => setFormData({ ...formData, limite_credito: v })} placeholder="0,00" />
               </div>
               <div>
                 <Label htmlFor="forma_pagamento">Forma de Pagamento</Label>

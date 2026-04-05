@@ -53,6 +53,7 @@ import { Separator } from "@/components/ui/separator";
 
 import { useUpdateLead, useDeleteLead, type Lead } from "@/hooks/useLeads";
 import { OportunidadesTab } from "./OportunidadesTab";
+import { TipoServicoMultiSelect } from "./TipoServicoMultiSelect";
 import { LEAD_STATUS_TO_OP, type Oportunidade } from "@/hooks/useOportunidades";
 import {
   useLeadInteracoes,
@@ -79,7 +80,7 @@ const formSchema = z.object({
   proximo_passo: z.string().optional(),
   motivo_perda: z.string().optional(),
   motivo_perda_detalhe: z.string().optional(),
-  tipos_servico: z.array(z.string()).optional(),
+  tipo_servico: z.array(z.string()).optional(),
 }).refine((data) => {
   // If status is "Perdido", motivo_perda is required
   if (data.status === "Perdido") {
@@ -132,11 +133,10 @@ export function EditLeadModal({ lead, open, onOpenChange }: EditLeadModalProps) 
 
   useEffect(() => {
     if (lead) {
-      // Merge legacy tipo_servico into tipos_servico array
-      const leadAny = lead as any;
-      const existingArray: string[] = Array.isArray(leadAny.tipos_servico) && leadAny.tipos_servico.length > 0
-        ? leadAny.tipos_servico
-        : lead.tipo_servico ? [lead.tipo_servico] : [];
+      // tipo_servico is now string[] in the DB
+      const existingArray: string[] = Array.isArray(lead.tipo_servico) && lead.tipo_servico.length > 0
+        ? lead.tipo_servico
+        : [];
 
       form.reset({
         status: lead.status || "Novo",
@@ -147,7 +147,7 @@ export function EditLeadModal({ lead, open, onOpenChange }: EditLeadModalProps) 
         proximo_passo: lead.proximo_passo || "",
         motivo_perda: lead.motivo_perda || "",
         motivo_perda_detalhe: lead.motivo_perda_detalhe || "",
-        tipos_servico: existingArray,
+        tipo_servico: existingArray,
       });
     }
   }, [lead, form]);
@@ -160,20 +160,22 @@ export function EditLeadModal({ lead, open, onOpenChange }: EditLeadModalProps) 
       const newStatus = data.status;
       const db = supabase as any;
 
-      const tiposArray = data.tipos_servico ?? [];
+      const tiposArray = data.tipo_servico ?? [];
       await updateLead.mutateAsync({
         id: lead.id,
         data: {
-          ...data,
+          status: data.status,
+          prioridade: data.prioridade,
+          vendedor: data.vendedor,
+          meio_contato: data.meio_contato,
           data_retorno: data.data_retorno?.toISOString() || null,
+          proximo_passo: data.proximo_passo,
           motivo_perda: data.status === "Perdido" ? data.motivo_perda : null,
           motivo_perda_detalhe: data.status === "Perdido" && data.motivo_perda === "Outros"
             ? data.motivo_perda_detalhe
             : null,
-          // keep legacy field in sync with first selection
-          tipo_servico: tiposArray[0] ?? null,
-          tipos_servico: tiposArray,
-        } as any,
+          tipo_servico: tiposArray,
+        },
       });
 
       // Create interaction record if status changed
@@ -263,17 +265,24 @@ export function EditLeadModal({ lead, open, onOpenChange }: EditLeadModalProps) 
           queryClient.invalidateQueries({ queryKey: ["oportunidades", lead.id] });
           queryClient.invalidateQueries({ queryKey: ["all-oportunidades"] });
 
-          // Auto-create client (existing logic)
-          const enderecoParts = [lead.logradouro, lead.numero, lead.bairro].filter(Boolean);
+          // Auto-create client — full field mapping from lead
+          const clienteEnderecoParts = [lead.logradouro, lead.numero, lead.bairro].filter(Boolean);
           await createCliente.mutateAsync({
             nome: lead.empresa || "Sem nome",
             cnpj: lead.cnpj || null,
+            nome_contato: lead.nome_contato || null,
             telefone: lead.telefone || null,
+            whatsapp: lead.telefone || null,
             email: lead.email || null,
+            responsavel_comercial: lead.vendedor || null,
+            origem_lead: lead.origem || null,
+            logradouro: lead.logradouro || null,
+            numero: lead.numero || null,
+            bairro: lead.bairro || null,
             cidade: lead.cidade || null,
             uf: lead.uf || null,
             cep: lead.cep || null,
-            endereco: enderecoParts.length > 0 ? enderecoParts.join(", ") : null,
+            endereco: clienteEnderecoParts.length > 0 ? clienteEnderecoParts.join(", ") : null,
             observacoes: PENDENTE_CADASTRO_MARKER,
             ativo: true,
             rotina_visitas: false,
@@ -371,21 +380,15 @@ export function EditLeadModal({ lead, open, onOpenChange }: EditLeadModalProps) 
               {lead.cnpj && (
                 <p className="text-sm text-muted-foreground">{lead.cnpj}</p>
               )}
-              {(() => {
-                const leadAny = lead as any;
-                const servicos: string[] = Array.isArray(leadAny.tipos_servico) && leadAny.tipos_servico.length > 0
-                  ? leadAny.tipos_servico
-                  : lead.tipo_servico ? [lead.tipo_servico] : [];
-                return servicos.length > 0 ? (
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {servicos.map((s) => (
-                      <Badge key={s} variant="secondary" className="text-xs font-normal">
-                        {s}
-                      </Badge>
-                    ))}
-                  </div>
-                ) : null;
-              })()}
+              {Array.isArray(lead.tipo_servico) && lead.tipo_servico.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {lead.tipo_servico.map((s) => (
+                    <Badge key={s} variant="secondary" className="text-xs font-normal">
+                      {s}
+                    </Badge>
+                  ))}
+                </div>
+              )}
             </div>
             {canDeleteLeads && (
               <AlertDialog>
@@ -691,42 +694,24 @@ export function EditLeadModal({ lead, open, onOpenChange }: EditLeadModalProps) 
                 />
 
                 {/* Tipos de Serviço */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Tipo(s) de Serviço</label>
-                  <div className="flex flex-wrap gap-2">
-                    {tiposServico.map((t) => {
-                      const selected = (form.watch("tipos_servico") ?? []).includes(t.nome);
-                      return (
-                        <button
-                          key={t.id}
-                          type="button"
+                <FormField
+                  control={form.control}
+                  name="tipo_servico"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo(s) de Serviço</FormLabel>
+                      <FormControl>
+                        <TipoServicoMultiSelect
+                          value={field.value ?? []}
+                          onChange={field.onChange}
+                          options={tiposServico}
                           disabled={isConcluded}
-                          onClick={() => {
-                            const current = form.getValues("tipos_servico") ?? [];
-                            form.setValue(
-                              "tipos_servico",
-                              selected
-                                ? current.filter((s) => s !== t.nome)
-                                : [...current, t.nome],
-                              { shouldDirty: true }
-                            );
-                          }}
-                          className={cn(
-                            "px-3 py-1.5 rounded-md text-sm border transition-colors",
-                            selected
-                              ? "bg-primary/10 border-primary text-primary font-medium"
-                              : "border-border text-muted-foreground hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
-                          )}
-                        >
-                          {t.nome}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {(form.watch("tipos_servico") ?? []).length === 0 && (
-                    <p className="text-xs text-muted-foreground">Nenhum serviço selecionado</p>
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
                   )}
-                </div>
+                />
 
                 {/* Adicionar Observação */}
                 <div className="space-y-2">
@@ -871,7 +856,7 @@ export function EditLeadModal({ lead, open, onOpenChange }: EditLeadModalProps) 
           </TabsContent>
 
           <TabsContent value="oportunidades" className="flex-1 overflow-hidden mt-4">
-            <OportunidadesTab leadId={lead.id} />
+            <OportunidadesTab leadId={lead.id} leadVendedor={lead.vendedor} />
           </TabsContent>
         </Tabs>
       </DialogContent>

@@ -678,7 +678,7 @@ export type Database = {
           status: string | null
           telefone: string | null
           tipo_atendimento: string | null
-          tipo_servico: string | null
+          tipo_servico: string[] | null
           uf: string | null
           vendedor: string | null
         }
@@ -707,7 +707,7 @@ export type Database = {
           status?: string | null
           telefone?: string | null
           tipo_atendimento?: string | null
-          tipo_servico?: string | null
+          tipo_servico?: string[] | null
           uf?: string | null
           vendedor?: string | null
         }
@@ -736,7 +736,7 @@ export type Database = {
           status?: string | null
           telefone?: string | null
           tipo_atendimento?: string | null
-          tipo_servico?: string | null
+          tipo_servico?: string[] | null
           uf?: string | null
           vendedor?: string | null
         }

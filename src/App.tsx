@@ -22,6 +22,7 @@ import Estoque from "@/pages/Estoque";
 import Orcamentos from "@/pages/Orcamentos";
 import NotasFiscais from "@/pages/NotasFiscais";
 import Financeiro from "@/pages/Financeiro";
+import Cobrancas from "@/pages/Cobrancas";
 import Equipe from "@/pages/Equipe";
 import Colaboradores from "@/pages/Colaboradores";
 import SuperAdmin from "@/pages/SuperAdmin";

@@ -44,6 +44,7 @@ import {
   useActiveOrigens,
 } from "@/hooks/useSettings";
 import { maskCNPJ, maskPhone } from "@/lib/masks";
+import { TipoServicoMultiSelect } from "./TipoServicoMultiSelect";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
@@ -63,7 +64,7 @@ const formSchema = z.object({
   origem: z.string().optional(),
   meio_contato: z.string().optional(),
   tipo_atendimento: z.string().optional(),
-  tipo_servico: z.string().optional(),
+  tipo_servico: z.array(z.string()).optional(),
   vendedor: z.string().optional(),
   status: z.string().optional(),
   prioridade: z.string().optional(),
@@ -99,7 +100,7 @@ export function NewLeadModal({ open, onOpenChange }: NewLeadModalProps) {
       origem: "",
       meio_contato: "",
       tipo_atendimento: "",
-      tipo_servico: "",
+      tipo_servico: [],
       vendedor: "",
       status: "Novo",
       prioridade: "",
@@ -356,25 +357,15 @@ export function NewLeadModal({ open, onOpenChange }: NewLeadModalProps) {
                   control={form.control}
                   name="tipo_servico"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tipo de Serviço</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {tiposServico.map((t) => (
-                            <SelectItem key={t.id} value={t.nome}>
-                              {t.nome}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                    <FormItem className="col-span-2">
+                      <FormLabel>Tipo(s) de Serviço</FormLabel>
+                      <FormControl>
+                        <TipoServicoMultiSelect
+                          value={field.value ?? []}
+                          onChange={field.onChange}
+                          options={tiposServico}
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}

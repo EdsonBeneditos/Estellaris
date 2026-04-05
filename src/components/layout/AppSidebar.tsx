@@ -12,6 +12,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { usePendingBudgetsCount } from "@/hooks/usePendingBudgets";
 import { usePendingClientesCount } from "@/hooks/usePendingClientesCount";
 import { useFuturosLeadsHojeCount } from "@/hooks/useFuturosLeadsAlerts";
+import { useOrcamentosPendentesCount, useAguardandoPagamentoCount } from "@/hooks/useOrcamentosBadges";
 
 import {
   Sidebar,
@@ -56,6 +57,8 @@ export function AppSidebar() {
   const { data: pendingBudgets = 0 } = usePendingBudgetsCount();
   const { data: pendingClientes = 0 } = usePendingClientesCount();
   const { data: futurosLeadsHoje = 0 } = useFuturosLeadsHojeCount();
+  const { data: orcamentosPendentes = 0 } = useOrcamentosPendentesCount();
+  const { data: aguardandoPagamento = 0 } = useAguardandoPagamentoCount();
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -175,18 +178,23 @@ export function AppSidebar() {
                     >
                       <item.icon className="h-5 w-5 shrink-0" />
                       <span className="truncate flex-1 min-w-0">{item.title}</span>
-                      {item.url === "/financeiro" && pendingBudgets > 0 && (
-                        <Badge className="shrink-0 group-data-[collapsible=icon]:hidden ml-auto h-5 min-w-5 px-1.5 text-[10px] bg-destructive text-destructive-foreground border-0 rounded-full">
-                          {pendingBudgets}
+                      {item.url === "/orcamentos" && orcamentosPendentes > 0 && (
+                        <Badge className="shrink-0 group-data-[collapsible=icon]:hidden ml-auto h-5 min-w-5 px-1 text-[10px] bg-red-600 text-white border-0 rounded-full inline-flex items-center justify-center leading-none">
+                          {orcamentosPendentes}
+                        </Badge>
+                      )}
+                      {item.url === "/financeiro" && aguardandoPagamento > 0 && (
+                        <Badge className="shrink-0 group-data-[collapsible=icon]:hidden ml-auto h-5 min-w-5 px-1 text-[10px] bg-red-600 text-white border-0 rounded-full inline-flex items-center justify-center leading-none">
+                          {aguardandoPagamento}
                         </Badge>
                       )}
                       {item.url === "/clientes" && pendingClientes > 0 && (
-                        <Badge className="shrink-0 group-data-[collapsible=icon]:hidden ml-auto h-5 min-w-5 px-1 text-[10px] bg-emerald-600 text-white border-0 rounded-full inline-flex items-center justify-center leading-none">
+                        <Badge className="shrink-0 group-data-[collapsible=icon]:hidden ml-auto h-5 min-w-5 px-1 text-[10px] bg-red-600 text-white border-0 rounded-full inline-flex items-center justify-center leading-none">
                           {pendingClientes}
                         </Badge>
                       )}
                       {item.url === "/futuros-leads" && futurosLeadsHoje > 0 && (
-                        <Badge className="shrink-0 group-data-[collapsible=icon]:hidden ml-auto h-5 min-w-5 px-1.5 text-[10px] bg-destructive text-destructive-foreground border-0 rounded-full animate-pulse">
+                        <Badge className="shrink-0 group-data-[collapsible=icon]:hidden ml-auto h-5 min-w-5 px-1 text-[10px] bg-red-600 text-white border-0 rounded-full inline-flex items-center justify-center leading-none animate-pulse">
                           {futurosLeadsHoje}
                         </Badge>
                       )}

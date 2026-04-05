@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Contrato, useCreateContrato, useUpdateContrato } from "@/hooks/useClientes";
+import { CurrencyInput } from "@/components/ui/currency-input";
 
 interface ContratoModalProps {
   open: boolean;
@@ -35,7 +36,7 @@ export function ContratoModal({ open, onOpenChange, clienteId, contrato }: Contr
   const [formData, setFormData] = useState({
     tipo_vinculo: "",
     servico_prestado: "",
-    valor: "",
+    valor: 0,
     recorrente: false,
     data_inicio: "",
     data_fim: "",
@@ -47,7 +48,7 @@ export function ContratoModal({ open, onOpenChange, clienteId, contrato }: Contr
       setFormData({
         tipo_vinculo: contrato.tipo_vinculo || "",
         servico_prestado: contrato.servico_prestado || "",
-        valor: contrato.valor?.toString() || "",
+        valor: contrato.valor || 0,
         recorrente: contrato.recorrente || false,
         data_inicio: contrato.data_inicio || "",
         data_fim: contrato.data_fim || "",
@@ -57,7 +58,7 @@ export function ContratoModal({ open, onOpenChange, clienteId, contrato }: Contr
       setFormData({
         tipo_vinculo: "",
         servico_prestado: "",
-        valor: "",
+        valor: 0,
         recorrente: false,
         data_inicio: new Date().toISOString().split("T")[0],
         data_fim: "",
@@ -73,7 +74,7 @@ export function ContratoModal({ open, onOpenChange, clienteId, contrato }: Contr
       cliente_id: clienteId,
       tipo_vinculo: formData.tipo_vinculo,
       servico_prestado: formData.servico_prestado,
-      valor: parseFloat(formData.valor) || 0,
+      valor: formData.valor || 0,
       recorrente: formData.recorrente,
       data_inicio: formData.data_inicio,
       data_fim: formData.data_fim || null,
@@ -132,14 +133,10 @@ export function ContratoModal({ open, onOpenChange, clienteId, contrato }: Contr
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="valor">Valor (R$) *</Label>
-              <Input
+              <CurrencyInput
                 id="valor"
-                type="number"
-                step="0.01"
-                min="0"
                 value={formData.valor}
-                onChange={(e) => setFormData({ ...formData, valor: e.target.value })}
-                required
+                onChange={(v) => setFormData({ ...formData, valor: v })}
                 placeholder="0,00"
               />
             </div>

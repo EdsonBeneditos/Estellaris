@@ -170,16 +170,20 @@ export default function Relatorios() {
       .sort((a, b) => b.count - a.count);
   }, [filteredLeads, origensConfig]);
 
-  // Serviço stats with custom colors
+  // Serviço stats with custom colors — each lead may have multiple services (array)
   const servicoStats = useMemo(() => {
     const counts: Record<string, number> = {};
     filteredLeads.forEach((lead) => {
-      const servico = lead.tipo_servico || "Não informado";
-      counts[servico] = (counts[servico] || 0) + 1;
+      const servicos = Array.isArray(lead.tipo_servico) && lead.tipo_servico.length > 0
+        ? lead.tipo_servico
+        : ["Não informado"];
+      servicos.forEach((servico) => {
+        counts[servico] = (counts[servico] || 0) + 1;
+      });
     });
     return Object.entries(counts)
-      .map(([servico, count]) => ({ 
-        servico, 
+      .map(([servico, count]) => ({
+        servico,
         count,
         color: getServicoColor(servico)
       }))
@@ -191,8 +195,12 @@ export default function Relatorios() {
     const convertedLeads = filteredLeads.filter((lead) => lead.status === "Convertido");
     const counts: Record<string, number> = {};
     convertedLeads.forEach((lead) => {
-      const servico = lead.tipo_servico || "Não informado";
-      counts[servico] = (counts[servico] || 0) + 1;
+      const servicos = Array.isArray(lead.tipo_servico) && lead.tipo_servico.length > 0
+        ? lead.tipo_servico
+        : ["Não informado"];
+      servicos.forEach((servico) => {
+        counts[servico] = (counts[servico] || 0) + 1;
+      });
     });
     return Object.entries(counts)
       .map(([servico, count]) => ({ 

@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
@@ -624,13 +625,10 @@ export function OrcamentoForm({ orcamento, onBack, onSuccess }: OrcamentoFormPro
                         />
                       </TableCell>
                       <TableCell>
-                        <Input
-                          type="number"
-                          min={0}
-                          step={0.01}
+                        <CurrencyInput
                           value={item.preco_unitario}
-                          onChange={(e) => updateCartItem(index, "preco_unitario", Number(e.target.value))}
-                          className="w-28"
+                          onChange={(v) => updateCartItem(index, "preco_unitario", v)}
+                          className="w-36"
                         />
                       </TableCell>
                       <TableCell>

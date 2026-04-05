@@ -55,6 +55,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { CurrencyInput } from "@/components/ui/currency-input";
 
 const STATUS_CONFIG: Record<
   Oportunidade["status"],
@@ -103,9 +104,10 @@ const emptyLine = (): ItemLine => ({
 
 interface Props {
   leadId: string;
+  leadVendedor?: string | null;
 }
 
-export function OportunidadesTab({ leadId }: Props) {
+export function OportunidadesTab({ leadId, leadVendedor }: Props) {
   const { data: oportunidades = [], isLoading } = useOportunidades(leadId);
   const createOp = useCreateOportunidade();
   const updateOp = useUpdateOportunidade();
@@ -121,12 +123,12 @@ export function OportunidadesTab({ leadId }: Props) {
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
   const [vendedor, setVendedor] = useState("");
-  const [valorDisplay, setValorDisplay] = useState("");
+  const [valorEstimado, setValorEstimado] = useState<number>(0);
   const [items, setItems] = useState<ItemLine[]>([]);
 
   const openNew = () => {
     setEditingOp(null);
-    setTitulo(""); setDescricao(""); setVendedor(""); setValorDisplay(""); setItems([]);
+    setTitulo(""); setDescricao(""); setVendedor(leadVendedor || ""); setValorEstimado(0); setItems([]);
     setIsFormOpen(true);
   };
 
@@ -135,7 +137,7 @@ export function OportunidadesTab({ leadId }: Props) {
     setTitulo(op.titulo);
     setDescricao(op.descricao || "");
     setVendedor(op.vendedor || "");
-    setValorDisplay(formatCurrencyInput(op.valor_estimado));
+    setValorEstimado(op.valor_estimado || 0);
     setItems(
       (op.itens || []).map((i) => ({
         produto_id: i.produto_id,
@@ -183,22 +185,17 @@ export function OportunidadesTab({ leadId }: Props) {
       preco_unitario: p.preco_venda,
       subtotal: (items[idx]?.quantidade || 1) * p.preco_venda,
     });
-    // Sync valor display with items total only if user hasn't manually changed it
+    // Auto-sync valor with items total
     setTimeout(() => {
       const newTotal = items.reduce((s, it, i) => {
         if (i === idx) return s + (items[idx]?.quantidade || 1) * p.preco_venda;
         return s + it.subtotal;
       }, 0);
-      setValorDisplay(formatCurrencyInput(newTotal));
+      setValorEstimado(newTotal);
     }, 0);
   };
 
-  const handleValorBlur = (raw: string) => {
-    const n = parseCurrencyInput(raw);
-    setValorDisplay(n > 0 ? formatCurrencyInput(n) : "");
-  };
-
-  const resolvedValor = parseCurrencyInput(valorDisplay) || totalItens;
+  const resolvedValor = valorEstimado || totalItens;
 
   const handleSave = async () => {
     if (!titulo.trim()) { toast.error("Título é obrigatório"); return; }
@@ -488,21 +485,20 @@ export function OportunidadesTab({ leadId }: Props) {
                                   updateItem(idx, { quantidade: q });
                                   const newTotal = items.reduce((s, it, i) =>
                                     s + (i === idx ? q * it.preco_unitario : it.subtotal), 0);
-                                  setValorDisplay(formatCurrencyInput(newTotal));
+                                  setValorEstimado(newTotal);
                                 }}
                               />
                             </div>
                             <div className="space-y-1">
                               <Label className="text-xs text-muted-foreground">Preço Unit.</Label>
-                              <Input
+                              <CurrencyInput
                                 className="h-7 text-xs"
-                                value={formatCurrencyInput(item.preco_unitario)}
-                                onChange={(e) => {
-                                  const p = parseCurrencyInput(e.target.value);
+                                value={item.preco_unitario}
+                                onChange={(p) => {
                                   updateItem(idx, { preco_unitario: p });
                                   const newTotal = items.reduce((s, it, i) =>
                                     s + (i === idx ? item.quantidade * p : it.subtotal), 0);
-                                  setValorDisplay(formatCurrencyInput(newTotal));
+                                  setValorEstimado(newTotal);
                                 }}
                               />
                             </div>
@@ -530,22 +526,20 @@ export function OportunidadesTab({ leadId }: Props) {
               {/* Valor da Oportunidade */}
               <div className="space-y-1.5">
                 <Label htmlFor="op-valor">Valor da Oportunidade (R$) *</Label>
-                <Input
+                <CurrencyInput
                   id="op-valor"
+                  value={valorEstimado}
+                  onChange={setValorEstimado}
                   placeholder="0,00"
-                  value={valorDisplay}
-                  onChange={(e) => setValorDisplay(e.target.value)}
-                  onBlur={(e) => handleValorBlur(e.target.value)}
-                  className="font-mono"
                 />
-                {items.length > 0 && parseCurrencyInput(valorDisplay) !== totalItens && totalItens > 0 && (
+                {items.length > 0 && valorEstimado !== totalItens && totalItens > 0 && (
                   <p className="text-xs text-muted-foreground">
                     Total dos produtos: {formatCurrency(totalItens)}
                     {" · "}
                     <button
                       type="button"
                       className="underline text-primary"
-                      onClick={() => setValorDisplay(formatCurrencyInput(totalItens))}
+                      onClick={() => setValorEstimado(totalItens)}
                     >
                       usar esse valor
                     </button>
