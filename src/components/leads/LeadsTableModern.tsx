@@ -112,6 +112,11 @@ export function LeadsTableModern({ leads, isLoading }: LeadsTableModernProps) {
                       {lead.cnpj && (
                         <p className="text-xs text-[#4B5563] mt-0.5 font-mono">{lead.cnpj}</p>
                       )}
+                      {lead.tipo_servico && (
+                        <Badge variant="secondary" className="mt-1 text-xs font-normal px-1.5 py-0">
+                          {lead.tipo_servico}
+                        </Badge>
+                      )}
                     </div>
                     <Badge variant="outline" className={statusStyles[lead.status || ""] || ""}>
                       {lead.status || "Novo"}
@@ -143,6 +148,11 @@ export function LeadsTableModern({ leads, isLoading }: LeadsTableModernProps) {
                     <p className="font-bold text-[#003366] dark:text-blue-400 truncate">{lead.empresa || "—"}</p>
                     {lead.cnpj && (
                       <p className="text-xs text-[#4B5563] mt-0.5 font-mono truncate">{lead.cnpj}</p>
+                    )}
+                    {lead.tipo_servico && (
+                      <Badge variant="secondary" className="mt-1 text-xs font-normal px-1.5 py-0 max-w-full truncate">
+                        {lead.tipo_servico}
+                      </Badge>
                     )}
                   </div>
 

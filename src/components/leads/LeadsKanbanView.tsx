@@ -114,9 +114,16 @@ export function LeadsKanbanView({ leads, isLoading }: LeadsKanbanViewProps) {
                       {/* Company */}
                       <div className="flex items-start gap-1.5">
                         <Building2 className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
-                        <p className="text-sm font-semibold text-foreground leading-tight line-clamp-2">
-                          {lead.empresa || "—"}
-                        </p>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-foreground leading-tight line-clamp-2">
+                            {lead.empresa || "—"}
+                          </p>
+                          {lead.tipo_servico && (
+                            <Badge variant="secondary" className="mt-1 text-xs font-normal px-1.5 py-0 max-w-full truncate">
+                              {lead.tipo_servico}
+                            </Badge>
+                          )}
+                        </div>
                       </div>
 
                       {/* Contact */}
