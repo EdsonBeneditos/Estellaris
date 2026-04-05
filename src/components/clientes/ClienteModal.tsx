@@ -228,14 +228,14 @@ export function ClienteModal({ open, onOpenChange, cliente }: ClienteModalProps)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogHeader className="shrink-0">
           <DialogTitle className="text-xl font-semibold">
             {cliente ? "Editar Cliente" : "Novo Cliente"}
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-8 py-2">
+        <form onSubmit={handleSubmit} className="space-y-8 py-2 overflow-y-auto flex-1 pr-1">
 
           {/* ── Dados Básicos ── */}
           <div>

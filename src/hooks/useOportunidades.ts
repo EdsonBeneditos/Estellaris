@@ -2,6 +2,16 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentProfile } from "@/hooks/useOrganization";
 
+export interface OportunidadeItem {
+  produto_id: string;
+  produto_nome: string;
+  produto_sku: string;
+  unidade_medida: string;
+  quantidade: number;
+  preco_unitario: number;
+  subtotal: number;
+}
+
 export interface Oportunidade {
   id: string;
   lead_id: string;
@@ -13,9 +23,21 @@ export interface Oportunidade {
   motivo_perda: string | null;
   data_fechamento: string | null;
   vendedor: string | null;
+  itens: OportunidadeItem[];
   created_at: string;
   updated_at: string;
 }
+
+/** Lead status → Oportunidade status mapping */
+export const LEAD_STATUS_TO_OP: Record<string, Oportunidade["status"] | null> = {
+  "Novo": "Aberta",
+  "Em Contato": "Proposta Enviada",
+  "Qualificado": "Em Negociação",
+  "Proposta Enviada": "Proposta Enviada",
+  "Negociação": "Em Negociação",
+  "Convertido": "Ganha",
+  "Perdido": "Perdida",
+};
 
 // Cast helper — table may not be in generated types yet
 const db = () => supabase as any;
@@ -64,6 +86,7 @@ export function useCreateOportunidade() {
       descricao?: string | null;
       valor_estimado?: number;
       vendedor?: string | null;
+      itens?: OportunidadeItem[];
     }) => {
       const { data, error } = await db()
         .from("oportunidades")
@@ -72,6 +95,7 @@ export function useCreateOportunidade() {
           organization_id: profile?.organization_id,
           status: "Aberta",
           valor_estimado: payload.valor_estimado ?? 0,
+          itens: payload.itens ?? [],
         })
         .select()
         .single();
@@ -113,30 +137,29 @@ export function useUpdateOportunidade() {
         .select()
         .single();
       if (error) throw error;
-      const updated = data as Oportunidade;
-
-      // When won → auto-convert the lead to "Convertido" (only if not already)
-      if (patch.status === "Ganha" && updated.lead_id) {
-        const { data: currentLead } = await supabase
-          .from("leads")
-          .select("status")
-          .eq("id", updated.lead_id)
-          .single();
-
-        if (currentLead && currentLead.status !== "Convertido") {
-          await supabase
-            .from("leads")
-            .update({ status: "Convertido" })
-            .eq("id", updated.lead_id);
-          queryClient.invalidateQueries({ queryKey: ["leads"] });
-          queryClient.invalidateQueries({ queryKey: ["leads-stats"] });
-        }
-      }
-
-      return updated;
+      return data as Oportunidade;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["oportunidades", data.lead_id] });
+      queryClient.invalidateQueries({ queryKey: ["all-oportunidades"] });
+    },
+  });
+}
+
+export function useDeleteOportunidade() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, leadId }: { id: string; leadId: string }) => {
+      const { error } = await db()
+        .from("oportunidades")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+      return leadId;
+    },
+    onSuccess: (leadId) => {
+      queryClient.invalidateQueries({ queryKey: ["oportunidades", leadId] });
       queryClient.invalidateQueries({ queryKey: ["all-oportunidades"] });
     },
   });

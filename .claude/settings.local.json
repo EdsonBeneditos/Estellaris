@@ -3,7 +3,12 @@
     "allow": [
       "mcp__claude_ai_Supabase__list_tables",
       "mcp__claude_ai_Supabase__execute_sql",
-      "mcp__claude_ai_Supabase__list_migrations"
+      "mcp__claude_ai_Supabase__list_migrations",
+      "Bash(npm run:*)",
+      "Bash(powershell -Command \"Get-Content 'C:\\\\Users\\\\aadmin\\\\.claude\\\\projects\\\\c--Users-aadmin-Desktop-MEU-CRM-Estellaris\\\\c3bde8b8-28e4-4548-bec5-6f4c1bed0282.jsonl' | Select-Object -Last 50\")",
+      "Bash(python3 -c \" import sys, json for line in sys.stdin: line = line.strip\\(\\) if not line: continue try: obj = json.loads\\(line\\) role = obj.get\\('role',''\\) content = obj.get\\('content',''\\) if isinstance\\(content, list\\): for c in content: if isinstance\\(c, dict\\) and c.get\\('type'\\) == 'text': txt = c['text'][:500] print\\(f'[{role}]: {txt}'\\) print\\('---'\\) elif isinstance\\(content, str\\) and content: print\\(f'[{role}]: {content[:500]}'\\) print\\('---'\\) except: pass \")",
+      "Bash(powershell -Command ':*)",
+      "Bash(ls src/hooks/use*.ts)"
     ]
   }
 }

@@ -1,11 +1,21 @@
 import { useState } from "react";
-import { Plus, TrendingUp, Trophy, XCircle, Edit2, Check, X } from "lucide-react";
+import {
+  Plus,
+  TrendingUp,
+  Trophy,
+  XCircle,
+  Edit2,
+  Trash2,
+  Package,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 import {
   Select,
   SelectContent,
@@ -21,11 +31,26 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   useOportunidades,
   useCreateOportunidade,
   useUpdateOportunidade,
+  useDeleteOportunidade,
   type Oportunidade,
+  type OportunidadeItem,
 } from "@/hooks/useOportunidades";
+import { useActiveVendedores } from "@/hooks/useSettings";
+import { useProdutos } from "@/hooks/useEstoque";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -35,24 +60,46 @@ const STATUS_CONFIG: Record<
   Oportunidade["status"],
   { label: string; color: string; dot: string }
 > = {
-  Aberta:           { label: "Aberta",           color: "bg-blue-500/10 text-blue-600 border-blue-200",     dot: "bg-blue-500" },
-  "Proposta Enviada":{ label: "Proposta Enviada", color: "bg-amber-500/10 text-amber-600 border-amber-200",  dot: "bg-amber-500" },
-  "Em Negociação":  { label: "Em Negociação",    color: "bg-purple-500/10 text-purple-600 border-purple-200",dot: "bg-purple-500" },
-  Ganha:            { label: "Ganha",             color: "bg-emerald-500/10 text-emerald-600 border-emerald-200", dot: "bg-emerald-500" },
-  Perdida:          { label: "Perdida",           color: "bg-red-500/10 text-red-600 border-red-200",        dot: "bg-red-500" },
+  Aberta:            { label: "Aberta",           color: "bg-blue-500/10 text-blue-600 border-blue-200",      dot: "bg-blue-500" },
+  "Proposta Enviada":{ label: "Proposta Enviada", color: "bg-amber-500/10 text-amber-600 border-amber-200",   dot: "bg-amber-500" },
+  "Em Negociação":   { label: "Em Negociação",    color: "bg-purple-500/10 text-purple-600 border-purple-200",dot: "bg-purple-500" },
+  Ganha:             { label: "Ganha",            color: "bg-emerald-500/10 text-emerald-600 border-emerald-200", dot: "bg-emerald-500" },
+  Perdida:           { label: "Perdida",          color: "bg-red-500/10 text-red-600 border-red-200",         dot: "bg-red-500" },
 };
-
-const STATUS_OPTIONS: Oportunidade["status"][] = [
-  "Aberta",
-  "Proposta Enviada",
-  "Em Negociação",
-  "Ganha",
-  "Perdida",
-];
 
 function formatCurrency(val: number) {
   return val.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
+
+function parseCurrencyInput(raw: string): number {
+  const cleaned = raw.replace(/[^\d,]/g, "").replace(",", ".");
+  return parseFloat(cleaned) || 0;
+}
+
+function formatCurrencyInput(val: number): string {
+  if (!val) return "";
+  return val.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+interface ItemLine {
+  produto_id: string;
+  produto_nome: string;
+  produto_sku: string;
+  unidade_medida: string;
+  quantidade: number;
+  preco_unitario: number;
+  subtotal: number;
+}
+
+const emptyLine = (): ItemLine => ({
+  produto_id: "",
+  produto_nome: "",
+  produto_sku: "",
+  unidade_medida: "UN",
+  quantidade: 1,
+  preco_unitario: 0,
+  subtotal: 0,
+});
 
 interface Props {
   leadId: string;
@@ -62,68 +109,140 @@ export function OportunidadesTab({ leadId }: Props) {
   const { data: oportunidades = [], isLoading } = useOportunidades(leadId);
   const createOp = useCreateOportunidade();
   const updateOp = useUpdateOportunidade();
+  const deleteOp = useDeleteOportunidade();
+  const { data: vendedores = [] } = useActiveVendedores();
+  const { data: produtos = [] } = useProdutos();
+  const produtosAtivos = produtos.filter((p) => p.ativo);
 
-  // New oportunidade form state
-  const [isNewOpen, setIsNewOpen] = useState(false);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingOp, setEditingOp] = useState<Oportunidade | null>(null);
+
+  // Form state
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
-  const [valorEstimado, setValorEstimado] = useState("");
   const [vendedor, setVendedor] = useState("");
+  const [valorDisplay, setValorDisplay] = useState("");
+  const [items, setItems] = useState<ItemLine[]>([]);
 
-  // Inline edit state
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editStatus, setEditStatus] = useState<Oportunidade["status"]>("Aberta");
-  const [editMotivoPerda, setEditMotivoPerda] = useState("");
+  const openNew = () => {
+    setEditingOp(null);
+    setTitulo(""); setDescricao(""); setVendedor(""); setValorDisplay(""); setItems([]);
+    setIsFormOpen(true);
+  };
 
-  const handleCreate = async () => {
+  const openEdit = (op: Oportunidade) => {
+    setEditingOp(op);
+    setTitulo(op.titulo);
+    setDescricao(op.descricao || "");
+    setVendedor(op.vendedor || "");
+    setValorDisplay(formatCurrencyInput(op.valor_estimado));
+    setItems(
+      (op.itens || []).map((i) => ({
+        produto_id: i.produto_id,
+        produto_nome: i.produto_nome,
+        produto_sku: i.produto_sku,
+        unidade_medida: i.unidade_medida,
+        quantidade: i.quantidade,
+        preco_unitario: i.preco_unitario,
+        subtotal: i.subtotal,
+      }))
+    );
+    setIsFormOpen(true);
+  };
+
+  const closeForm = () => {
+    setIsFormOpen(false);
+    setEditingOp(null);
+  };
+
+  // Item helpers
+  const totalItens = items.reduce((s, i) => s + i.subtotal, 0);
+
+  const addItem = () => setItems((prev) => [...prev, emptyLine()]);
+
+  const removeItem = (idx: number) => setItems((prev) => prev.filter((_, i) => i !== idx));
+
+  const updateItem = (idx: number, patch: Partial<ItemLine>) => {
+    setItems((prev) => {
+      const next = [...prev];
+      const updated = { ...next[idx], ...patch };
+      updated.subtotal = updated.quantidade * updated.preco_unitario;
+      next[idx] = updated;
+      return next;
+    });
+  };
+
+  const selectProduto = (idx: number, produtoId: string) => {
+    const p = produtosAtivos.find((p) => p.id === produtoId);
+    if (!p) return;
+    updateItem(idx, {
+      produto_id: p.id,
+      produto_nome: p.nome,
+      produto_sku: p.sku,
+      unidade_medida: p.unidade_medida || "UN",
+      preco_unitario: p.preco_venda,
+      subtotal: (items[idx]?.quantidade || 1) * p.preco_venda,
+    });
+    // Sync valor display with items total only if user hasn't manually changed it
+    setTimeout(() => {
+      const newTotal = items.reduce((s, it, i) => {
+        if (i === idx) return s + (items[idx]?.quantidade || 1) * p.preco_venda;
+        return s + it.subtotal;
+      }, 0);
+      setValorDisplay(formatCurrencyInput(newTotal));
+    }, 0);
+  };
+
+  const handleValorBlur = (raw: string) => {
+    const n = parseCurrencyInput(raw);
+    setValorDisplay(n > 0 ? formatCurrencyInput(n) : "");
+  };
+
+  const resolvedValor = parseCurrencyInput(valorDisplay) || totalItens;
+
+  const handleSave = async () => {
     if (!titulo.trim()) { toast.error("Título é obrigatório"); return; }
+
+    const payload = {
+      titulo: titulo.trim(),
+      descricao: descricao.trim() || null,
+      vendedor: vendedor || null,
+      valor_estimado: resolvedValor,
+      itens: items.map((i) => ({
+        produto_id: i.produto_id,
+        produto_nome: i.produto_nome,
+        produto_sku: i.produto_sku,
+        unidade_medida: i.unidade_medida,
+        quantidade: i.quantidade,
+        preco_unitario: i.preco_unitario,
+        subtotal: i.subtotal,
+      })) as OportunidadeItem[],
+    };
+
     try {
-      await createOp.mutateAsync({
-        lead_id: leadId,
-        titulo: titulo.trim(),
-        descricao: descricao.trim() || null,
-        valor_estimado: parseFloat(valorEstimado.replace(",", ".")) || 0,
-        vendedor: vendedor.trim() || null,
-      });
-      toast.success("Oportunidade criada!");
-      setIsNewOpen(false);
-      setTitulo(""); setDescricao(""); setValorEstimado(""); setVendedor("");
+      if (editingOp) {
+        await updateOp.mutateAsync({ id: editingOp.id, data: payload });
+        toast.success("Oportunidade atualizada!");
+      } else {
+        await createOp.mutateAsync({ lead_id: leadId, ...payload });
+        toast.success("Oportunidade criada!");
+      }
+      closeForm();
     } catch (e: any) {
-      toast.error(e.message || "Erro ao criar oportunidade");
+      toast.error(e.message || "Erro ao salvar oportunidade");
     }
   };
 
-  const startEdit = (op: Oportunidade) => {
-    setEditingId(op.id);
-    setEditStatus(op.status);
-    setEditMotivoPerda(op.motivo_perda || "");
-  };
-
-  const cancelEdit = () => { setEditingId(null); };
-
-  const saveEdit = async (op: Oportunidade) => {
-    if (editStatus === "Perdida" && !editMotivoPerda.trim()) {
-      toast.error("Informe o motivo da perda");
-      return;
-    }
+  const handleDelete = async (op: Oportunidade) => {
     try {
-      await updateOp.mutateAsync({
-        id: op.id,
-        data: {
-          status: editStatus,
-          motivo_perda: editStatus === "Perdida" ? editMotivoPerda.trim() : null,
-        },
-      });
-      toast.success("Oportunidade atualizada!");
-      setEditingId(null);
+      await deleteOp.mutateAsync({ id: op.id, leadId: op.lead_id });
+      toast.success("Oportunidade removida!");
     } catch (e: any) {
-      toast.error(e.message || "Erro ao atualizar");
+      toast.error(e.message || "Erro ao remover");
     }
   };
 
-  const totalAberto = oportunidades
-    .filter((o) => o.status !== "Perdida")
-    .reduce((s, o) => s + (o.valor_estimado || 0), 0);
+  const isSaving = createOp.isPending || updateOp.isPending;
 
   if (isLoading) {
     return (
@@ -133,18 +252,20 @@ export function OportunidadesTab({ leadId }: Props) {
     );
   }
 
+  const totalAberto = oportunidades
+    .filter((o) => o.status !== "Perdida" && o.status !== "Ganha")
+    .reduce((s, o) => s + (o.valor_estimado || 0), 0);
+
   return (
-    <div className="flex flex-col h-full gap-4">
-      {/* Header row */}
+    <div className="flex flex-col h-full gap-3">
+      {/* Header */}
       <div className="flex items-center justify-between gap-2">
-        <div className="text-sm text-muted-foreground">
-          {oportunidades.length > 0 && (
-            <span>
-              <strong>{formatCurrency(totalAberto)}</strong> em aberto
-            </span>
+        <span className="text-sm text-muted-foreground">
+          {totalAberto > 0 && (
+            <><strong>{formatCurrency(totalAberto)}</strong> em pipeline</>
           )}
-        </div>
-        <Button size="sm" className="gap-1.5 shrink-0" onClick={() => setIsNewOpen(true)}>
+        </span>
+        <Button size="sm" className="gap-1.5 shrink-0" onClick={openNew}>
           <Plus className="h-4 w-4" />
           Nova Oportunidade
         </Button>
@@ -153,69 +274,90 @@ export function OportunidadesTab({ leadId }: Props) {
       {/* List */}
       <ScrollArea className="flex-1 pr-1">
         {oportunidades.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center gap-2">
+          <div className="flex flex-col items-center justify-center py-10 text-center gap-2">
             <TrendingUp className="h-10 w-10 text-muted-foreground/30" />
             <p className="text-sm text-muted-foreground">Nenhuma oportunidade registrada</p>
             <p className="text-xs text-muted-foreground/60">
-              Registre propostas, negociações e vendas associadas a este lead.
+              Registre propostas e negociações associadas a este lead.
             </p>
           </div>
         ) : (
           <div className="space-y-3">
             {oportunidades.map((op) => {
               const cfg = STATUS_CONFIG[op.status];
-              const isEditing = editingId === op.id;
+              const isClosed = op.status === "Ganha" || op.status === "Perdida";
 
               return (
-                <div
-                  key={op.id}
-                  className="rounded-lg border border-border bg-card p-4 space-y-3"
-                >
-                  {/* Title & status badge */}
+                <div key={op.id} className="rounded-lg border border-border bg-card p-4 space-y-2">
+                  {/* Title row */}
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm leading-snug truncate">{op.titulo}</p>
+                      <p className="font-medium text-sm leading-snug">{op.titulo}</p>
                       {op.descricao && (
-                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                          {op.descricao}
-                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{op.descricao}</p>
                       )}
                     </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      {!isEditing && (
-                        <Badge
-                          variant="outline"
-                          className={cn("text-xs gap-1.5 border", cfg.color)}
-                        >
-                          <span className={cn("h-1.5 w-1.5 rounded-full", cfg.dot)} />
-                          {cfg.label}
-                        </Badge>
-                      )}
-                      {!isEditing && (
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Badge variant="outline" className={cn("text-xs gap-1.5 border", cfg.color)}>
+                        <span className={cn("h-1.5 w-1.5 rounded-full", cfg.dot)} />
+                        {cfg.label}
+                      </Badge>
+                      {!isClosed && (
                         <Button
-                          variant="ghost"
-                          size="icon"
+                          variant="ghost" size="icon"
                           className="h-6 w-6 text-muted-foreground hover:text-foreground"
-                          onClick={() => startEdit(op)}
+                          onClick={() => openEdit(op)}
                         >
                           <Edit2 className="h-3.5 w-3.5" />
                         </Button>
                       )}
+                      {!isClosed && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost" size="icon"
+                              className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Remover Oportunidade</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Tem certeza que deseja remover "{op.titulo}"? Esta ação não pode ser desfeita.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                onClick={() => handleDelete(op)}
+                              >
+                                Remover
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
                     </div>
                   </div>
 
-                  {/* Value & dates */}
+                  {/* Meta row */}
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
                     {op.valor_estimado > 0 && (
-                      <span className="font-medium text-foreground">
-                        {formatCurrency(op.valor_estimado)}
-                      </span>
+                      <span className="font-semibold text-foreground">{formatCurrency(op.valor_estimado)}</span>
                     )}
                     {op.vendedor && <span>{op.vendedor}</span>}
+                    {op.itens?.length > 0 && (
+                      <span className="flex items-center gap-1">
+                        <Package className="h-3 w-3" />
+                        {op.itens.length} produto(s)
+                      </span>
+                    )}
                     {op.data_fechamento && (
                       <span>
-                        Fechado em{" "}
-                        {format(new Date(op.data_fechamento + "T12:00:00"), "dd/MM/yyyy", { locale: ptBR })}
+                        Fechado {format(new Date(op.data_fechamento + "T12:00:00"), "dd/MM/yyyy", { locale: ptBR })}
                       </span>
                     )}
                     <span className="ml-auto">
@@ -223,84 +365,16 @@ export function OportunidadesTab({ leadId }: Props) {
                     </span>
                   </div>
 
-                  {/* Inline edit */}
-                  {isEditing && (
-                    <div className="pt-2 border-t border-border space-y-3">
-                      <div className="space-y-1.5">
-                        <Label className="text-xs">Status</Label>
-                        <Select
-                          value={editStatus}
-                          onValueChange={(v) => setEditStatus(v as Oportunidade["status"])}
-                        >
-                          <SelectTrigger className="h-8 text-sm">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {STATUS_OPTIONS.map((s) => (
-                              <SelectItem key={s} value={s}>
-                                <div className="flex items-center gap-2">
-                                  <span
-                                    className={cn(
-                                      "h-2 w-2 rounded-full",
-                                      STATUS_CONFIG[s].dot
-                                    )}
-                                  />
-                                  {STATUS_CONFIG[s].label}
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {editStatus === "Perdida" && (
-                        <div className="space-y-1.5">
-                          <Label className="text-xs text-destructive">Motivo da Perda *</Label>
-                          <Input
-                            className="h-8 text-sm"
-                            placeholder="Ex: Preço, concorrência..."
-                            value={editMotivoPerda}
-                            onChange={(e) => setEditMotivoPerda(e.target.value)}
-                          />
-                        </div>
-                      )}
-
-                      <div className="flex gap-2 justify-end">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 gap-1"
-                          onClick={cancelEdit}
-                        >
-                          <X className="h-3.5 w-3.5" />
-                          Cancelar
-                        </Button>
-                        <Button
-                          size="sm"
-                          className="h-7 gap-1"
-                          disabled={updateOp.isPending}
-                          onClick={() => saveEdit(op)}
-                        >
-                          <Check className="h-3.5 w-3.5" />
-                          Salvar
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Show motivo_perda if Perdida */}
-                  {op.status === "Perdida" && op.motivo_perda && !isEditing && (
+                  {op.status === "Perdida" && op.motivo_perda && (
                     <div className="flex items-center gap-1.5 text-xs text-red-500/80">
                       <XCircle className="h-3.5 w-3.5 shrink-0" />
                       {op.motivo_perda}
                     </div>
                   )}
-
-                  {/* Show trophy if Ganha */}
-                  {op.status === "Ganha" && !isEditing && (
+                  {op.status === "Ganha" && (
                     <div className="flex items-center gap-1.5 text-xs text-emerald-600">
                       <Trophy className="h-3.5 w-3.5 shrink-0" />
-                      Negócio fechado!
+                      Negócio fechado — orçamento gerado automaticamente
                     </div>
                   )}
                 </div>
@@ -310,68 +384,185 @@ export function OportunidadesTab({ leadId }: Props) {
         )}
       </ScrollArea>
 
-      {/* New Oportunidade Dialog */}
-      <Dialog open={isNewOpen} onOpenChange={setIsNewOpen}>
-        <DialogContent className="sm:max-w-[440px]">
+      {/* Form Dialog */}
+      <Dialog open={isFormOpen} onOpenChange={(v) => { if (!v) closeForm(); }}>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5" />
-              Nova Oportunidade
+              {editingOp ? "Editar Oportunidade" : "Nova Oportunidade"}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="op-titulo">Título *</Label>
-              <Input
-                id="op-titulo"
-                placeholder="Ex: Proposta de licenciamento anual"
-                value={titulo}
-                onChange={(e) => setTitulo(e.target.value)}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="op-desc">Descrição</Label>
-              <Textarea
-                id="op-desc"
-                placeholder="Detalhes da oportunidade..."
-                rows={3}
-                className="resize-none"
-                value={descricao}
-                onChange={(e) => setDescricao(e.target.value)}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
+
+          <ScrollArea className="flex-1 pr-4">
+            <div className="space-y-4 py-2 pr-1">
+              {/* Título */}
               <div className="space-y-1.5">
-                <Label htmlFor="op-valor">Valor Estimado (R$)</Label>
+                <Label htmlFor="op-titulo">Título *</Label>
+                <Input
+                  id="op-titulo"
+                  placeholder="Ex: Proposta de tratamento de efluentes"
+                  value={titulo}
+                  onChange={(e) => setTitulo(e.target.value)}
+                />
+              </div>
+
+              {/* Descrição */}
+              <div className="space-y-1.5">
+                <Label htmlFor="op-desc">Descrição</Label>
+                <Textarea
+                  id="op-desc"
+                  placeholder="Detalhes da negociação..."
+                  rows={2}
+                  className="resize-none"
+                  value={descricao}
+                  onChange={(e) => setDescricao(e.target.value)}
+                />
+              </div>
+
+              {/* Vendedor */}
+              <div className="space-y-1.5">
+                <Label>Vendedor</Label>
+                <Select value={vendedor} onValueChange={setVendedor}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o vendedor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_none">— Sem vendedor —</SelectItem>
+                    {vendedores.map((v) => (
+                      <SelectItem key={v.id} value={v.nome}>{v.nome}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Produtos */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Produtos</Label>
+                  <Button type="button" variant="outline" size="sm" className="h-7 gap-1 text-xs" onClick={addItem}>
+                    <Plus className="h-3.5 w-3.5" /> Adicionar Produto
+                  </Button>
+                </div>
+
+                {items.length > 0 && (
+                  <div className="rounded-lg border border-border divide-y divide-border">
+                    {items.map((item, idx) => (
+                      <div key={idx} className="p-3 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1">
+                            <Select
+                              value={item.produto_id || "_none"}
+                              onValueChange={(v) => v !== "_none" && selectProduto(idx, v)}
+                            >
+                              <SelectTrigger className="h-8 text-sm">
+                                <SelectValue placeholder="Selecionar produto..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {produtosAtivos.map((p) => (
+                                  <SelectItem key={p.id} value={p.id}>
+                                    {p.nome} {p.sku ? `(${p.sku})` : ""}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <Button
+                            type="button" variant="ghost" size="icon"
+                            className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                            onClick={() => removeItem(idx)}
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                        {item.produto_id && (
+                          <div className="grid grid-cols-3 gap-2 text-sm">
+                            <div className="space-y-1">
+                              <Label className="text-xs text-muted-foreground">Qtd.</Label>
+                              <Input
+                                type="number" min={1}
+                                className="h-7 text-xs"
+                                value={item.quantidade}
+                                onChange={(e) => {
+                                  const q = Math.max(1, parseInt(e.target.value) || 1);
+                                  updateItem(idx, { quantidade: q });
+                                  const newTotal = items.reduce((s, it, i) =>
+                                    s + (i === idx ? q * it.preco_unitario : it.subtotal), 0);
+                                  setValorDisplay(formatCurrencyInput(newTotal));
+                                }}
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs text-muted-foreground">Preço Unit.</Label>
+                              <Input
+                                className="h-7 text-xs"
+                                value={formatCurrencyInput(item.preco_unitario)}
+                                onChange={(e) => {
+                                  const p = parseCurrencyInput(e.target.value);
+                                  updateItem(idx, { preco_unitario: p });
+                                  const newTotal = items.reduce((s, it, i) =>
+                                    s + (i === idx ? item.quantidade * p : it.subtotal), 0);
+                                  setValorDisplay(formatCurrencyInput(newTotal));
+                                }}
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs text-muted-foreground">Subtotal</Label>
+                              <div className="h-7 flex items-center px-2 text-xs font-medium text-foreground bg-muted rounded-md">
+                                {formatCurrency(item.subtotal)}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    <div className="px-3 py-2 flex justify-end">
+                      <span className="text-xs text-muted-foreground">
+                        Total produtos: <strong className="text-foreground">{formatCurrency(totalItens)}</strong>
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <Separator />
+
+              {/* Valor da Oportunidade */}
+              <div className="space-y-1.5">
+                <Label htmlFor="op-valor">Valor da Oportunidade (R$) *</Label>
                 <Input
                   id="op-valor"
                   placeholder="0,00"
-                  value={valorEstimado}
-                  onChange={(e) => setValorEstimado(e.target.value)}
+                  value={valorDisplay}
+                  onChange={(e) => setValorDisplay(e.target.value)}
+                  onBlur={(e) => handleValorBlur(e.target.value)}
+                  className="font-mono"
                 />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="op-vendedor">Vendedor</Label>
-                <Input
-                  id="op-vendedor"
-                  placeholder="Nome do vendedor"
-                  value={vendedor}
-                  onChange={(e) => setVendedor(e.target.value)}
-                />
+                {items.length > 0 && parseCurrencyInput(valorDisplay) !== totalItens && totalItens > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Total dos produtos: {formatCurrency(totalItens)}
+                    {" · "}
+                    <button
+                      type="button"
+                      className="underline text-primary"
+                      onClick={() => setValorDisplay(formatCurrencyInput(totalItens))}
+                    >
+                      usar esse valor
+                    </button>
+                  </p>
+                )}
               </div>
             </div>
-          </div>
+          </ScrollArea>
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsNewOpen(false)}>
-              Cancelar
-            </Button>
+            <Button variant="outline" onClick={closeForm}>Cancelar</Button>
             <Button
-              onClick={handleCreate}
-              disabled={createOp.isPending || !titulo.trim()}
+              onClick={handleSave}
+              disabled={isSaving || !titulo.trim()}
               className="gap-1.5"
             >
-              <Plus className="h-4 w-4" />
-              {createOp.isPending ? "Criando..." : "Criar"}
+              {isSaving ? "Salvando..." : editingOp ? "Salvar" : <><Plus className="h-4 w-4" />Criar</>}
             </Button>
           </DialogFooter>
         </DialogContent>

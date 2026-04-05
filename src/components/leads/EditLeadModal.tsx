@@ -53,6 +53,7 @@ import { Separator } from "@/components/ui/separator";
 
 import { useUpdateLead, useDeleteLead, type Lead } from "@/hooks/useLeads";
 import { OportunidadesTab } from "./OportunidadesTab";
+import { LEAD_STATUS_TO_OP, type Oportunidade } from "@/hooks/useOportunidades";
 import {
   useLeadInteracoes,
   useCreateInteracao,
@@ -61,6 +62,9 @@ import { useActiveVendedores } from "@/hooks/useSettings";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useCreateCliente } from "@/hooks/useClientes";
 import { PENDENTE_CADASTRO_MARKER } from "@/hooks/usePendingClientesCount";
+import { useCurrentProfile } from "@/hooks/useOrganization";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { STATUS_OPTIONS, PRIORIDADES, MOTIVOS_PERDA, MEIOS_CONTATO } from "@/lib/constants";
@@ -112,6 +116,8 @@ export function EditLeadModal({ lead, open, onOpenChange }: EditLeadModalProps) 
   const { data: interacoes = [], isLoading: interacoesLoading } =
     useLeadInteracoes(lead?.id || "");
   const { canDeleteLeads } = usePermissions();
+  const { data: profile } = useCurrentProfile();
+  const queryClient = useQueryClient();
 
   const [observacao, setObservacao] = useState("");
 
@@ -143,6 +149,7 @@ export function EditLeadModal({ lead, open, onOpenChange }: EditLeadModalProps) 
     try {
       const previousStatus = lead.status;
       const newStatus = data.status;
+      const db = supabase as any;
 
       await updateLead.mutateAsync({
         id: lead.id,
@@ -150,8 +157,8 @@ export function EditLeadModal({ lead, open, onOpenChange }: EditLeadModalProps) 
           ...data,
           data_retorno: data.data_retorno?.toISOString() || null,
           motivo_perda: data.status === "Perdido" ? data.motivo_perda : null,
-          motivo_perda_detalhe: data.status === "Perdido" && data.motivo_perda === "Outros" 
-            ? data.motivo_perda_detalhe 
+          motivo_perda_detalhe: data.status === "Perdido" && data.motivo_perda === "Outros"
+            ? data.motivo_perda_detalhe
             : null,
         },
       });
@@ -165,7 +172,6 @@ export function EditLeadModal({ lead, open, onOpenChange }: EditLeadModalProps) 
             descricao += ` - ${data.motivo_perda_detalhe}`;
           }
         }
-        
         await createInteracao.mutateAsync({
           lead_id: lead.id,
           tipo: "status_change",
@@ -175,23 +181,127 @@ export function EditLeadModal({ lead, open, onOpenChange }: EditLeadModalProps) 
         });
       }
 
-      // Auto-create client when lead is converted
-      if (newStatus === "Convertido" && previousStatus !== "Convertido") {
-        const enderecoParts = [lead.logradouro, lead.numero, lead.bairro].filter(Boolean);
-        await createCliente.mutateAsync({
-          nome: lead.empresa || "Sem nome",
-          cnpj: lead.cnpj || null,
-          telefone: lead.telefone || null,
-          email: lead.email || null,
-          cidade: lead.cidade || null,
-          uf: lead.uf || null,
-          cep: lead.cep || null,
-          endereco: enderecoParts.length > 0 ? enderecoParts.join(", ") : null,
-          observacoes: PENDENTE_CADASTRO_MARKER,
-          ativo: true,
-          rotina_visitas: false,
-        });
-        toast.success("Cliente pré-cadastrado na aba Clientes!");
+      // ── Sync oportunidades status ──────────────────────────────────────
+      if (previousStatus !== newStatus) {
+        // Fetch all oportunidades for this lead
+        const { data: ops } = await db
+          .from("oportunidades")
+          .select("id, status, titulo, valor_estimado, itens, vendedor")
+          .eq("lead_id", lead.id);
+
+        const oportunidades: Oportunidade[] = ops ?? [];
+        const today = new Date().toISOString().split("T")[0];
+        const orgId = profile?.organization_id;
+
+        if (newStatus === "Convertido") {
+          // Mark all non-Perdida oportunidades as Ganha + create orcamentos
+          const toGanha = oportunidades.filter((o) => o.status !== "Perdida");
+          for (const op of toGanha) {
+            await db
+              .from("oportunidades")
+              .update({ status: "Ganha", data_fechamento: today })
+              .eq("id", op.id);
+
+            // Generate an orcamento for each oportunidade ganha
+            const enderecoParts = [lead.logradouro, lead.numero, lead.bairro].filter(Boolean);
+            const clienteEndereco = enderecoParts.length > 0 ? enderecoParts.join(", ") : null;
+
+            const { data: newOrc } = await db
+              .from("orcamentos")
+              .insert({
+                lead_id: lead.id,
+                oportunidade_id: op.id,
+                organization_id: orgId,
+                cliente_nome: lead.empresa || "Sem nome",
+                cliente_cnpj: lead.cnpj || null,
+                cliente_telefone: lead.telefone || null,
+                cliente_email: lead.email || null,
+                cliente_endereco: clienteEndereco,
+                status: "Pendente",
+                status_financeiro: "pendente",
+                subtotal: op.valor_estimado || 0,
+                desconto_total: 0,
+                valor_total: op.valor_estimado || 0,
+                observacoes: `Gerado automaticamente a partir da oportunidade: ${op.titulo}`,
+              })
+              .select("id")
+              .single();
+
+            // Copy oportunidade items → orcamento_itens
+            if (newOrc?.id && Array.isArray(op.itens) && op.itens.length > 0) {
+              const orcItens = op.itens.map((item: any) => ({
+                orcamento_id: newOrc.id,
+                produto_id: item.produto_id,
+                produto_nome: item.produto_nome,
+                produto_sku: item.produto_sku,
+                unidade_medida: item.unidade_medida || "UN",
+                quantidade: item.quantidade,
+                preco_unitario: item.preco_unitario,
+                desconto_percentual: 0,
+                desconto_valor: 0,
+                valor_total: item.subtotal,
+                organization_id: orgId,
+              }));
+              await db.from("orcamento_itens").insert(orcItens);
+            }
+          }
+
+          queryClient.invalidateQueries({ queryKey: ["orcamentos"] });
+          queryClient.invalidateQueries({ queryKey: ["oportunidades", lead.id] });
+          queryClient.invalidateQueries({ queryKey: ["all-oportunidades"] });
+
+          // Auto-create client (existing logic)
+          const enderecoParts = [lead.logradouro, lead.numero, lead.bairro].filter(Boolean);
+          await createCliente.mutateAsync({
+            nome: lead.empresa || "Sem nome",
+            cnpj: lead.cnpj || null,
+            telefone: lead.telefone || null,
+            email: lead.email || null,
+            cidade: lead.cidade || null,
+            uf: lead.uf || null,
+            cep: lead.cep || null,
+            endereco: enderecoParts.length > 0 ? enderecoParts.join(", ") : null,
+            observacoes: PENDENTE_CADASTRO_MARKER,
+            ativo: true,
+            rotina_visitas: false,
+          });
+          if (toGanha.length > 0) {
+            toast.success(`${toGanha.length} oportunidade(s) ganha(s) — orçamento(s) gerado(s)!`);
+          }
+          toast.success("Cliente pré-cadastrado na aba Clientes!");
+
+        } else if (newStatus === "Perdido") {
+          // Mark all non-Ganha oportunidades as Perdida
+          const motivo = data.motivo_perda || "Não informado";
+          const toPerdida = oportunidades.filter((o) => o.status !== "Ganha");
+          if (toPerdida.length > 0) {
+            const ids = toPerdida.map((o) => o.id);
+            await db
+              .from("oportunidades")
+              .update({ status: "Perdida", motivo_perda: motivo, data_fechamento: today })
+              .in("id", ids);
+            queryClient.invalidateQueries({ queryKey: ["oportunidades", lead.id] });
+            queryClient.invalidateQueries({ queryKey: ["all-oportunidades"] });
+          }
+
+        } else {
+          // Regular status change — sync oportunidades that are still active
+          const mappedOpStatus = LEAD_STATUS_TO_OP[newStatus];
+          if (mappedOpStatus) {
+            const toSync = oportunidades.filter(
+              (o) => o.status !== "Ganha" && o.status !== "Perdida"
+            );
+            if (toSync.length > 0) {
+              const ids = toSync.map((o) => o.id);
+              await db
+                .from("oportunidades")
+                .update({ status: mappedOpStatus })
+                .in("id", ids);
+              queryClient.invalidateQueries({ queryKey: ["oportunidades", lead.id] });
+              queryClient.invalidateQueries({ queryKey: ["all-oportunidades"] });
+            }
+          }
+        }
       }
 
       toast.success("Lead atualizado com sucesso!");

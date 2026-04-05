@@ -111,7 +111,8 @@ export function OrcamentosList({ onNewOrcamento, onEditOrcamento, onViewOrcament
   };
 
   const handleOrcamentoStatusChange = (orcamento: Orcamento, newStatus: string) => {
-    updateOrcamento({ id: orcamento.id, data: { status: newStatus } });
+    const extra = newStatus === "Aprovado" ? { status_financeiro: "aguardando_pagamento" } : {};
+    updateOrcamento({ id: orcamento.id, data: { status: newStatus, ...extra } as any });
   };
 
   const handleCancelApproved = (orcamento: Orcamento) => {

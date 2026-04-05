@@ -29,6 +29,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useVendedores, useOrigens, useTiposServico } from "@/hooks/useSettings";
+import { useAllOportunidades } from "@/hooks/useOportunidades";
 import {
   format,
   parseISO,
@@ -87,6 +88,9 @@ export default function Relatorios() {
       return data;
     },
   });
+
+  // Fetch all oportunidades for metrics
+  const { data: allOportunidades = [] } = useAllOportunidades();
 
   // Filter leads by selected month/year
   const filteredLeads = useMemo(() => {
@@ -199,27 +203,116 @@ export default function Relatorios() {
       .sort((a, b) => b.count - a.count);
   }, [filteredLeads, servicosConfig]);
 
-  // Loss reasons stats
-  const lossStats = useMemo(() => {
-    const lostLeads = filteredLeads.filter((lead) => lead.status === "Perdido");
-    const counts: Record<string, number> = {};
-    
-    lostLeads.forEach((lead) => {
-      const motivo = lead.motivo_perda || "Não informado";
-      counts[motivo] = (counts[motivo] || 0) + 1;
+  // Filter oportunidades by selected month/year (based on created_at)
+  const filteredOportunidades = useMemo(() => {
+    return allOportunidades.filter((op) => {
+      const d = parseISO(op.created_at);
+      return (
+        isSameMonth(d, new Date(selectedYear, selectedMonth)) &&
+        isSameYear(d, new Date(selectedYear, selectedMonth))
+      );
     });
+  }, [allOportunidades, selectedMonth, selectedYear]);
 
+  // Lead id → origem map
+  const leadOrigemMap = useMemo(() => {
+    const m: Record<string, string> = {};
+    allLeads.forEach((l) => { m[l.id] = l.origem || "Não informado"; });
+    return m;
+  }, [allLeads]);
+
+  // Taxa de conversão: oportunidades Ganha / total × 100
+  const taxaConversao = useMemo(() => {
+    const total = filteredOportunidades.length;
+    if (total === 0) return 0;
+    const ganhas = filteredOportunidades.filter((o) => o.status === "Ganha").length;
+    return Math.round((ganhas / total) * 100);
+  }, [filteredOportunidades]);
+
+  // Funil de vendas: count by oportunidade status
+  const STATUS_ORDER: Array<{ status: string; label: string; color: string }> = [
+    { status: "Aberta",           label: "Aberta",           color: "#3B82F6" },
+    { status: "Proposta Enviada", label: "Proposta Enviada", color: "#F59E0B" },
+    { status: "Em Negociação",    label: "Em Negociação",    color: "#8B5CF6" },
+    { status: "Ganha",            label: "Ganha",            color: "#10B981" },
+    { status: "Perdida",          label: "Perdida",          color: "#EF4444" },
+  ];
+
+  const funil = useMemo(() => {
+    const counts: Record<string, number> = {};
+    filteredOportunidades.forEach((o) => {
+      counts[o.status] = (counts[o.status] || 0) + 1;
+    });
+    return STATUS_ORDER.map((s) => ({
+      status: s.label,
+      count: counts[s.status] || 0,
+      color: s.color,
+    }));
+  }, [filteredOportunidades]);
+
+  // Vendedor performance: oportunidades ganhas + valor total
+  const vendedorOpStats = useMemo(() => {
+    const stats: Record<string, { count: number; valor: number }> = {};
+    filteredOportunidades
+      .filter((o) => o.status === "Ganha")
+      .forEach((o) => {
+        const v = o.vendedor || "Não informado";
+        if (!stats[v]) stats[v] = { count: 0, valor: 0 };
+        stats[v].count += 1;
+        stats[v].valor += o.valor_estimado || 0;
+      });
+    return Object.entries(stats)
+      .map(([vendedor, s]) => ({
+        vendedor,
+        count: s.count,
+        valor: s.valor,
+        color: getVendedorColor(vendedor),
+      }))
+      .sort((a, b) => b.valor - a.valor);
+  }, [filteredOportunidades, vendedoresConfig]);
+
+  // Origem → receita: oportunidades ganhas grouped by lead origem
+  const origemReceitaStats = useMemo(() => {
+    const stats: Record<string, { count: number; valor: number }> = {};
+    filteredOportunidades
+      .filter((o) => o.status === "Ganha")
+      .forEach((o) => {
+        const origem = leadOrigemMap[o.lead_id] || "Não informado";
+        if (!stats[origem]) stats[origem] = { count: 0, valor: 0 };
+        stats[origem].count += 1;
+        stats[origem].valor += o.valor_estimado || 0;
+      });
+    return Object.entries(stats)
+      .map(([origem, s]) => ({
+        origem,
+        count: s.count,
+        valor: s.valor,
+        color: getOrigemColor(origem),
+      }))
+      .sort((a, b) => b.valor - a.valor);
+  }, [filteredOportunidades, leadOrigemMap, origensConfig]);
+
+  // Loss reasons from oportunidades perdidas
+  const lossStats = useMemo(() => {
+    const counts: Record<string, number> = {};
+    filteredOportunidades
+      .filter((o) => o.status === "Perdida")
+      .forEach((o) => {
+        const motivo = o.motivo_perda || "Não informado";
+        counts[motivo] = (counts[motivo] || 0) + 1;
+      });
     return Object.entries(counts)
-      .map(([motivo, count], index) => ({ 
-        motivo, 
+      .map(([motivo, count], index) => ({
+        motivo,
         count,
-        color: LOSS_COLORS[index % LOSS_COLORS.length]
+        color: LOSS_COLORS[index % LOSS_COLORS.length],
       }))
       .sort((a, b) => b.count - a.count);
-  }, [filteredLeads]);
+  }, [filteredOportunidades]);
 
   const totalLeads = filteredLeads.length;
-  const totalLostLeads = filteredLeads.filter((lead) => lead.status === "Perdido").length;
+  const totalLostLeads = filteredOportunidades.filter((o) => o.status === "Perdida").length;
+  const totalOpPerdidas = totalLostLeads;
 
   // Generate month/year options
   const months = Array.from({ length: 12 }, (_, i) => ({
@@ -309,18 +402,20 @@ export default function Relatorios() {
                 <p className="text-xs text-muted-foreground">No período selecionado</p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="border-emerald-500/30 bg-emerald-500/5">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Vendedores Ativos
+                <CardTitle className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
+                  Taxa de Conversão
                 </CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                <TrendingUp className="h-4 w-4 text-emerald-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
-                  {vendedorStats.filter((v) => v.vendedor !== "Não atribuído").length}
+                <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">
+                  {taxaConversao}%
                 </div>
-                <p className="text-xs text-muted-foreground">Com leads atribuídos</p>
+                <p className="text-xs text-muted-foreground">
+                  {filteredOportunidades.filter((o) => o.status === "Ganha").length} ganhas de {filteredOportunidades.length}
+                </p>
               </CardContent>
             </Card>
             <Card>
@@ -340,12 +435,12 @@ export default function Relatorios() {
             <Card className="border-destructive/30 bg-destructive/5">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-destructive">
-                  Leads Perdidos
+                  Oportunidades Perdidas
                 </CardTitle>
                 <AlertTriangle className="h-4 w-4 text-destructive" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-destructive">{totalLostLeads}</div>
+                <div className="text-2xl font-bold text-destructive">{totalOpPerdidas}</div>
                 <p className="text-xs text-muted-foreground">No período selecionado</p>
               </CardContent>
             </Card>
@@ -353,7 +448,7 @@ export default function Relatorios() {
 
           {/* Charts Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Desempenho por Vendedor */}
+            {/* Desempenho por Vendedor — oportunidades ganhas */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -366,24 +461,20 @@ export default function Relatorios() {
                   <div className="h-[300px] flex items-center justify-center text-muted-foreground">
                     Carregando...
                   </div>
-                ) : vendedorStats.length === 0 ? (
+                ) : vendedorOpStats.length === 0 ? (
                   <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                    Nenhum dado disponível
+                    Nenhuma oportunidade ganha no período
                   </div>
                 ) : (
                   <ChartContainer config={chartConfig} className="h-[300px] w-full">
                     <BarChart
-                      data={vendedorStats}
+                      data={vendedorOpStats}
                       layout="horizontal"
                       margin={{ left: 10, right: 10, top: 20, bottom: 40 }}
                     >
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        horizontal={true}
-                        vertical={false}
-                      />
-                      <XAxis 
-                        dataKey="vendedor" 
+                      <CartesianGrid strokeDasharray="3 3" horizontal vertical={false} />
+                      <XAxis
+                        dataKey="vendedor"
                         type="category"
                         tick={{ fontSize: 11 }}
                         angle={-35}
@@ -392,9 +483,16 @@ export default function Relatorios() {
                         interval={0}
                       />
                       <YAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} />
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                      <Bar dataKey="count" radius={[4, 4, 0, 0]} name="Leads" barSize={32}>
-                        {vendedorStats.map((entry, index) => (
+                      <ChartTooltip
+                        content={<ChartTooltipContent />}
+                        formatter={(value, name) =>
+                          name === "valor"
+                            ? [new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(value)), "Receita"]
+                            : [value, "Oportunidades ganhas"]
+                        }
+                      />
+                      <Bar dataKey="count" radius={[4, 4, 0, 0]} name="Ganhas" barSize={32}>
+                        {vendedorOpStats.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Bar>
@@ -520,12 +618,12 @@ export default function Relatorios() {
               </CardContent>
             </Card>
 
-            {/* Serviços Mais Convertidos */}
+            {/* Funil de Oportunidades */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <TrendingUp className="h-5 w-5 text-emerald-500" />
-                  Serviços Mais Convertidos
+                  Funil de Oportunidades
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -533,38 +631,34 @@ export default function Relatorios() {
                   <div className="h-[300px] flex items-center justify-center text-muted-foreground">
                     Carregando...
                   </div>
-                ) : servicoConvertidoStats.length === 0 ? (
+                ) : filteredOportunidades.length === 0 ? (
                   <div className="h-[300px] flex items-center justify-center text-muted-foreground">
                     <div className="text-center">
                       <TrendingUp className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p>Nenhuma conversão no período</p>
+                      <p>Nenhuma oportunidade no período</p>
                     </div>
                   </div>
                 ) : (
                   <ChartContainer config={chartConfig} className="h-[300px] w-full">
                     <BarChart
-                      data={servicoConvertidoStats}
+                      data={funil}
                       layout="horizontal"
-                      margin={{ left: 10, right: 10, top: 20, bottom: 60 }}
+                      margin={{ left: 10, right: 10, top: 20, bottom: 50 }}
                     >
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        horizontal={true}
-                        vertical={false}
-                      />
-                      <XAxis 
-                        dataKey="servico" 
+                      <CartesianGrid strokeDasharray="3 3" horizontal vertical={false} />
+                      <XAxis
+                        dataKey="status"
                         type="category"
                         tick={{ fontSize: 10 }}
-                        angle={-45}
+                        angle={-35}
                         textAnchor="end"
-                        height={80}
+                        height={70}
                         interval={0}
                       />
                       <YAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} />
                       <ChartTooltip content={<ChartTooltipContent />} />
-                      <Bar dataKey="count" radius={[4, 4, 0, 0]} name="Convertidos" barSize={28}>
-                        {servicoConvertidoStats.map((entry, index) => (
+                      <Bar dataKey="count" radius={[4, 4, 0, 0]} name="Oportunidades" barSize={36}>
+                        {funil.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Bar>
@@ -662,7 +756,7 @@ export default function Relatorios() {
                   <div className="h-[300px] flex items-center justify-center text-muted-foreground">
                     <div className="text-center">
                       <AlertTriangle className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p>Nenhum lead perdido no período</p>
+                      <p>Nenhuma oportunidade perdida no período</p>
                     </div>
                   </div>
                 ) : (
@@ -707,7 +801,7 @@ export default function Relatorios() {
                               {item.count}
                             </span>
                             <span className="text-xs text-muted-foreground">
-                              ({Math.round((item.count / totalLostLeads) * 100)}%)
+                              ({totalOpPerdidas > 0 ? Math.round((item.count / totalOpPerdidas) * 100) : 0}%)
                             </span>
                           </div>
                         </div>

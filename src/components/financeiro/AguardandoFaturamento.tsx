@@ -35,7 +35,11 @@ export function AguardandoFaturamento({ caixaId }: AguardandoFaturamentoProps) {
   const [canceling, setCanceling] = useState(false);
 
   const pendentes = orcamentos?.filter(
-    (o) => o.status === "Aprovado" && (o.status_financeiro === "pendente" || !o.status_financeiro)
+    (o) =>
+      o.status === "Aprovado" &&
+      o.status_financeiro !== "pago" &&
+      o.status_financeiro !== "conciliado" &&
+      o.status_financeiro !== "cancelado"
   ) || [];
 
   const formatCurrency = (value: number) =>

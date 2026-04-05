@@ -88,34 +88,31 @@ export function EfetivarRecebimentoModal({
       // Format date as ISO with time to ensure correct filter matching
       const dataISO = new Date(dataRecebimento + "T12:00:00").toISOString();
 
-      // Update the existing movimentação linked to this orcamento
-      const { data: movExistente } = await supabase
+      // Create cash movement entry for this payment
+      const { error: movError } = await supabase
         .from("movimentacoes_caixa")
-        .select("id")
-        .eq("orcamento_id", orcamento.id)
-        .maybeSingle();
+        .insert({
+          tipo: "Entrada",
+          valor: orcamento.valor_total,
+          categoria_id: finalCategoriaId,
+          categoria_nome: finalCategoriaNome,
+          forma_pagamento: formaPagamento,
+          descricao: `Recebimento do orçamento #${String(orcamento.numero_orcamento).padStart(5, "0")} — ${orcamento.cliente_nome || "Cliente"}`,
+          data_hora: dataISO,
+          data_movimentacao: dataRecebimento,
+          usuario_email: user?.email || null,
+          realizado_por: user?.id || null,
+          orcamento_id: orcamento.id,
+          caixa_id: caixaId || null,
+          organization_id: profile.organization_id,
+        });
 
-      if (movExistente) {
-        const { error: updateError } = await supabase
-          .from("movimentacoes_caixa")
-          .update({
-            categoria_id: finalCategoriaId,
-            categoria_nome: finalCategoriaNome,
-            forma_pagamento: formaPagamento,
-            data_hora: dataISO,
-            data_movimentacao: dataRecebimento,
-            caixa_id: caixaId || null,
-            organization_id: profile.organization_id,
-          })
-          .eq("id", movExistente.id);
+      if (movError) throw movError;
 
-        if (updateError) throw updateError;
-      }
-
-      // Update orcamento status_financeiro
+      // Mark orcamento as paid
       await updateOrcamento.mutateAsync({
         id: orcamento.id,
-        data: { status_financeiro: "conciliado" } as any,
+        data: { status_financeiro: "pago" } as any,
       });
 
       // Invalidate all relevant queries
