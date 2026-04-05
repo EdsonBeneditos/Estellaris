@@ -112,11 +112,15 @@ export function LeadsTableModern({ leads, isLoading }: LeadsTableModernProps) {
                       {lead.cnpj && (
                         <p className="text-xs text-[#4B5563] mt-0.5 font-mono">{lead.cnpj}</p>
                       )}
-                      {lead.tipo_servico && (
-                        <Badge variant="secondary" className="mt-1 text-xs font-normal px-1.5 py-0">
-                          {lead.tipo_servico}
-                        </Badge>
-                      )}
+                      {(() => {
+                        const a = (lead as any).tipos_servico;
+                        const servicos: string[] = Array.isArray(a) && a.length > 0 ? a : lead.tipo_servico ? [lead.tipo_servico] : [];
+                        return servicos.length > 0 ? (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {servicos.map((s) => <Badge key={s} variant="secondary" className="text-xs font-normal px-1.5 py-0">{s}</Badge>)}
+                          </div>
+                        ) : null;
+                      })()}
                     </div>
                     <Badge variant="outline" className={statusStyles[lead.status || ""] || ""}>
                       {lead.status || "Novo"}
@@ -149,11 +153,15 @@ export function LeadsTableModern({ leads, isLoading }: LeadsTableModernProps) {
                     {lead.cnpj && (
                       <p className="text-xs text-[#4B5563] mt-0.5 font-mono truncate">{lead.cnpj}</p>
                     )}
-                    {lead.tipo_servico && (
-                      <Badge variant="secondary" className="mt-1 text-xs font-normal px-1.5 py-0 max-w-full truncate">
-                        {lead.tipo_servico}
-                      </Badge>
-                    )}
+                    {(() => {
+                      const a = (lead as any).tipos_servico;
+                      const servicos: string[] = Array.isArray(a) && a.length > 0 ? a : lead.tipo_servico ? [lead.tipo_servico] : [];
+                      return servicos.length > 0 ? (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {servicos.map((s) => <Badge key={s} variant="secondary" className="text-xs font-normal px-1.5 py-0">{s}</Badge>)}
+                        </div>
+                      ) : null;
+                    })()}
                   </div>
 
                   {/* Contato */}

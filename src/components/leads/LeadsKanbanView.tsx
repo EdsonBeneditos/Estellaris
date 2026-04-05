@@ -118,11 +118,15 @@ export function LeadsKanbanView({ leads, isLoading }: LeadsKanbanViewProps) {
                           <p className="text-sm font-semibold text-foreground leading-tight line-clamp-2">
                             {lead.empresa || "—"}
                           </p>
-                          {lead.tipo_servico && (
-                            <Badge variant="secondary" className="mt-1 text-xs font-normal px-1.5 py-0 max-w-full truncate">
-                              {lead.tipo_servico}
-                            </Badge>
-                          )}
+                          {(() => {
+                            const a = (lead as any).tipos_servico;
+                            const servicos: string[] = Array.isArray(a) && a.length > 0 ? a : lead.tipo_servico ? [lead.tipo_servico] : [];
+                            return servicos.length > 0 ? (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {servicos.map((s) => <Badge key={s} variant="secondary" className="text-xs font-normal px-1.5 py-0">{s}</Badge>)}
+                              </div>
+                            ) : null;
+                          })()}
                         </div>
                       </div>
 

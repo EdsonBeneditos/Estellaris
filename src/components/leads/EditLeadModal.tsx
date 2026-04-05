@@ -58,7 +58,7 @@ import {
   useLeadInteracoes,
   useCreateInteracao,
 } from "@/hooks/useLeadInteracoes";
-import { useActiveVendedores } from "@/hooks/useSettings";
+import { useActiveVendedores, useActiveTiposServico } from "@/hooks/useSettings";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useCreateCliente } from "@/hooks/useClientes";
 import { PENDENTE_CADASTRO_MARKER } from "@/hooks/usePendingClientesCount";
@@ -79,6 +79,7 @@ const formSchema = z.object({
   proximo_passo: z.string().optional(),
   motivo_perda: z.string().optional(),
   motivo_perda_detalhe: z.string().optional(),
+  tipos_servico: z.array(z.string()).optional(),
 }).refine((data) => {
   // If status is "Perdido", motivo_perda is required
   if (data.status === "Perdido") {
@@ -113,6 +114,7 @@ export function EditLeadModal({ lead, open, onOpenChange }: EditLeadModalProps) 
   const createInteracao = useCreateInteracao();
   const createCliente = useCreateCliente();
   const { data: vendedores = [] } = useActiveVendedores();
+  const { data: tiposServico = [] } = useActiveTiposServico();
   const { data: interacoes = [], isLoading: interacoesLoading } =
     useLeadInteracoes(lead?.id || "");
   const { canDeleteLeads } = usePermissions();
@@ -130,6 +132,12 @@ export function EditLeadModal({ lead, open, onOpenChange }: EditLeadModalProps) 
 
   useEffect(() => {
     if (lead) {
+      // Merge legacy tipo_servico into tipos_servico array
+      const leadAny = lead as any;
+      const existingArray: string[] = Array.isArray(leadAny.tipos_servico) && leadAny.tipos_servico.length > 0
+        ? leadAny.tipos_servico
+        : lead.tipo_servico ? [lead.tipo_servico] : [];
+
       form.reset({
         status: lead.status || "Novo",
         prioridade: lead.prioridade || "",
@@ -139,6 +147,7 @@ export function EditLeadModal({ lead, open, onOpenChange }: EditLeadModalProps) 
         proximo_passo: lead.proximo_passo || "",
         motivo_perda: lead.motivo_perda || "",
         motivo_perda_detalhe: lead.motivo_perda_detalhe || "",
+        tipos_servico: existingArray,
       });
     }
   }, [lead, form]);
@@ -151,6 +160,7 @@ export function EditLeadModal({ lead, open, onOpenChange }: EditLeadModalProps) 
       const newStatus = data.status;
       const db = supabase as any;
 
+      const tiposArray = data.tipos_servico ?? [];
       await updateLead.mutateAsync({
         id: lead.id,
         data: {
@@ -160,7 +170,10 @@ export function EditLeadModal({ lead, open, onOpenChange }: EditLeadModalProps) 
           motivo_perda_detalhe: data.status === "Perdido" && data.motivo_perda === "Outros"
             ? data.motivo_perda_detalhe
             : null,
-        },
+          // keep legacy field in sync with first selection
+          tipo_servico: tiposArray[0] ?? null,
+          tipos_servico: tiposArray,
+        } as any,
       });
 
       // Create interaction record if status changed
@@ -358,11 +371,21 @@ export function EditLeadModal({ lead, open, onOpenChange }: EditLeadModalProps) 
               {lead.cnpj && (
                 <p className="text-sm text-muted-foreground">{lead.cnpj}</p>
               )}
-              {lead.tipo_servico && (
-                <Badge variant="secondary" className="mt-1 text-xs font-normal w-fit">
-                  {lead.tipo_servico}
-                </Badge>
-              )}
+              {(() => {
+                const leadAny = lead as any;
+                const servicos: string[] = Array.isArray(leadAny.tipos_servico) && leadAny.tipos_servico.length > 0
+                  ? leadAny.tipos_servico
+                  : lead.tipo_servico ? [lead.tipo_servico] : [];
+                return servicos.length > 0 ? (
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {servicos.map((s) => (
+                      <Badge key={s} variant="secondary" className="text-xs font-normal">
+                        {s}
+                      </Badge>
+                    ))}
+                  </div>
+                ) : null;
+              })()}
             </div>
             {canDeleteLeads && (
               <AlertDialog>
@@ -666,6 +689,44 @@ export function EditLeadModal({ lead, open, onOpenChange }: EditLeadModalProps) 
                     </FormItem>
                   )}
                 />
+
+                {/* Tipos de Serviço */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Tipo(s) de Serviço</label>
+                  <div className="flex flex-wrap gap-2">
+                    {tiposServico.map((t) => {
+                      const selected = (form.watch("tipos_servico") ?? []).includes(t.nome);
+                      return (
+                        <button
+                          key={t.id}
+                          type="button"
+                          disabled={isConcluded}
+                          onClick={() => {
+                            const current = form.getValues("tipos_servico") ?? [];
+                            form.setValue(
+                              "tipos_servico",
+                              selected
+                                ? current.filter((s) => s !== t.nome)
+                                : [...current, t.nome],
+                              { shouldDirty: true }
+                            );
+                          }}
+                          className={cn(
+                            "px-3 py-1.5 rounded-md text-sm border transition-colors",
+                            selected
+                              ? "bg-primary/10 border-primary text-primary font-medium"
+                              : "border-border text-muted-foreground hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
+                          )}
+                        >
+                          {t.nome}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {(form.watch("tipos_servico") ?? []).length === 0 && (
+                    <p className="text-xs text-muted-foreground">Nenhum serviço selecionado</p>
+                  )}
+                </div>
 
                 {/* Adicionar Observação */}
                 <div className="space-y-2">
