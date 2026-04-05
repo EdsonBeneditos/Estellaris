@@ -34,8 +34,8 @@ export const OrcamentoPreview = forwardRef<HTMLDivElement, OrcamentoPreviewProps
     return (
       <div
         ref={ref}
-        className="mx-auto w-full max-w-[210mm] bg-white p-8 text-slate-900 print:p-12"
-        style={{ minHeight: "297mm" }}
+        className="mx-auto w-full max-w-[210mm] bg-white text-slate-900"
+        style={{ minHeight: "297mm", padding: "16mm 14mm" }}
       >
         {/* Custom Header Text */}
         {orgData?.orcamento_cabecalho && (

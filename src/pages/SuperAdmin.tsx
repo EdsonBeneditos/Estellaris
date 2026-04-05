@@ -10,12 +10,16 @@ import {
   AlertTriangle,
   Check,
   Eye,
+  EyeOff,
   Settings2,
   Sparkles,
   Medal,
   Award,
   Trophy,
   FileText,
+  Copy,
+  KeyRound,
+  RefreshCw,
 } from "lucide-react";
 import { GestaoFiscal } from "@/components/super-admin/GestaoFiscal";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -45,6 +49,7 @@ import {
   useAllOrganizations,
   useCreateOrganization,
   useInviteUser,
+  useCreateUser,
 } from "@/hooks/useSuperAdmin";
 import { useSimulation } from "@/contexts/SimulationContext";
 import { useNavigate } from "react-router-dom";
@@ -57,6 +62,7 @@ export default function SuperAdmin() {
   const { data: organizations = [], isLoading } = useAllOrganizations();
   const createOrg = useCreateOrganization();
   const inviteUser = useInviteUser();
+  const createUser = useCreateUser();
   const { startSimulation } = useSimulation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -72,6 +78,15 @@ export default function SuperAdmin() {
   // Responsible person fields
   const [responsavelNome, setResponsavelNome] = useState("");
   const [responsavelEmail, setResponsavelEmail] = useState("");
+  const [responsavelSenha, setResponsavelSenha] = useState("");
+  const [showResponsavelSenha, setShowResponsavelSenha] = useState(false);
+
+  // Credentials shown in the success overlay after org+user creation
+  const [orgCreatedCredentials, setOrgCreatedCredentials] = useState<{
+    orgNome: string;
+    email: string;
+    password: string;
+  } | null>(null);
 
   // Edit Org State
   const [editingOrg, setEditingOrg] = useState<{
@@ -83,12 +98,19 @@ export default function SuperAdmin() {
   const [editPlanTemplate, setEditPlanTemplate] = useState<PlanType | "custom">("custom");
   const [isSavingModules, setIsSavingModules] = useState(false);
 
-  // Invite User State
-  const [isInviteOpen, setIsInviteOpen] = useState(false);
+  // Create User State
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteNome, setInviteNome] = useState("");
+  const [inviteSenha, setInviteSenha] = useState("");
   const [inviteOrgId, setInviteOrgId] = useState("");
   const [inviteRole, setInviteRole] = useState<"admin" | "gerente" | "vendedor">("vendedor");
+  const [createdCredentials, setCreatedCredentials] = useState<{
+    email: string;
+    password: string;
+    nome: string;
+    orgNome: string;
+    role: string;
+  } | null>(null);
 
   // Success animation state
   const [showSuccess, setShowSuccess] = useState(false);
@@ -150,28 +172,50 @@ export default function SuperAdmin() {
     }
   };
 
-  const handleInviteUser = async () => {
-    if (!inviteEmail.trim() || !inviteOrgId) {
-      toast.error("E-mail e organização são obrigatórios");
+  const handleCreateUser = async () => {
+    if (!inviteEmail.trim() || !inviteNome.trim() || !inviteSenha.trim() || !inviteOrgId) {
+      toast.error("Preencha todos os campos obrigatórios");
+      return;
+    }
+    if (inviteSenha.length < 6) {
+      toast.error("A senha deve ter no mínimo 6 caracteres");
       return;
     }
 
     try {
-      await inviteUser.mutateAsync({
-        email: inviteEmail,
-        organizationId: inviteOrgId,
+      const result = await createUser.mutateAsync({
+        email: inviteEmail.trim(),
+        password: inviteSenha,
+        nome: inviteNome.trim(),
+        organization_id: inviteOrgId,
         role: inviteRole,
-        nome: inviteNome || undefined,
       });
-      toast.success(`Convite enviado para ${inviteEmail}!`);
-      setIsInviteOpen(false);
+
+      const orgNome = organizations.find((o) => o.id === inviteOrgId)?.nome || inviteOrgId;
+
+      setCreatedCredentials({
+        email: inviteEmail.trim(),
+        password: inviteSenha,
+        nome: inviteNome.trim(),
+        orgNome,
+        role: inviteRole,
+      });
+
       setInviteEmail("");
       setInviteNome("");
+      setInviteSenha("");
       setInviteOrgId("");
       setInviteRole("vendedor");
+
+      toast.success(result.message || "Usuário criado com sucesso!");
     } catch (error: any) {
-      toast.error(error.message || "Erro ao enviar convite");
+      toast.error(error.message || "Erro ao criar usuário");
     }
+  };
+
+  const handleCopyCredentials = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success("Copiado!");
   };
 
   const handleSimulateAccess = (org: { id: string; nome: string }) => {
@@ -629,16 +673,85 @@ export default function SuperAdmin() {
           <GestaoFiscal organizations={organizations as any} />
         </TabsContent>
 
-        {/* Invite Users Tab */}
+        {/* Create Users Tab */}
         <TabsContent value="users" className="space-y-4">
+          {/* Credentials card shown after successful creation */}
+          {createdCredentials && (
+            <Card className="border-emerald-500/40 bg-emerald-50 dark:bg-emerald-950/30">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 text-base">
+                  <Check className="h-5 w-5" />
+                  Usuário criado! Anote as credenciais de acesso
+                </CardTitle>
+                <CardDescription className="text-emerald-600 dark:text-emerald-500">
+                  Passe estas informações ao cliente via WhatsApp ou outro canal seguro.
+                  Após fechar este card você não verá a senha novamente.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="rounded-lg border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-zinc-900 p-4 space-y-3 font-mono text-sm">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-muted-foreground shrink-0">Nome:</span>
+                    <span className="font-semibold flex-1 text-right">{createdCredentials.nome}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-muted-foreground shrink-0">Organização:</span>
+                    <span className="font-semibold flex-1 text-right">{createdCredentials.orgNome}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-muted-foreground shrink-0">Cargo:</span>
+                    <span className="font-semibold flex-1 text-right capitalize">{createdCredentials.role}</span>
+                  </div>
+                  <div className="border-t pt-3 flex items-center justify-between gap-3">
+                    <span className="text-muted-foreground shrink-0">E-mail:</span>
+                    <div className="flex items-center gap-2 flex-1 justify-end">
+                      <span className="font-semibold">{createdCredentials.email}</span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={() => handleCopyCredentials(createdCredentials.email)}
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-muted-foreground shrink-0">Senha:</span>
+                    <div className="flex items-center gap-2 flex-1 justify-end">
+                      <span className="font-semibold tracking-widest">{createdCredentials.password}</span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={() => handleCopyCredentials(createdCredentials.password)}
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCreatedCredentials(null)}
+                  >
+                    Fechar
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <Card className="border-zinc-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-zinc-950 dark:text-zinc-50">
                 <UserPlus className="h-5 w-5" />
-                Convidar Novo Usuário
+                Criar Novo Usuário
               </CardTitle>
               <CardDescription>
-                Envie um convite por e-mail para adicionar um usuário a uma organização
+                Cria o usuário diretamente com e-mail e senha — sem envio de e-mail. O acesso fica disponível imediatamente.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -654,14 +767,32 @@ export default function SuperAdmin() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="invNome">Nome</Label>
+                  <Label htmlFor="invNome">Nome completo *</Label>
                   <Input
                     id="invNome"
-                    placeholder="Nome do usuário"
+                    placeholder="Ex: João Silva"
                     value={inviteNome}
                     onChange={(e) => setInviteNome(e.target.value)}
                   />
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="invSenha" className="flex items-center gap-2">
+                  <KeyRound className="h-4 w-4" />
+                  Senha temporária *
+                </Label>
+                <Input
+                  id="invSenha"
+                  type="text"
+                  placeholder="Mínimo 6 caracteres"
+                  value={inviteSenha}
+                  onChange={(e) => setInviteSenha(e.target.value)}
+                  className="font-mono"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Crie uma senha inicial. O usuário poderá alterá-la após o primeiro acesso.
+                </p>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
@@ -712,16 +843,16 @@ export default function SuperAdmin() {
 
               <div className="flex justify-end">
                 <Button
-                  onClick={handleInviteUser}
-                  disabled={inviteUser.isPending || !inviteEmail || !inviteOrgId}
+                  onClick={handleCreateUser}
+                  disabled={createUser.isPending || !inviteEmail || !inviteNome || !inviteSenha || !inviteOrgId}
                   className="gap-2"
                 >
-                  {inviteUser.isPending ? (
-                    "Enviando..."
+                  {createUser.isPending ? (
+                    "Criando usuário..."
                   ) : (
                     <>
                       <UserPlus className="h-4 w-4" />
-                      Enviar Convite
+                      Criar Usuário
                     </>
                   )}
                 </Button>
@@ -729,12 +860,11 @@ export default function SuperAdmin() {
             </CardContent>
           </Card>
 
-          <Alert className="border-blue-500/30 bg-blue-500/10">
-            <Shield className="h-4 w-4 text-blue-500" />
-            <AlertDescription className="text-blue-700 dark:text-blue-300">
-              O usuário receberá um e-mail com link para definir sua senha e acessar o
-              sistema. Ele será automaticamente vinculado à organização selecionada com
-              o cargo definido.
+          <Alert className="border-amber-500/30 bg-amber-500/10">
+            <Shield className="h-4 w-4 text-amber-500" />
+            <AlertDescription className="text-amber-700 dark:text-amber-300">
+              Nenhum e-mail é enviado. O usuário é criado com acesso imediato usando as credenciais
+              informadas. Anote a senha antes de fechar o card de confirmação.
             </AlertDescription>
           </Alert>
         </TabsContent>

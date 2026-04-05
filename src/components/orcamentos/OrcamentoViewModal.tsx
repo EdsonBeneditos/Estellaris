@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { OrcamentoPreview } from "./OrcamentoPreview";
 import { Orcamento, useOrcamentoItens } from "@/hooks/useOrcamentos";
+import { useCurrentOrganization } from "@/hooks/useOrganization";
 import { toast } from "sonner";
 
 interface OrcamentoViewModalProps {
@@ -22,8 +23,9 @@ interface OrcamentoViewModalProps {
 export function OrcamentoViewModal({ orcamento, open, onOpenChange }: OrcamentoViewModalProps) {
   const previewRef = useRef<HTMLDivElement>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  
+
   const { data: items = [], isLoading } = useOrcamentoItens(orcamento?.id || null);
+  const { data: organization } = useCurrentOrganization();
 
   const handlePrint = () => {
     window.print();
@@ -103,7 +105,18 @@ export function OrcamentoViewModal({ orcamento, open, onOpenChange }: OrcamentoV
             </div>
           ) : (
             <div className="shadow-lg print:shadow-none">
-              <OrcamentoPreview ref={previewRef} orcamento={orcamento} items={items} />
+              <OrcamentoPreview
+                ref={previewRef}
+                orcamento={orcamento}
+                items={items}
+                orgData={organization ? {
+                  nome: organization.nome,
+                  cnpj: organization.cnpj || undefined,
+                  logo_url: (organization as any).orcamento_logo_url || undefined,
+                  orcamento_cabecalho: (organization as any).orcamento_cabecalho || undefined,
+                  orcamento_rodape: (organization as any).orcamento_rodape || undefined,
+                } : null}
+              />
             </div>
           )}
         </div>

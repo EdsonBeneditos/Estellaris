@@ -299,6 +299,43 @@ export function ProdutoModal({ open, onOpenChange, produto, defaultGrupoId }: Pr
               )}
             />
 
+            <FormField
+              control={form.control}
+              name="grupo_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Grupo / Departamento</FormLabel>
+                  <Select
+                    onValueChange={(value) => {
+                      const newGrupoId = value === "none" ? null : value;
+                      field.onChange(newGrupoId);
+                      // Auto-fill SKU for new products when group is selected
+                      if (!produto && newGrupoId) {
+                        const autoSku = generateChildSku(newGrupoId);
+                        if (autoSku) form.setValue("sku", autoSku);
+                      }
+                    }}
+                    value={field.value || "none"}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione um grupo" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="none">Sem grupo</SelectItem>
+                      {grupos.map((grupo) => (
+                        <SelectItem key={grupo.id} value={grupo.id}>
+                          {grupo.nome} ({grupo.numero_referencia})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -444,43 +481,6 @@ export function ProdutoModal({ open, onOpenChange, produto, defaultGrupoId }: Pr
                       {...field}
                     />
                   </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="grupo_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Grupo / Departamento</FormLabel>
-                  <Select
-                    onValueChange={(value) => {
-                      const newGrupoId = value === "none" ? null : value;
-                      field.onChange(newGrupoId);
-                      // Auto-fill SKU for new products when group is selected
-                      if (!produto && newGrupoId) {
-                        const autoSku = generateChildSku(newGrupoId);
-                        if (autoSku) form.setValue("sku", autoSku);
-                      }
-                    }}
-                    value={field.value || "none"}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione um grupo" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="none">Sem grupo</SelectItem>
-                      {grupos.map((grupo) => (
-                        <SelectItem key={grupo.id} value={grupo.id}>
-                          {grupo.nome} ({grupo.numero_referencia})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                   <FormMessage />
                 </FormItem>
               )}

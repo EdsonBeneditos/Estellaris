@@ -92,3 +92,37 @@ export function useInviteUser() {
     },
   });
 }
+
+export function useCreateUser() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: {
+      email: string;
+      password: string;
+      nome: string;
+      organization_id?: string; // required for super admin, omit for org admin (backend uses caller's org)
+      role: "admin" | "gerente" | "vendedor";
+    }) => {
+      const { data: result, error } = await supabase.functions.invoke("create-user", {
+        body: data,
+      });
+
+      if (error) throw error;
+      if (result?.error) throw new Error(result.error);
+      return result as {
+        success: boolean;
+        userId: string;
+        email: string;
+        nome: string;
+        id_nome: string;
+        role: string;
+        organization_id: string;
+        message: string;
+      };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["organization-members"] });
+    },
+  });
+}

@@ -181,7 +181,7 @@ export function AppSidebar() {
                         </Badge>
                       )}
                       {item.url === "/clientes" && pendingClientes > 0 && (
-                        <Badge className="shrink-0 group-data-[collapsible=icon]:hidden ml-auto h-5 min-w-5 px-1.5 text-[10px] bg-emerald-600 text-white border-0 rounded-full">
+                        <Badge className="shrink-0 group-data-[collapsible=icon]:hidden ml-auto h-5 min-w-5 px-1 text-[10px] bg-emerald-600 text-white border-0 rounded-full inline-flex items-center justify-center leading-none">
                           {pendingClientes}
                         </Badge>
                       )}

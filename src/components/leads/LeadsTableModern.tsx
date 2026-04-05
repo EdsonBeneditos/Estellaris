@@ -132,7 +132,7 @@ export function LeadsTableModern({ leads, isLoading }: LeadsTableModernProps) {
                       </div>
                       <span className="font-semibold text-sm">{lead.meio_contato || "—"}</span>
                     </div>
-                    <ReturnBadge date={lead.data_retorno} />
+                    <ReturnBadge date={lead.data_retorno} status={lead.status} />
                   </div>
                 </div>
 
@@ -179,7 +179,7 @@ export function LeadsTableModern({ leads, isLoading }: LeadsTableModernProps) {
 
                   {/* Retorno */}
                   <div>
-                    <ReturnBadge date={lead.data_retorno} />
+                    <ReturnBadge date={lead.data_retorno} status={lead.status} />
                   </div>
                 </div>
               </div>

@@ -10,7 +10,9 @@ import {
   Building2,
   AlertCircle,
   Clock,
-  Settings,
+  KeyRound,
+  Copy,
+  Check,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -53,6 +55,7 @@ import {
   useRemoveOrganizationMember,
   useIsOrgAdmin,
 } from "@/hooks/useOrganization";
+import { useCreateUser } from "@/hooks/useSuperAdmin";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -81,9 +84,21 @@ export default function Equipe() {
   const removeMember = useRemoveOrganizationMember();
   const isAdmin = useIsOrgAdmin();
 
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState<"vendedor" | "gerente" | "admin">("vendedor");
-  const [isInviteOpen, setIsInviteOpen] = useState(false);
+  const createUser = useCreateUser();
+
+  // Add member dialog state
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [memberEmail, setMemberEmail] = useState("");
+  const [memberNome, setMemberNome] = useState("");
+  const [memberSenha, setMemberSenha] = useState("");
+  const [memberRole, setMemberRole] = useState<"gerente" | "vendedor">("vendedor");
+
+  // Credentials shown after successful creation
+  const [createdCredentials, setCreatedCredentials] = useState<{
+    email: string;
+    password: string;
+    nome: string;
+  } | null>(null);
 
   // Access control modal state
   const [accessModalOpen, setAccessModalOpen] = useState(false);
@@ -111,12 +126,46 @@ export default function Equipe() {
     }
   };
 
-  const handleInvite = async () => {
-    toast.info(
-      "Para adicionar novos membros, crie o usuário no Supabase Dashboard e depois adicione o perfil aqui."
-    );
-    setIsInviteOpen(false);
-    setInviteEmail("");
+  const handleCreateMember = async () => {
+    if (!memberEmail.trim() || !memberNome.trim() || !memberSenha.trim()) {
+      toast.error("Preencha todos os campos obrigatórios");
+      return;
+    }
+    if (memberSenha.length < 6) {
+      toast.error("A senha deve ter no mínimo 6 caracteres");
+      return;
+    }
+
+    try {
+      // organization_id is omitted — the Edge Function will use the caller's own org
+      await createUser.mutateAsync({
+        email: memberEmail.trim(),
+        password: memberSenha,
+        nome: memberNome.trim(),
+        role: memberRole,
+      });
+
+      setCreatedCredentials({
+        email: memberEmail.trim(),
+        password: memberSenha,
+        nome: memberNome.trim(),
+      });
+
+      setIsAddOpen(false);
+      setMemberEmail("");
+      setMemberNome("");
+      setMemberSenha("");
+      setMemberRole("vendedor");
+
+      toast.success("Membro criado com sucesso!");
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao criar membro");
+    }
+  };
+
+  const handleCopyCredential = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success("Copiado!");
   };
 
   const openAccessModal = (member: any) => {
@@ -190,64 +239,153 @@ export default function Equipe() {
         </div>
 
         {isAdmin && (
-          <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
+          <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
             <DialogTrigger asChild>
               <Button className="gap-2">
                 <UserPlus className="h-4 w-4" />
-                Convidar Membro
+                Adicionar Membro
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Convidar Novo Membro</DialogTitle>
+                <DialogTitle>Adicionar Novo Membro</DialogTitle>
                 <DialogDescription>
-                  Adicione um novo membro à sua organização
+                  Cria o acesso imediatamente, sem envio de e-mail. Anote as credenciais para repassar ao novo membro.
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="memberEmail">E-mail *</Label>
+                    <Input
+                      id="memberEmail"
+                      type="email"
+                      placeholder="email@exemplo.com"
+                      value={memberEmail}
+                      onChange={(e) => setMemberEmail(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="memberNome">Nome completo *</Label>
+                    <Input
+                      id="memberNome"
+                      placeholder="Ex: João Silva"
+                      value={memberNome}
+                      onChange={(e) => setMemberNome(e.target.value)}
+                    />
+                  </div>
+                </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email">E-mail</Label>
+                  <Label htmlFor="memberSenha" className="flex items-center gap-2">
+                    <KeyRound className="h-4 w-4" />
+                    Senha temporária *
+                  </Label>
                   <Input
-                    id="email"
-                    type="email"
-                    placeholder="email@exemplo.com"
-                    value={inviteEmail}
-                    onChange={(e) => setInviteEmail(e.target.value)}
+                    id="memberSenha"
+                    type="text"
+                    placeholder="Mínimo 6 caracteres"
+                    value={memberSenha}
+                    onChange={(e) => setMemberSenha(e.target.value)}
+                    className="font-mono"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="role">Cargo</Label>
-                  <Select value={inviteRole} onValueChange={(v) => setInviteRole(v as any)}>
+                  <Label htmlFor="memberRole">Cargo</Label>
+                  <Select value={memberRole} onValueChange={(v) => setMemberRole(v as "gerente" | "vendedor")}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="vendedor">Vendedor</SelectItem>
-                      <SelectItem value="gerente">Gerente</SelectItem>
-                      <SelectItem value="admin">Administrador</SelectItem>
+                      <SelectItem value="vendedor">
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4 text-emerald-500" />
+                          Vendedor
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="gerente">
+                        <div className="flex items-center gap-2">
+                          <Briefcase className="h-4 w-4 text-blue-500" />
+                          Gerente
+                        </div>
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                <Alert>
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription className="text-xs">
-                    O usuário precisará ter uma conta ativa no sistema para acessar a
-                    organização.
-                  </AlertDescription>
-                </Alert>
               </div>
               <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setIsInviteOpen(false)}>
+                <Button variant="outline" onClick={() => setIsAddOpen(false)}>
                   Cancelar
                 </Button>
-                <Button onClick={handleInvite} disabled={!inviteEmail}>
-                  Enviar Convite
+                <Button
+                  onClick={handleCreateMember}
+                  disabled={createUser.isPending || !memberEmail || !memberNome || !memberSenha}
+                  className="gap-2"
+                >
+                  {createUser.isPending ? "Criando..." : (
+                    <><UserPlus className="h-4 w-4" /> Criar Membro</>
+                  )}
                 </Button>
               </div>
             </DialogContent>
           </Dialog>
         )}
       </div>
+
+      {/* Credentials card shown after member creation */}
+      {createdCredentials && (
+        <Card className="border-emerald-500/40 bg-emerald-50 dark:bg-emerald-950/30">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 text-base">
+              <Check className="h-5 w-5" />
+              Membro criado! Repasse estas credenciais ao novo colaborador
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="rounded-lg border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-zinc-900 p-4 space-y-3 font-mono text-sm">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-muted-foreground shrink-0">Nome:</span>
+                <span className="font-semibold flex-1 text-right">{createdCredentials.nome}</span>
+              </div>
+              <div className="border-t pt-3 flex items-center justify-between gap-3">
+                <span className="text-muted-foreground shrink-0">E-mail:</span>
+                <div className="flex items-center gap-2 flex-1 justify-end">
+                  <span className="font-semibold">{createdCredentials.email}</span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 shrink-0"
+                    onClick={() => handleCopyCredential(createdCredentials.email)}
+                  >
+                    <Copy className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-muted-foreground shrink-0">Senha:</span>
+                <div className="flex items-center gap-2 flex-1 justify-end">
+                  <span className="font-semibold tracking-widest">{createdCredentials.password}</span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 shrink-0"
+                    onClick={() => handleCopyCredential(createdCredentials.password)}
+                  >
+                    <Copy className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+            <p className="text-xs text-emerald-600 dark:text-emerald-500">
+              A senha não será exibida novamente após fechar este card.
+            </p>
+            <div className="flex justify-end">
+              <Button variant="outline" size="sm" onClick={() => setCreatedCredentials(null)}>
+                Fechar
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Organization Info */}
       <Card className="border-border">

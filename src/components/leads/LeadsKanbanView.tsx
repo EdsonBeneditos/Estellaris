@@ -144,7 +144,7 @@ export function LeadsKanbanView({ leads, isLoading }: LeadsKanbanViewProps) {
                         )}
                         {lead.data_retorno && (
                           <div className="shrink-0">
-                            <ReturnBadge date={lead.data_retorno} />
+                            <ReturnBadge date={lead.data_retorno} status={lead.status} />
                           </div>
                         )}
                       </div>

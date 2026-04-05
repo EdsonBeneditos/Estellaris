@@ -110,7 +110,7 @@ export function LeadsTable({ leads, isLoading }: LeadsTableProps) {
                   </Badge>
                 </TableCell>
                 <TableCell className="hidden sm:table-cell">
-                  <ReturnBadge date={lead.data_retorno} />
+                  <ReturnBadge date={lead.data_retorno} status={lead.status} />
                 </TableCell>
               </TableRow>
             ))}
