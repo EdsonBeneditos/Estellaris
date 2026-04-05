@@ -130,31 +130,84 @@ export default function SuperAdmin() {
     }
   }, [editPlanTemplate]);
 
+  const generatePassword = () => {
+    const chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789";
+    let pwd = "";
+    for (let i = 0; i < 8; i++) {
+      pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setResponsavelSenha(pwd);
+    setShowResponsavelSenha(true);
+  };
+
   const handleCreateOrg = async () => {
     if (!newOrgName.trim()) {
       toast.error("Nome da organização é obrigatório");
       return;
     }
 
-    if (responsavelEmail && !responsavelEmail.includes("@")) {
-      toast.error("E-mail do responsável inválido");
-      return;
+    // If admin fields are provided, validate them
+    if (responsavelEmail || responsavelNome || responsavelSenha) {
+      if (!responsavelEmail.trim() || !responsavelNome.trim() || !responsavelSenha.trim()) {
+        toast.error("Preencha nome, e-mail e senha do responsável ou deixe todos em branco");
+        return;
+      }
+      if (!responsavelEmail.includes("@")) {
+        toast.error("E-mail do responsável inválido");
+        return;
+      }
+      if (responsavelSenha.length < 6) {
+        toast.error("A senha deve ter no mínimo 6 caracteres");
+        return;
+      }
     }
 
+    const hasAdmin = responsavelEmail.trim() && responsavelNome.trim() && responsavelSenha.trim();
+
     try {
+      // Step 1: create the organization (Edge Function, no email invite)
       const result = await createOrg.mutateAsync({
         nome: newOrgName,
         cnpj: newOrgCnpj || undefined,
         plano: newOrgPlano,
         modules_enabled: newOrgModules,
-        responsavel_nome: responsavelNome || undefined,
-        responsavel_email: responsavelEmail || undefined,
+        // Don't pass responsavel_email so the old Edge Function won't try to invite via email
       });
-      
+
+      const newOrgId: string = result.organization?.id;
+
+      // Step 2: if admin credentials were provided, create the admin user
+      if (hasAdmin && newOrgId) {
+        try {
+          await createUser.mutateAsync({
+            email: responsavelEmail.trim(),
+            password: responsavelSenha,
+            nome: responsavelNome.trim(),
+            organization_id: newOrgId,
+            role: "admin",
+          });
+
+          // Show credentials in success overlay
+          setOrgCreatedCredentials({
+            orgNome: newOrgName,
+            email: responsavelEmail.trim(),
+            password: responsavelSenha,
+          });
+        } catch (userError: any) {
+          // Rollback: delete the org we just created
+          await supabase.from("organizations").delete().eq("id", newOrgId);
+          queryClient.invalidateQueries({ queryKey: ["all-organizations"] });
+          toast.error("Erro ao criar usuário admin — organização removida. Tente novamente.", {
+            description: userError.message,
+          });
+          return;
+        }
+      }
+
       // Show success animation
       setSuccessMessage(result.message || `Organização "${newOrgName}" criada com sucesso!`);
       setShowSuccess(true);
-      
+
       // Reset form
       setIsCreateOrgOpen(false);
       setNewOrgName("");
@@ -164,9 +217,11 @@ export default function SuperAdmin() {
       setSelectedPlanTemplate("Bronze");
       setResponsavelNome("");
       setResponsavelEmail("");
+      setResponsavelSenha("");
+      setShowResponsavelSenha(false);
 
-      // Hide success after animation
-      setTimeout(() => setShowSuccess(false), 4000);
+      // Hide success animation after 8s (longer so admin can read credentials)
+      setTimeout(() => setShowSuccess(false), 8000);
     } catch (error: any) {
       toast.error(error.message || "Erro ao criar organização");
     }
@@ -314,7 +369,7 @@ export default function SuperAdmin() {
       {/* Success Overlay Animation */}
       {showSuccess && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white rounded-2xl p-8 shadow-2xl max-w-md mx-4 animate-in zoom-in-95 duration-300">
+          <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white rounded-2xl p-8 shadow-2xl max-w-md w-full mx-4 animate-in zoom-in-95 duration-300">
             <div className="flex flex-col items-center gap-4 text-center">
               <div className="relative">
                 <div className="absolute inset-0 animate-ping">
@@ -324,14 +379,59 @@ export default function SuperAdmin() {
               </div>
               <h3 className="text-2xl font-bold">Organização Criada!</h3>
               <p className="text-emerald-100">{successMessage}</p>
-              <div className="flex gap-2 mt-2">
+              <div className="flex gap-2 mt-2 flex-wrap justify-center">
                 <Badge className="bg-white/20 text-white border-white/30">
                   Centros de Custo ✓
                 </Badge>
                 <Badge className="bg-white/20 text-white border-white/30">
                   Módulos ✓
                 </Badge>
+                {orgCreatedCredentials && (
+                  <Badge className="bg-white/20 text-white border-white/30">
+                    Admin criado ✓
+                  </Badge>
+                )}
               </div>
+
+              {/* Credentials block */}
+              {orgCreatedCredentials && (
+                <div className="w-full mt-2 rounded-xl bg-white/10 border border-white/20 p-4 text-left space-y-2 font-mono text-sm">
+                  <p className="text-white/70 text-xs uppercase tracking-wide font-sans font-semibold mb-3">
+                    Credenciais de acesso — repasse ao cliente
+                  </p>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-white/70 shrink-0 font-sans text-xs">E-mail</span>
+                    <div className="flex items-center gap-1 flex-1 justify-end">
+                      <span className="text-white font-semibold truncate">{orgCreatedCredentials.email}</span>
+                      <button
+                        onClick={() => { navigator.clipboard.writeText(orgCreatedCredentials.email); toast.success("Copiado!"); }}
+                        className="shrink-0 p-1 rounded hover:bg-white/20 transition-colors"
+                      >
+                        <Copy className="h-3 w-3 text-white/80" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-white/70 shrink-0 font-sans text-xs">Senha</span>
+                    <div className="flex items-center gap-1 flex-1 justify-end">
+                      <span className="text-white font-bold tracking-widest">{orgCreatedCredentials.password}</span>
+                      <button
+                        onClick={() => { navigator.clipboard.writeText(orgCreatedCredentials.password); toast.success("Copiado!"); }}
+                        className="shrink-0 p-1 rounded hover:bg-white/20 transition-colors"
+                      >
+                        <Copy className="h-3 w-3 text-white/80" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <button
+                onClick={() => { setShowSuccess(false); setOrgCreatedCredentials(null); }}
+                className="mt-2 text-white/70 hover:text-white text-sm underline"
+              >
+                Fechar
+              </button>
             </div>
           </div>
         </div>
@@ -400,7 +500,7 @@ export default function SuperAdmin() {
                     Criar Nova Organização
                   </DialogTitle>
                   <DialogDescription>
-                    Preencha os dados para criar uma nova empresa no sistema. O administrador receberá um convite por e-mail.
+                    Preencha os dados para criar uma nova empresa. O administrador poderá acessar o sistema imediatamente com as credenciais definidas abaixo — nenhum e-mail é enviado.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-6 py-4">
@@ -434,7 +534,7 @@ export default function SuperAdmin() {
                   {/* Dados do Responsável */}
                   <div className="space-y-4">
                     <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide border-b pb-2">
-                      Responsável / Administrador
+                      Responsável / Administrador <span className="normal-case font-normal">(opcional)</span>
                     </h4>
                     <div className="grid gap-4 md:grid-cols-2">
                       <div className="space-y-2">
@@ -455,10 +555,47 @@ export default function SuperAdmin() {
                           value={responsavelEmail}
                           onChange={(e) => setResponsavelEmail(e.target.value)}
                         />
-                        <p className="text-xs text-muted-foreground">
-                          Um convite será enviado automaticamente para este e-mail.
-                        </p>
                       </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="responsavelSenha" className="flex items-center gap-2">
+                        <KeyRound className="h-4 w-4" />
+                        Senha Temporária
+                      </Label>
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <Input
+                            id="responsavelSenha"
+                            type={showResponsavelSenha ? "text" : "password"}
+                            placeholder="Mínimo 6 caracteres"
+                            value={responsavelSenha}
+                            onChange={(e) => setResponsavelSenha(e.target.value)}
+                            className="font-mono pr-10"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowResponsavelSenha((v) => !v)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                            tabIndex={-1}
+                          >
+                            {showResponsavelSenha ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={generatePassword}
+                          className="gap-1.5 shrink-0"
+                        >
+                          <RefreshCw className="h-3.5 w-3.5" />
+                          Gerar
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Preencha nome, e-mail e senha para criar o admin junto com a organização.
+                      </p>
                     </div>
                   </div>
 
@@ -574,8 +711,8 @@ export default function SuperAdmin() {
                     <Button variant="outline" onClick={() => setIsCreateOrgOpen(false)}>
                       Cancelar
                     </Button>
-                    <Button onClick={handleCreateOrg} disabled={createOrg.isPending} className="gap-2">
-                      {createOrg.isPending ? (
+                    <Button onClick={handleCreateOrg} disabled={createOrg.isPending || createUser.isPending} className="gap-2">
+                      {createOrg.isPending || createUser.isPending ? (
                         "Criando..."
                       ) : (
                         <>

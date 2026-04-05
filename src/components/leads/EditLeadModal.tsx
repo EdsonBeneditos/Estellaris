@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon, History, MessageSquare, ArrowRight, Trash2, PlusCircle } from "lucide-react";
+import { CalendarIcon, History, MessageSquare, ArrowRight, Trash2, PlusCircle, TrendingUp } from "lucide-react";
 
 import {
   Dialog,
@@ -52,6 +52,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 
 import { useUpdateLead, useDeleteLead, type Lead } from "@/hooks/useLeads";
+import { OportunidadesTab } from "./OportunidadesTab";
 import {
   useLeadInteracoes,
   useCreateInteracao,
@@ -283,11 +284,15 @@ export function EditLeadModal({ lead, open, onOpenChange }: EditLeadModalProps) 
         </DialogHeader>
 
         <Tabs defaultValue="editar" className="flex-1 overflow-hidden flex flex-col">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="editar">Editar</TabsTrigger>
-            <TabsTrigger value="historico" className="gap-2">
+            <TabsTrigger value="historico" className="gap-1.5">
               <History className="h-4 w-4" />
               Histórico
+            </TabsTrigger>
+            <TabsTrigger value="oportunidades" className="gap-1.5">
+              <TrendingUp className="h-4 w-4" />
+              Oportunidades
             </TabsTrigger>
           </TabsList>
 
@@ -687,6 +692,10 @@ export function EditLeadModal({ lead, open, onOpenChange }: EditLeadModalProps) 
                 })()
               )}
             </ScrollArea>
+          </TabsContent>
+
+          <TabsContent value="oportunidades" className="flex-1 overflow-hidden mt-4">
+            <OportunidadesTab leadId={lead.id} />
           </TabsContent>
         </Tabs>
       </DialogContent>
