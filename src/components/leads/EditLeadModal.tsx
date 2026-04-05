@@ -358,6 +358,11 @@ export function EditLeadModal({ lead, open, onOpenChange }: EditLeadModalProps) 
               {lead.cnpj && (
                 <p className="text-sm text-muted-foreground">{lead.cnpj}</p>
               )}
+              {lead.tipo_servico && (
+                <Badge variant="secondary" className="mt-1 text-xs font-normal w-fit">
+                  {lead.tipo_servico}
+                </Badge>
+              )}
             </div>
             {canDeleteLeads && (
               <AlertDialog>
