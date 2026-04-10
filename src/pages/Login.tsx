@@ -39,12 +39,14 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: 'hsl(215, 50%, 15%)' }}>
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center mb-8">
-          <div className="h-20 w-20 rounded-xl bg-primary/20 flex items-center justify-center mb-4">
-            <span className="text-3xl font-bold text-primary">CRM</span>
-          </div>
-          <h1 className="text-2xl font-bold text-white">Meu CRM</h1>
+          <img
+            src="/estellaris_logo.png"
+            alt="Estellaris"
+            style={{ height: "56px", width: "auto" }}
+            className="mb-4"
+          />
           <p className="text-white/70 text-center text-sm mt-1">
-            Sistema de Gestão de Leads
+            Sistema de Gestão Empresarial
           </p>
         </div>
 

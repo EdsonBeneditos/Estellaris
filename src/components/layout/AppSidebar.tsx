@@ -149,13 +149,19 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border transition-all duration-300">
       <SidebarHeader className="p-4 border-b border-sidebar-border">
-        <div className="flex items-center justify-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center shrink-0 transition-transform duration-200">
-            <span className="text-sm font-bold text-primary">CRM</span>
-          </div>
-          <span className="font-semibold text-foreground group-data-[collapsible=icon]:hidden transition-opacity duration-200">
-            Meu CRM
-          </span>
+        <div className="flex items-center justify-start gap-2">
+          <img
+            src="/estellaris_logo.png"
+            alt="Estellaris"
+            className="group-data-[collapsible=icon]:hidden"
+            style={{ height: "36px", width: "auto" }}
+          />
+          <img
+            src="/estellaris_logo.png"
+            alt="Estellaris"
+            className="hidden group-data-[collapsible=icon]:block"
+            style={{ height: "28px", width: "auto", maxWidth: "28px", objectFit: "contain", objectPosition: "left" }}
+          />
         </div>
       </SidebarHeader>
 

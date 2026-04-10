@@ -15,7 +15,7 @@ export interface GrupoProduto {
 export interface Produto {
   id: string;
   nome: string;
-  sku: string;
+  sku: string | null;
   marca: string | null;
   descricao: string | null;
   preco_venda: number;

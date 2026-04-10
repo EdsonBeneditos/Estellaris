@@ -78,7 +78,7 @@ interface NotaFiscalFormProps {
 
 export function NotaFiscalForm({ nota, orcamentoId, onBack, onSuccess }: NotaFiscalFormProps) {
   // Emitente (default values)
-  const [emitenteRazaoSocial, setEmitenteRazaoSocial] = useState(nota?.emitente_razao_social || "Acqua Nobilis Ltda");
+  const [emitenteRazaoSocial, setEmitenteRazaoSocial] = useState(nota?.emitente_razao_social || "Estellaris");
   const [emitenteCnpj, setEmitenteCnpj] = useState(nota?.emitente_cnpj || "00.000.000/0001-00");
   const [emitenteEndereco, setEmitenteEndereco] = useState(nota?.emitente_endereco || "Endereço da Empresa");
   const [emitenteCidade, setEmitenteCidade] = useState(nota?.emitente_cidade || "São Paulo");

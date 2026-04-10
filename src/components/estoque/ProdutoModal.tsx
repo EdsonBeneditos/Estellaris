@@ -40,7 +40,7 @@ import {
 
 const formSchema = z.object({
   nome: z.string().min(1, "Nome é obrigatório"),
-  sku: z.string().min(1, "SKU é obrigatório"),
+  sku: z.string(),
   marca: z.string().optional().or(z.literal("")),
   descricao: z.string().optional().or(z.literal("")),
   preco_venda: z.coerce.number().min(0, "Preço de venda inválido"),
@@ -133,29 +133,6 @@ export function ProdutoModal({ open, onOpenChange, produto, defaultGrupoId }: Pr
   const [precoCustoDisplay, setPrecoCustoDisplay] = useState("R$ 0,00");
   const [precoVendaDisplay, setPrecoVendaDisplay] = useState("R$ 0,00");
 
-  // Generate next child SKU for a group
-  const generateChildSku = (grupoId: string | null): string => {
-    if (!grupoId) return "";
-    const grupo = grupos.find((g) => g.id === grupoId);
-    if (!grupo) return "";
-    // Products in this group
-    const siblingSkus = allProdutos
-      .filter((p) => p.grupo_id === grupoId && p.id !== produto?.id)
-      .map((p) => p.sku);
-    // Find the highest suffix number
-    const base = grupo.numero_referencia;
-    let maxNum = 0;
-    siblingSkus.forEach((sku) => {
-      if (sku.startsWith(base)) {
-        const suffix = sku.slice(base.length);
-        const num = parseInt(suffix, 10);
-        if (!isNaN(num) && num > maxNum) maxNum = num;
-      }
-    });
-    const nextNum = maxNum + 1;
-    return `${base}${String(nextNum).padStart(2, "0")}`;
-  };
-
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -181,7 +158,7 @@ export function ProdutoModal({ open, onOpenChange, produto, defaultGrupoId }: Pr
     if (produto) {
       form.reset({
         nome: produto.nome,
-        sku: produto.sku,
+        sku: produto.sku ?? "",
         marca: (produto as any).marca || "",
         descricao: (produto as any).descricao || "",
         preco_venda: produto.preco_venda,
@@ -199,10 +176,9 @@ export function ProdutoModal({ open, onOpenChange, produto, defaultGrupoId }: Pr
       setPrecoCustoDisplay(formatCurrency(produto.preco_custo));
       setPrecoVendaDisplay(formatCurrency(produto.preco_venda));
     } else {
-      const autoSku = defaultGrupoId ? generateChildSku(defaultGrupoId) : "";
       form.reset({
         nome: "",
-        sku: autoSku,
+        sku: "",
         marca: "",
         descricao: "",
         preco_venda: 0,
@@ -229,25 +205,27 @@ export function ProdutoModal({ open, onOpenChange, produto, defaultGrupoId }: Pr
       return;
     }
     const exists = allProdutos.some(
-      (p) => p.sku.toLowerCase() === sku.toLowerCase() && p.id !== produto?.id
+      (p) => p.sku && p.sku.toLowerCase() === sku.toLowerCase() && p.id !== produto?.id
     );
     setSkuError(exists ? "Código já cadastrado" : null);
   };
 
   const onSubmit = async (data: FormData) => {
-    // Revalidate SKU before submit
-    const skuExists = allProdutos.some(
-      (p) => p.sku.toLowerCase() === data.sku.toLowerCase() && p.id !== produto?.id
-    );
-    if (skuExists) {
-      setSkuError("Código já cadastrado");
-      return;
+    // Revalidate SKU before submit (only if provided)
+    if (data.sku.trim()) {
+      const skuExists = allProdutos.some(
+        (p) => p.sku && p.sku.toLowerCase() === data.sku.toLowerCase() && p.id !== produto?.id
+      );
+      if (skuExists) {
+        setSkuError("Código já cadastrado");
+        return;
+      }
     }
 
     try {
       const produtoData = {
         nome: data.nome,
-        sku: data.sku,
+        sku: data.sku.trim() || null,
         marca: data.marca || null,
         descricao: data.descricao || null,
         preco_venda: data.preco_venda,
@@ -309,11 +287,6 @@ export function ProdutoModal({ open, onOpenChange, produto, defaultGrupoId }: Pr
                     onValueChange={(value) => {
                       const newGrupoId = value === "none" ? null : value;
                       field.onChange(newGrupoId);
-                      // Auto-fill SKU for new products when group is selected
-                      if (!produto && newGrupoId) {
-                        const autoSku = generateChildSku(newGrupoId);
-                        if (autoSku) form.setValue("sku", autoSku);
-                      }
                     }}
                     value={field.value || "none"}
                   >
@@ -340,26 +313,35 @@ export function ProdutoModal({ open, onOpenChange, produto, defaultGrupoId }: Pr
               <FormField
                 control={form.control}
                 name="sku"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>SKU / Código</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Ex: FLT-001"
-                        {...field}
-                        onChange={(e) => {
-                          field.onChange(e);
-                          validateSku(e.target.value);
-                        }}
-                        className={skuError ? "border-destructive" : ""}
-                      />
-                    </FormControl>
-                    {skuError && (
-                      <p className="text-xs text-destructive font-medium">{skuError}</p>
-                    )}
-                    <FormMessage />
-                  </FormItem>
-                )}
+                render={({ field }) => {
+                  const grupoId = form.watch("grupo_id");
+                  const showAutoHint = !field.value?.trim() && !!grupoId;
+                  return (
+                    <FormItem>
+                      <FormLabel>SKU / Código <span className="text-muted-foreground font-normal">(opcional)</span></FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Ex: FLT-001"
+                          {...field}
+                          onChange={(e) => {
+                            field.onChange(e);
+                            validateSku(e.target.value);
+                          }}
+                          className={skuError ? "border-destructive" : ""}
+                        />
+                      </FormControl>
+                      {showAutoHint && (
+                        <p className="text-xs text-muted-foreground">
+                          SKU será gerado automaticamente com base no grupo
+                        </p>
+                      )}
+                      {skuError && (
+                        <p className="text-xs text-destructive font-medium">{skuError}</p>
+                      )}
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
               />
 
               <FormField
@@ -395,7 +377,7 @@ export function ProdutoModal({ open, onOpenChange, produto, defaultGrupoId }: Pr
                 <FormItem>
                   <FormLabel>Marca (opcional)</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ex: Acqua Nobilis" {...field} />
+                    <Input placeholder="Ex: Estellaris" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

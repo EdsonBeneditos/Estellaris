@@ -49,7 +49,7 @@ export const OrcamentoPreview = forwardRef<HTMLDivElement, OrcamentoPreviewProps
           <div className="flex items-center gap-4">
             <img src={orgData?.logo_url || logo} alt="Logo" className="h-16 w-auto object-contain" />
             <div>
-              <h1 className="text-xl font-bold text-slate-900">{orgData?.nome || "Acqua Nobilis"}</h1>
+              <h1 className="text-xl font-bold text-slate-900">{orgData?.nome || "Estellaris"}</h1>
               {orgData?.cnpj && <p className="text-sm text-slate-600">CNPJ: {orgData.cnpj}</p>}
             </div>
           </div>
@@ -197,7 +197,7 @@ export const OrcamentoPreview = forwardRef<HTMLDivElement, OrcamentoPreviewProps
           ) : (
             <>
               <p>Este documento não possui valor fiscal. Documento gerado eletronicamente.</p>
-              <p className="mt-1">{orgData?.nome || "Acqua Nobilis"}</p>
+              <p className="mt-1">{orgData?.nome || "Estellaris"}</p>
             </>
           )}
         </div>

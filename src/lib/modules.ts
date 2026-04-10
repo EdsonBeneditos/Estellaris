@@ -82,6 +82,12 @@ export const MODULE_CONFIG: Record<
     route: "/financeiro",
     category: "financeiro",
   },
+  cobrancas: {
+    label: "Cobranças",
+    description: "Controle de cobranças e inadimplência",
+    route: "/cobrancas",
+    category: "financeiro",
+  },
   relatorios_leads: {
     label: "Relatórios Leads",
     description: "Analytics de vendas e conversões",

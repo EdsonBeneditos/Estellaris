@@ -1487,7 +1487,7 @@ export type Database = {
           preco_custo: number
           preco_venda: number
           quantidade_estoque: number
-          sku: string
+          sku: string | null
           unidade_medida: string
           updated_at: string
         }
@@ -1509,7 +1509,7 @@ export type Database = {
           preco_custo?: number
           preco_venda?: number
           quantidade_estoque?: number
-          sku: string
+          sku?: string | null
           unidade_medida?: string
           updated_at?: string
         }

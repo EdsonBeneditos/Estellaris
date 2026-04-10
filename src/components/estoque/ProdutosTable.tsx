@@ -10,7 +10,11 @@ import {
   AlertTriangle,
   ChevronLeft,
   ChevronRight,
+  Upload,
+  Download,
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { ImportProdutosModal } from "./ImportProdutosModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -61,6 +65,7 @@ export function ProdutosTable() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedGrupo, setSelectedGrupo] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedProduto, setSelectedProduto] = useState<Produto | null>(null);
   const [page, setPage] = useState(1);
@@ -74,7 +79,7 @@ export function ProdutosTable() {
   const filteredProdutos = produtos.filter(
     (p) =>
       p.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.sku.toLowerCase().includes(searchTerm.toLowerCase())
+      (p.sku ?? "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const totalPages = Math.max(1, Math.ceil(filteredProdutos.length / PAGE_SIZE));
@@ -113,6 +118,39 @@ export function ProdutosTable() {
     }).format(value);
   };
 
+  const handleExport = async () => {
+    const { data, error } = await supabase
+      .from("produtos")
+      .select("*, grupo:grupos_produtos(nome)")
+      .order("nome");
+    if (error) {
+      toast.error("Erro ao exportar produtos");
+      return;
+    }
+    const headers = "nome,sku,preco_venda,preco_custo,quantidade_estoque,unidade_medida,marca,grupo,descricao,ncm";
+    const rows = (data || []).map((p: any) => [
+      `"${(p.nome || "").replace(/"/g, '""')}"`,
+      `"${(p.sku || "").replace(/"/g, '""')}"`,
+      p.preco_venda ?? 0,
+      p.preco_custo ?? 0,
+      p.quantidade_estoque ?? 0,
+      `"${(p.unidade_medida || "UN").replace(/"/g, '""')}"`,
+      `"${(p.marca || "").replace(/"/g, '""')}"`,
+      `"${((p.grupo as any)?.nome || "").replace(/"/g, '""')}"`,
+      `"${(p.descricao || "").replace(/"/g, '""')}"`,
+      `"${(p.ncm || "").replace(/"/g, '""')}"`,
+    ].join(","));
+    const csv = [headers, ...rows].join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `produtos_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Produtos exportados com sucesso");
+  };
+
   return (
     <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
       <CardHeader className="pb-4">
@@ -121,10 +159,20 @@ export function ProdutosTable() {
             <Package className="h-5 w-5 text-primary" />
             Produtos
           </CardTitle>
-          <Button onClick={handleCreate} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Novo Produto
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setIsImportOpen(true)} className="gap-2">
+              <Upload className="h-4 w-4" />
+              Importar
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleExport} className="gap-2">
+              <Download className="h-4 w-4" />
+              Exportar
+            </Button>
+            <Button onClick={handleCreate} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Novo Produto
+            </Button>
+          </div>
         </div>
 
         {/* Filters */}
@@ -213,9 +261,13 @@ export function ProdutosTable() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <code className="text-xs bg-muted px-2 py-1 rounded">
-                          {produto.sku}
-                        </code>
+                        {produto.sku ? (
+                          <code className="text-xs bg-muted px-2 py-1 rounded">
+                            {produto.sku}
+                          </code>
+                        ) : (
+                          <span className="text-xs text-muted-foreground italic">Auto</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         {produto.grupo ? (
@@ -296,9 +348,13 @@ export function ProdutosTable() {
                       </div>
                       <div className="min-w-0">
                         <p className="font-medium truncate">{produto.nome}</p>
-                        <code className="text-xs bg-muted px-2 py-0.5 rounded">
-                          {produto.sku}
-                        </code>
+                        {produto.sku ? (
+                          <code className="text-xs bg-muted px-2 py-0.5 rounded">
+                            {produto.sku}
+                          </code>
+                        ) : (
+                          <span className="text-xs text-muted-foreground italic">Auto</span>
+                        )}
                       </div>
                     </div>
                     <DropdownMenu>
@@ -403,6 +459,12 @@ export function ProdutosTable() {
         open={isModalOpen}
         onOpenChange={setIsModalOpen}
         produto={selectedProduto}
+      />
+
+      {/* Import Modal */}
+      <ImportProdutosModal
+        open={isImportOpen}
+        onOpenChange={setIsImportOpen}
       />
 
       {/* Delete Confirmation */}

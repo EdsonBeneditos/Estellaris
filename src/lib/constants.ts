@@ -1,4 +1,4 @@
-// Vendedores oficiais da Acqua Nobilis Ambiental
+// Vendedores oficiais da Estellaris
 export const VENDEDORES = [
   "Maria Victoria",
   "Francielli",
