@@ -150,6 +150,18 @@ const App = () => (
                   }
                 />
                 <Route
+                  path="/cobrancas"
+                  element={
+                    <ProtectedRoute>
+                      <AccessControlGuard>
+                        <MainLayout>
+                          <Cobrancas />
+                        </MainLayout>
+                      </AccessControlGuard>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
                   path="/equipe"
                   element={
                     <ProtectedRoute>

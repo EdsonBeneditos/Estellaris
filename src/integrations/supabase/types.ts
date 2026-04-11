@@ -240,6 +240,7 @@ export type Database = {
           uf: string | null
           ultima_visita: string | null
           updated_at: string
+          dia_vencimento: number | null
         }
         Insert: {
           ativo?: boolean
@@ -260,6 +261,7 @@ export type Database = {
           uf?: string | null
           ultima_visita?: string | null
           updated_at?: string
+          dia_vencimento?: number | null
         }
         Update: {
           ativo?: boolean
@@ -280,6 +282,7 @@ export type Database = {
           uf?: string | null
           ultima_visita?: string | null
           updated_at?: string
+          dia_vencimento?: number | null
         }
         Relationships: [
           {
@@ -1487,6 +1490,7 @@ export type Database = {
           preco_custo: number
           preco_venda: number
           quantidade_estoque: number
+          estoque_minimo: number | null
           sku: string | null
           unidade_medida: string
           updated_at: string
@@ -1509,6 +1513,7 @@ export type Database = {
           preco_custo?: number
           preco_venda?: number
           quantidade_estoque?: number
+          estoque_minimo?: number | null
           sku?: string | null
           unidade_medida?: string
           updated_at?: string
@@ -1531,6 +1536,7 @@ export type Database = {
           preco_custo?: number
           preco_venda?: number
           quantidade_estoque?: number
+          estoque_minimo?: number | null
           sku?: string
           unidade_medida?: string
           updated_at?: string

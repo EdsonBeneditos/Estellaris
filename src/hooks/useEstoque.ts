@@ -21,6 +21,7 @@ export interface Produto {
   preco_venda: number;
   preco_custo: number;
   quantidade_estoque: number;
+  estoque_minimo: number | null;
   unidade_medida: string;
   grupo_id: string | null;
   ativo: boolean;
@@ -201,5 +202,22 @@ export function useDeleteProduto() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["produtos"] });
     },
+  });
+}
+
+export function useProdutosAbaixoMinimoCount() {
+  return useQuery({
+    queryKey: ["produtos_abaixo_minimo_count"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("produtos")
+        .select("quantidade_estoque, estoque_minimo")
+        .gt("estoque_minimo", 0);
+      if (error) throw error;
+      return (data || []).filter(
+        (p) => p.quantidade_estoque < (p.estoque_minimo ?? 0)
+      ).length;
+    },
+    refetchInterval: 60000,
   });
 }

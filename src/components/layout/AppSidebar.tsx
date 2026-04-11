@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, BarChart3, Settings, LogOut, UserPlus, Package, FileText, Receipt, Wallet, UsersRound, Building2, Shield, HardHat, Crown } from "lucide-react";
+import { LayoutDashboard, Users, BarChart3, Settings, LogOut, UserPlus, Package, FileText, Receipt, Wallet, UsersRound, Building2, Shield, HardHat, Crown, CreditCard } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -13,6 +13,8 @@ import { usePendingBudgetsCount } from "@/hooks/usePendingBudgets";
 import { usePendingClientesCount } from "@/hooks/usePendingClientesCount";
 import { useFuturosLeadsHojeCount } from "@/hooks/useFuturosLeadsAlerts";
 import { useOrcamentosPendentesCount, useAguardandoPagamentoCount } from "@/hooks/useOrcamentosBadges";
+import { useCobrancasAtrasadasCount } from "@/hooks/useCobrancas";
+import { useProdutosAbaixoMinimoCount } from "@/hooks/useEstoque";
 
 import {
   Sidebar,
@@ -39,6 +41,7 @@ const moduleMenuItems: Record<ModuleKey, { title: string; url: string; icon: Rea
   orcamentos: { title: "Orçamentos", url: "/orcamentos", icon: FileText },
   notas_fiscais: { title: "Notas Fiscais", url: "/notas-fiscais", icon: Receipt },
   financeiro: { title: "Financeiro / Caixa", url: "/financeiro", icon: Wallet },
+  cobrancas: { title: "Cobranças", url: "/cobrancas", icon: CreditCard },
   relatorios_leads: null, // Tratado separadamente como "Relatórios"
   relatorios_financeiro: null, // Tratado separadamente como "Relatórios"
   equipe: { title: "Equipe", url: "/equipe", icon: UsersRound },
@@ -59,6 +62,8 @@ export function AppSidebar() {
   const { data: futurosLeadsHoje = 0 } = useFuturosLeadsHojeCount();
   const { data: orcamentosPendentes = 0 } = useOrcamentosPendentesCount();
   const { data: aguardandoPagamento = 0 } = useAguardandoPagamentoCount();
+  const { data: cobrancasAtrasadas = 0 } = useCobrancasAtrasadasCount();
+  const { data: produtosAbaixoMinimo = 0 } = useProdutosAbaixoMinimoCount();
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -81,6 +86,7 @@ export function AppSidebar() {
     "orcamentos",
     "notas_fiscais",
     "financeiro",
+    "cobrancas",
   ];
 
   if (isGodMode) {
@@ -111,8 +117,9 @@ export function AppSidebar() {
     regularModules.forEach((moduleKey) => {
       const menuItem = moduleMenuItems[moduleKey];
       if (!menuItem || !isModuleEnabled(enabledModules, moduleKey)) return;
-      // Financeiro: apenas admin ou quem tiver permissão explícita
+      // Financeiro e Cobranças: apenas admin ou quem tiver permissão explícita
       if (moduleKey === "financeiro" && !isAdmin && !hasMenuAccess("financeiro")) return;
+      if (moduleKey === "cobrancas" && !isAdmin && !hasMenuAccess("cobrancas")) return;
       // Outros menus: verificar menu_permissions
       if (!hasMenuAccess(moduleKey)) return;
       menuItems.push(menuItem);
@@ -192,6 +199,16 @@ export function AppSidebar() {
                       {item.url === "/financeiro" && aguardandoPagamento > 0 && (
                         <Badge className="shrink-0 group-data-[collapsible=icon]:hidden ml-auto h-5 min-w-5 px-1 text-[10px] bg-red-600 text-white border-0 rounded-full inline-flex items-center justify-center leading-none">
                           {aguardandoPagamento}
+                        </Badge>
+                      )}
+                      {item.url === "/cobrancas" && cobrancasAtrasadas > 0 && (
+                        <Badge className="shrink-0 group-data-[collapsible=icon]:hidden ml-auto h-5 min-w-5 px-1 text-[10px] bg-red-600 text-white border-0 rounded-full inline-flex items-center justify-center leading-none">
+                          {cobrancasAtrasadas}
+                        </Badge>
+                      )}
+                      {item.url === "/estoque" && produtosAbaixoMinimo > 0 && (
+                        <Badge className="shrink-0 group-data-[collapsible=icon]:hidden ml-auto h-5 min-w-5 px-1 text-[10px] bg-amber-500 text-white border-0 rounded-full inline-flex items-center justify-center leading-none">
+                          {produtosAbaixoMinimo}
                         </Badge>
                       )}
                       {item.url === "/clientes" && pendingClientes > 0 && (

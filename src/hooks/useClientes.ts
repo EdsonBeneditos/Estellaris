@@ -35,6 +35,7 @@ export interface Cliente {
   limite_credito: number | null;
   forma_pagamento: string | null;
   status_financeiro: string | null;
+  dia_vencimento: number | null;
   // Endereço completo
   logradouro: string | null;
   numero: string | null;

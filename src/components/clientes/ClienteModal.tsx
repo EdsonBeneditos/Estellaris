@@ -78,6 +78,7 @@ const emptyForm = {
   limite_credito: 0 as number,
   forma_pagamento: "",
   status_financeiro: "Em dia",
+  dia_vencimento: 10 as number,
   // Endereço completo
   logradouro: "",
   numero: "",
@@ -144,6 +145,7 @@ export function ClienteModal({ open, onOpenChange, cliente }: ClienteModalProps)
         limite_credito: cliente.limite_credito || 0,
         forma_pagamento: cliente.forma_pagamento || "",
         status_financeiro: cliente.status_financeiro || "Em dia",
+        dia_vencimento: cliente.dia_vencimento ?? 10,
         logradouro: cliente.logradouro || "",
         numero: cliente.numero || "",
         complemento: cliente.complemento || "",
@@ -208,6 +210,7 @@ export function ClienteModal({ open, onOpenChange, cliente }: ClienteModalProps)
       limite_credito: formData.limite_credito || null,
       forma_pagamento: formData.forma_pagamento || null,
       status_financeiro: formData.status_financeiro || null,
+      dia_vencimento: formData.dia_vencimento || 10,
       logradouro: formData.logradouro || null,
       numero: formData.numero || null,
       complemento: formData.complemento || null,
@@ -309,10 +312,24 @@ export function ClienteModal({ open, onOpenChange, cliente }: ClienteModalProps)
           {/* ── Financeiro ── */}
           <div>
             <SectionTitle>Financeiro</SectionTitle>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="limite_credito">Limite de Crédito (R$)</Label>
                 <CurrencyInput id="limite_credito" value={formData.limite_credito} onChange={v => setFormData({ ...formData, limite_credito: v })} placeholder="0,00" />
+              </div>
+              <div>
+                <Label htmlFor="dia_vencimento">Dia de Vencimento</Label>
+                <Select
+                  value={String(formData.dia_vencimento || 10)}
+                  onValueChange={v => setFormData({ ...formData, dia_vencimento: parseInt(v) })}
+                >
+                  <SelectTrigger><SelectValue placeholder="Dia" /></SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 28 }, (_, i) => i + 1).map(d => (
+                      <SelectItem key={d} value={String(d)}>Dia {d}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label htmlFor="forma_pagamento">Forma de Pagamento</Label>

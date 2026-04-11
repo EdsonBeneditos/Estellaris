@@ -46,6 +46,7 @@ const formSchema = z.object({
   preco_venda: z.coerce.number().min(0, "Preço de venda inválido"),
   preco_custo: z.coerce.number().min(0, "Preço de custo inválido"),
   quantidade_estoque: z.coerce.number().int().min(0, "Quantidade inválida"),
+  estoque_minimo: z.coerce.number().int().min(0, "Estoque mínimo inválido"),
   unidade_medida: z.string().min(1, "Unidade é obrigatória"),
   grupo_id: z.string().nullable(),
   ativo: z.boolean(),
@@ -143,6 +144,7 @@ export function ProdutoModal({ open, onOpenChange, produto, defaultGrupoId }: Pr
       preco_venda: 0,
       preco_custo: 0,
       quantidade_estoque: 0,
+      estoque_minimo: 0,
       unidade_medida: "UN",
       grupo_id: null,
       ativo: true,
@@ -164,6 +166,7 @@ export function ProdutoModal({ open, onOpenChange, produto, defaultGrupoId }: Pr
         preco_venda: produto.preco_venda,
         preco_custo: produto.preco_custo,
         quantidade_estoque: produto.quantidade_estoque,
+        estoque_minimo: produto.estoque_minimo ?? 0,
         unidade_medida: produto.unidade_medida,
         grupo_id: produto.grupo_id,
         ativo: produto.ativo,
@@ -231,6 +234,7 @@ export function ProdutoModal({ open, onOpenChange, produto, defaultGrupoId }: Pr
         preco_venda: data.preco_venda,
         preco_custo: data.preco_custo,
         quantidade_estoque: data.quantidade_estoque,
+        estoque_minimo: data.estoque_minimo,
         unidade_medida: data.unidade_medida,
         grupo_id: data.grupo_id,
         ativo: data.ativo,
@@ -448,25 +452,50 @@ export function ProdutoModal({ open, onOpenChange, produto, defaultGrupoId }: Pr
               />
             </div>
 
-            <FormField
-              control={form.control}
-              name="quantidade_estoque"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Quantidade em Estoque</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min="0"
-                      step="1"
-                      placeholder="0"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="quantidade_estoque"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Quantidade em Estoque</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="1"
+                        placeholder="0"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="estoque_minimo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Estoque Mínimo</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="1"
+                        placeholder="0"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription className="text-xs">
+                      Alerta quando estoque ficar abaixo
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <Separator />
 

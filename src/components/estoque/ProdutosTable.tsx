@@ -13,6 +13,11 @@ import {
   Upload,
   Download,
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { ImportProdutosModal } from "./ImportProdutosModal";
 import { Button } from "@/components/ui/button";
@@ -245,15 +250,32 @@ export function ProdutosTable() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {pagedProdutos.map((produto) => (
-                    <TableRow key={produto.id} className="group">
+                  {pagedProdutos.map((produto) => {
+                    const abaixoMinimo =
+                      produto.estoque_minimo != null &&
+                      produto.estoque_minimo > 0 &&
+                      produto.quantidade_estoque < produto.estoque_minimo;
+                    return (
+                    <TableRow key={produto.id} className={`group ${abaixoMinimo ? "bg-amber-500/5" : ""}`}>
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-primary/10 text-primary shrink-0">
                             <Package className="h-5 w-5" />
                           </div>
                           <div>
-                            <p className="font-medium">{produto.nome}</p>
+                            <div className="flex items-center gap-1.5">
+                              <p className="font-medium">{produto.nome}</p>
+                              {abaixoMinimo && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0 cursor-help" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    Estoque abaixo do mínimo (atual: {produto.quantidade_estoque}, mínimo: {produto.estoque_minimo})
+                                  </TooltipContent>
+                                </Tooltip>
+                              )}
+                            </div>
                             <p className="text-xs text-muted-foreground">
                               {produto.unidade_medida}
                             </p>
@@ -329,7 +351,8 @@ export function ProdutosTable() {
                         </DropdownMenu>
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>

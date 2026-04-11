@@ -9,6 +9,7 @@ export const AVAILABLE_MODULES = [
   "orcamentos",
   "notas_fiscais",
   "financeiro",
+  "cobrancas",
   "relatorios_leads",
   "relatorios_financeiro",
   "equipe",
