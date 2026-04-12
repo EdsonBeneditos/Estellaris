@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Save, Clock, Calendar, Palette, Globe, Shield, Upload, Image, Loader2, UserCircle, Users, Lock } from "lucide-react";
+import { Save, Clock, Calendar, Palette, Globe, Shield, Upload, Image, Loader2, UserCircle, Users, Lock, X, KeyRound, Eye, EyeOff } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -9,6 +9,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { useCurrentOrganization, useUpdateOrganization, useCurrentProfile, useOrganizationMembers } from "@/hooks/useOrganization";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -65,6 +72,12 @@ export function OrganizationSettings() {
   const [isSaving, setIsSaving] = useState(false);
   const [idNome, setIdNome] = useState("");
   const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [showSenhaModal, setShowSenhaModal] = useState(false);
+  const [novaSenha, setNovaSenha] = useState("");
+  const [confirmarSenha, setConfirmarSenha] = useState("");
+  const [showNovaSenha, setShowNovaSenha] = useState(false);
+  const [showConfirmarSenha, setShowConfirmarSenha] = useState(false);
+  const [isSavingSenha, setIsSavingSenha] = useState(false);
 
   useEffect(() => {
     if (organization) {
@@ -135,10 +148,20 @@ export function OrganizationSettings() {
 
     setIsUploadingLogo(true);
     try {
-      const filePath = `logos/${organization.id}/logo.${file.name.split(".").pop()}`;
+      // Delete old logo file from storage if one exists
+      const org = organization as any;
+      if (org.orcamento_logo_url) {
+        const oldPath = org.orcamento_logo_url.split("/org-logos/")[1]?.split("?")[0];
+        if (oldPath) {
+          await supabase.storage.from("org-logos").remove([oldPath]);
+        }
+      }
+
+      const ext = file.name.split(".").pop() || "png";
+      const filePath = `logos/${organization.id}/logo_${Date.now()}.${ext}`;
       const { error: uploadError } = await supabase.storage
         .from("org-logos")
-        .upload(filePath, file, { upsert: true });
+        .upload(filePath, file, { upsert: false });
 
       if (uploadError) throw uploadError;
 
@@ -153,7 +176,7 @@ export function OrganizationSettings() {
 
       if (updateError) throw updateError;
 
-      setLogoUrl(publicUrl);
+      setLogoUrl(`${publicUrl}?t=${Date.now()}`);
       await queryClient.invalidateQueries({ queryKey: ["current-organization"] });
       toast.success("Logo enviado com sucesso!");
     } catch (error: any) {
@@ -161,6 +184,29 @@ export function OrganizationSettings() {
     } finally {
       setIsUploadingLogo(false);
       if (logoInputRef.current) logoInputRef.current.value = "";
+    }
+  };
+
+  const handleRemoveLogo = async () => {
+    if (!organization || !logoUrl) return;
+    try {
+      const org = organization as any;
+      if (org.orcamento_logo_url) {
+        const oldPath = org.orcamento_logo_url.split("/org-logos/")[1]?.split("?")[0];
+        if (oldPath) {
+          await supabase.storage.from("org-logos").remove([oldPath]);
+        }
+      }
+      const { error } = await supabase
+        .from("organizations")
+        .update({ orcamento_logo_url: null } as any)
+        .eq("id", organization.id);
+      if (error) throw error;
+      setLogoUrl(null);
+      await queryClient.invalidateQueries({ queryKey: ["current-organization"] });
+      toast.success("Logo removido!");
+    } catch (error: any) {
+      toast.error("Erro ao remover logo", { description: error.message });
     }
   };
 
@@ -267,6 +313,33 @@ export function OrganizationSettings() {
     }
   };
 
+  const handleChangeSenha = async () => {
+    if (novaSenha.length < 6) {
+      toast.error("A senha deve ter pelo menos 6 caracteres");
+      return;
+    }
+    if (novaSenha !== confirmarSenha) {
+      toast.error("As senhas não coincidem");
+      return;
+    }
+    setIsSavingSenha(true);
+    try {
+      const db = supabase as any;
+      const { error } = await db.rpc("change_own_password", {
+        p_new_password: novaSenha,
+      });
+      if (error) throw error;
+      toast.success("Senha alterada com sucesso!");
+      setShowSenhaModal(false);
+      setNovaSenha("");
+      setConfirmarSenha("");
+    } catch (error: any) {
+      toast.error("Erro ao alterar senha", { description: error.message });
+    } finally {
+      setIsSavingSenha(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -313,7 +386,14 @@ export function OrganizationSettings() {
               <Input value={currentProfile?.email || ""} disabled className="bg-muted" />
             </div>
           </div>
-          <div className="flex justify-end">
+          <div className="flex justify-between items-center">
+            <Button
+              variant="outline"
+              onClick={() => { setNovaSenha(""); setConfirmarSenha(""); setShowSenhaModal(true); }}
+              className="gap-2"
+            >
+              <KeyRound className="h-4 w-4" /> Alterar Senha
+            </Button>
             <Button onClick={handleSaveProfile} disabled={isSavingProfile} className="gap-2">
               {isSavingProfile ? (
                 <><Loader2 className="h-4 w-4 animate-spin" /> Salvando...</>
@@ -539,6 +619,79 @@ export function OrganizationSettings() {
         </Card>
       )}
 
+      {/* Modal Alterar Senha */}
+      <Dialog open={showSenhaModal} onOpenChange={setShowSenhaModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="h-5 w-5" /> Alterar Senha
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Nova Senha</Label>
+              <div className="relative">
+                <Input
+                  type={showNovaSenha ? "text" : "password"}
+                  placeholder="Mínimo 6 caracteres"
+                  value={novaSenha}
+                  onChange={(e) => setNovaSenha(e.target.value)}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNovaSenha((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  tabIndex={-1}
+                >
+                  {showNovaSenha ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Confirmar Nova Senha</Label>
+              <div className="relative">
+                <Input
+                  type={showConfirmarSenha ? "text" : "password"}
+                  placeholder="Repita a senha"
+                  value={confirmarSenha}
+                  onChange={(e) => setConfirmarSenha(e.target.value)}
+                  className="pr-10"
+                  onKeyDown={(e) => e.key === "Enter" && handleChangeSenha()}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmarSenha((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  tabIndex={-1}
+                >
+                  {showConfirmarSenha ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {confirmarSenha && novaSenha !== confirmarSenha && (
+                <p className="text-xs text-destructive">As senhas não coincidem</p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSenhaModal(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleChangeSenha}
+              disabled={isSavingSenha || !novaSenha || novaSenha !== confirmarSenha}
+              className="gap-2"
+            >
+              {isSavingSenha ? (
+                <><Loader2 className="h-4 w-4 animate-spin" /> Salvando...</>
+              ) : (
+                <><Save className="h-4 w-4" /> Salvar Senha</>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Papel Timbrado / Orçamentos */}
       <Card className="bg-gradient-to-br from-slate-50 to-zinc-100 dark:from-zinc-900 dark:to-slate-900 border-slate-200 dark:border-zinc-800">
         <CardHeader>
@@ -570,19 +723,31 @@ export function OrganizationSettings() {
                   onChange={handleUploadLogo}
                   className="hidden"
                 />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => logoInputRef.current?.click()}
-                  disabled={isUploadingLogo}
-                  className="gap-2"
-                >
-                  {isUploadingLogo ? (
-                    <><Loader2 className="h-4 w-4 animate-spin" /> Enviando...</>
-                  ) : (
-                    <><Upload className="h-4 w-4" /> Enviar Logo</>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => logoInputRef.current?.click()}
+                    disabled={isUploadingLogo}
+                    className="gap-2"
+                  >
+                    {isUploadingLogo ? (
+                      <><Loader2 className="h-4 w-4 animate-spin" /> Enviando...</>
+                    ) : (
+                      <><Upload className="h-4 w-4" /> Enviar Logo</>
+                    )}
+                  </Button>
+                  {logoUrl && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleRemoveLogo}
+                      className="gap-2 text-destructive hover:text-destructive"
+                    >
+                      <X className="h-4 w-4" /> Remover
+                    </Button>
                   )}
-                </Button>
+                </div>
                 <p className="text-xs text-muted-foreground mt-1">PNG, JPG ou SVG. Recomendado 200x200px.</p>
               </div>
             </div>

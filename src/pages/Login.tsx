@@ -42,7 +42,7 @@ export default function Login() {
           <img
             src="/estellaris_logo.png"
             alt="Estellaris"
-            style={{ height: "56px", width: "auto" }}
+            style={{ height: "56px", width: "auto", marginLeft: "1rem", marginTop: "1rem" }}
             className="mb-4"
           />
           <p className="text-white/70 text-center text-sm mt-1">
@@ -53,7 +53,7 @@ export default function Login() {
         <Card className="border-0 shadow-2xl bg-white">
           <form onSubmit={handleLogin}>
             <CardHeader className="text-center pb-4">
-              <CardTitle className="text-xl">Acesso ao Sistema</CardTitle>
+              <CardTitle className="text-xl" style={{ color: "hsl(215, 80%, 45%)" }}>Acesso ao Sistema</CardTitle>
               <CardDescription>
                 Entre com suas credenciais
               </CardDescription>
@@ -101,8 +101,8 @@ export default function Login() {
           </form>
         </Card>
         
-        <p className="text-center text-xs text-white/70 mt-6">
-          Sistema de Gestão de Leads e Vendas
+        <p className="text-center text-xs text-white/40 mt-6">
+          Todos os dados protegidos
         </p>
       </div>
     </div>

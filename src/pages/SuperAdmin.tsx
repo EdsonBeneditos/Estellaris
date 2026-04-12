@@ -50,6 +50,9 @@ import {
   useCreateOrganization,
   useInviteUser,
   useCreateUser,
+  useOrgUsers,
+  useAdminUpdatePassword,
+  useAdminUpdateRole,
 } from "@/hooks/useSuperAdmin";
 import { useSimulation } from "@/contexts/SimulationContext";
 import { useNavigate } from "react-router-dom";
@@ -116,6 +119,22 @@ export default function SuperAdmin() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
 
+  // Org users panel
+  const [usersOrgId, setUsersOrgId] = useState<string | null>(null);
+  const [usersOrgNome, setUsersOrgNome] = useState("");
+  const { data: orgUsers = [], isLoading: loadingOrgUsers } = useOrgUsers(usersOrgId);
+
+  // Reset password modal
+  const [resetUserId, setResetUserId] = useState<string | null>(null);
+  const [resetUserNome, setResetUserNome] = useState("");
+  const [resetNovaSenha, setResetNovaSenha] = useState("");
+  const [showResetSenha, setShowResetSenha] = useState(false);
+  const adminUpdatePassword = useAdminUpdatePassword();
+  const adminUpdateRole = useAdminUpdateRole();
+
+  // Invite senha visibility
+  const [showInviteSenha, setShowInviteSenha] = useState(false);
+
   // Apply plan template when selected
   useEffect(() => {
     if (selectedPlanTemplate !== "custom") {
@@ -130,14 +149,31 @@ export default function SuperAdmin() {
     }
   }, [editPlanTemplate]);
 
-  const generatePassword = () => {
+  const generateRandomPassword = () => {
     const chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789";
     let pwd = "";
     for (let i = 0; i < 8; i++) {
       pwd += chars.charAt(Math.floor(Math.random() * chars.length));
     }
+    return pwd;
+  };
+
+  const generatePassword = () => {
+    const pwd = generateRandomPassword();
     setResponsavelSenha(pwd);
     setShowResponsavelSenha(true);
+  };
+
+  const handleResetPassword = async () => {
+    if (!resetNovaSenha.trim() || resetNovaSenha.length < 6) {
+      toast.error("A senha deve ter no mínimo 6 caracteres");
+      return;
+    }
+    if (!resetUserId) return;
+    await adminUpdatePassword.mutateAsync({ userId: resetUserId, newPassword: resetNovaSenha });
+    setResetUserId(null);
+    setResetNovaSenha("");
+    setShowResetSenha(false);
   };
 
   const handleCreateOrg = async () => {
@@ -768,7 +804,7 @@ export default function SuperAdmin() {
                       {(org.modules_enabled || DEFAULT_MODULES).length} módulos
                     </Badge>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
                     <Button
                       variant="outline"
                       size="sm"
@@ -781,11 +817,20 @@ export default function SuperAdmin() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="flex-1 gap-2 border-amber-500/50 text-amber-600 hover:bg-amber-500/10 hover:text-amber-700"
+                      className="flex-1 gap-2"
+                      onClick={() => { setUsersOrgId(org.id); setUsersOrgNome(org.nome); }}
+                    >
+                      <UserPlus className="h-4 w-4" />
+                      Usuários
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full gap-2 border-amber-500/50 text-amber-600 hover:bg-amber-500/10 hover:text-amber-700"
                       onClick={() => handleSimulateAccess(org)}
                     >
                       <Eye className="h-4 w-4" />
-                      Simular
+                      Simular Acesso
                     </Button>
                   </div>
                 </CardContent>
@@ -919,14 +964,36 @@ export default function SuperAdmin() {
                   <KeyRound className="h-4 w-4" />
                   Senha temporária *
                 </Label>
-                <Input
-                  id="invSenha"
-                  type="text"
-                  placeholder="Mínimo 6 caracteres"
-                  value={inviteSenha}
-                  onChange={(e) => setInviteSenha(e.target.value)}
-                  className="font-mono"
-                />
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Input
+                      id="invSenha"
+                      type={showInviteSenha ? "text" : "password"}
+                      placeholder="Mínimo 6 caracteres"
+                      value={inviteSenha}
+                      onChange={(e) => setInviteSenha(e.target.value)}
+                      className="font-mono pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowInviteSenha((v) => !v)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      tabIndex={-1}
+                    >
+                      {showInviteSenha ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => { const p = generateRandomPassword(); setInviteSenha(p); setShowInviteSenha(true); }}
+                    className="gap-1.5 shrink-0"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" />
+                    Gerar
+                  </Button>
+                </div>
                 <p className="text-xs text-muted-foreground">
                   Crie uma senha inicial. O usuário poderá alterá-la após o primeiro acesso.
                 </p>
@@ -1106,6 +1173,144 @@ export default function SuperAdmin() {
                 {isSavingModules ? "Salvando..." : "Salvar Alterações"}
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Painel de Usuários da Organização ── */}
+      <Dialog open={!!usersOrgId} onOpenChange={(open) => !open && setUsersOrgId(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="h-5 w-5" />
+              Usuários — {usersOrgNome}
+            </DialogTitle>
+            <DialogDescription>
+              Gerencie os usuários desta organização. Você pode redefinir senhas e alterar cargos.
+            </DialogDescription>
+          </DialogHeader>
+
+          {loadingOrgUsers ? (
+            <div className="flex items-center justify-center py-10 text-muted-foreground text-sm">
+              Carregando usuários...
+            </div>
+          ) : orgUsers.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-10 text-muted-foreground gap-2">
+              <User className="h-10 w-10 opacity-40" />
+              <p className="text-sm">Nenhum usuário cadastrado nesta organização</p>
+            </div>
+          ) : (
+            <div className="space-y-2 py-2">
+              {orgUsers.map((u: any) => (
+                <div
+                  key={u.id}
+                  className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border/50 bg-muted/20"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-sm truncate">{u.nome}</p>
+                    <p className="text-xs text-muted-foreground truncate">{u.email}</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Select
+                      value={u.role}
+                      onValueChange={(role) =>
+                        adminUpdateRole.mutateAsync({
+                          userId: u.id,
+                          role: role as "admin" | "gerente" | "vendedor",
+                          organizationId: usersOrgId!,
+                        })
+                      }
+                    >
+                      <SelectTrigger className="h-7 w-[110px] text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="vendedor">Vendedor</SelectItem>
+                        <SelectItem value="gerente">Gerente</SelectItem>
+                        <SelectItem value="admin">Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5 h-7 text-xs"
+                      onClick={() => {
+                        setResetUserId(u.id);
+                        setResetUserNome(u.nome);
+                        setResetNovaSenha("");
+                        setShowResetSenha(false);
+                      }}
+                    >
+                      <KeyRound className="h-3 w-3" />
+                      Nova Senha
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Modal de Reset de Senha ── */}
+      <Dialog
+        open={!!resetUserId}
+        onOpenChange={(open) => { if (!open) { setResetUserId(null); setResetNovaSenha(""); setShowResetSenha(false); } }}
+      >
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="h-5 w-5" />
+              Redefinir Senha
+            </DialogTitle>
+            <DialogDescription>
+              Definindo nova senha para <strong>{resetUserNome}</strong>. A senha atual não pode ser visualizada.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="resetSenha">Nova Senha</Label>
+              <div className="relative">
+                <Input
+                  id="resetSenha"
+                  type={showResetSenha ? "text" : "password"}
+                  placeholder="Mínimo 6 caracteres"
+                  value={resetNovaSenha}
+                  onChange={(e) => setResetNovaSenha(e.target.value)}
+                  className="font-mono pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowResetSenha((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  tabIndex={-1}
+                >
+                  {showResetSenha ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full gap-1.5"
+              onClick={() => { const p = generateRandomPassword(); setResetNovaSenha(p); setShowResetSenha(true); }}
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+              Gerar Senha Aleatória
+            </Button>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2 border-t">
+            <Button variant="outline" onClick={() => setResetUserId(null)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleResetPassword}
+              disabled={adminUpdatePassword.isPending || resetNovaSenha.length < 6}
+            >
+              {adminUpdatePassword.isPending ? "Salvando..." : "Salvar Nova Senha"}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

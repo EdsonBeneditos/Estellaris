@@ -133,6 +133,12 @@ export function ProdutoModal({ open, onOpenChange, produto, defaultGrupoId }: Pr
   const [skuError, setSkuError] = useState<string | null>(null);
   const [precoCustoDisplay, setPrecoCustoDisplay] = useState("R$ 0,00");
   const [precoVendaDisplay, setPrecoVendaDisplay] = useState("R$ 0,00");
+  const [margemDisplay, setMargemDisplay] = useState("0,00");
+
+  const calcMargem = (custo: number, venda: number) => {
+    if (custo <= 0) return 0;
+    return ((venda - custo) / custo) * 100;
+  };
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -178,6 +184,8 @@ export function ProdutoModal({ open, onOpenChange, produto, defaultGrupoId }: Pr
       });
       setPrecoCustoDisplay(formatCurrency(produto.preco_custo));
       setPrecoVendaDisplay(formatCurrency(produto.preco_venda));
+      const m = calcMargem(produto.preco_custo, produto.preco_venda);
+      setMargemDisplay(m.toFixed(2).replace(".", ","));
     } else {
       form.reset({
         nome: "",
@@ -198,6 +206,7 @@ export function ProdutoModal({ open, onOpenChange, produto, defaultGrupoId }: Pr
       });
       setPrecoCustoDisplay("R$ 0,00");
       setPrecoVendaDisplay("R$ 0,00");
+      setMargemDisplay("0,00");
     }
     setSkuError(null);
   }, [produto, form, open, defaultGrupoId, grupos, allProdutos]);
@@ -406,7 +415,7 @@ export function ProdutoModal({ open, onOpenChange, produto, defaultGrupoId }: Pr
               )}
             />
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-3">
               <FormField
                 control={form.control}
                 name="preco_custo"
@@ -418,9 +427,14 @@ export function ProdutoModal({ open, onOpenChange, produto, defaultGrupoId }: Pr
                         placeholder="R$ 0,00"
                         value={precoCustoDisplay}
                         onChange={(e) => {
-                          const val = parseCurrencyInput(e.target.value);
-                          field.onChange(val);
-                          setPrecoCustoDisplay(formatCurrency(val));
+                          const custo = parseCurrencyInput(e.target.value);
+                          field.onChange(custo);
+                          setPrecoCustoDisplay(formatCurrency(custo));
+                          // Keep margem, recalculate venda
+                          const margem = parseFloat(margemDisplay.replace(",", ".")) || 0;
+                          const novaVenda = custo * (1 + margem / 100);
+                          form.setValue("preco_venda", novaVenda);
+                          setPrecoVendaDisplay(formatCurrency(novaVenda));
                         }}
                       />
                     </FormControl>
@@ -428,6 +442,27 @@ export function ProdutoModal({ open, onOpenChange, produto, defaultGrupoId }: Pr
                   </FormItem>
                 )}
               />
+
+              <FormItem>
+                <FormLabel>Margem (%)</FormLabel>
+                <Input
+                  placeholder="0,00"
+                  value={margemDisplay}
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/[^0-9,.-]/g, "");
+                    setMargemDisplay(raw);
+                    const margem = parseFloat(raw.replace(",", ".")) || 0;
+                    const custo = form.getValues("preco_custo") || 0;
+                    const novaVenda = custo * (1 + margem / 100);
+                    form.setValue("preco_venda", novaVenda);
+                    setPrecoVendaDisplay(formatCurrency(novaVenda));
+                  }}
+                  onBlur={(e) => {
+                    const margem = parseFloat(e.target.value.replace(",", ".")) || 0;
+                    setMargemDisplay(margem.toFixed(2).replace(".", ","));
+                  }}
+                />
+              </FormItem>
 
               <FormField
                 control={form.control}
@@ -440,9 +475,13 @@ export function ProdutoModal({ open, onOpenChange, produto, defaultGrupoId }: Pr
                         placeholder="R$ 0,00"
                         value={precoVendaDisplay}
                         onChange={(e) => {
-                          const val = parseCurrencyInput(e.target.value);
-                          field.onChange(val);
-                          setPrecoVendaDisplay(formatCurrency(val));
+                          const venda = parseCurrencyInput(e.target.value);
+                          field.onChange(venda);
+                          setPrecoVendaDisplay(formatCurrency(venda));
+                          // Recalculate margem from venda
+                          const custo = form.getValues("preco_custo") || 0;
+                          const m = calcMargem(custo, venda);
+                          setMargemDisplay(m.toFixed(2).replace(".", ","));
                         }}
                       />
                     </FormControl>

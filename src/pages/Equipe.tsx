@@ -13,6 +13,8 @@ import {
   KeyRound,
   Copy,
   Check,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -91,6 +93,7 @@ export default function Equipe() {
   const [memberEmail, setMemberEmail] = useState("");
   const [memberNome, setMemberNome] = useState("");
   const [memberSenha, setMemberSenha] = useState("");
+  const [showMemberSenha, setShowMemberSenha] = useState(false);
   const [memberRole, setMemberRole] = useState<"gerente" | "vendedor">("vendedor");
 
   // Credentials shown after successful creation
@@ -280,14 +283,24 @@ export default function Equipe() {
                     <KeyRound className="h-4 w-4" />
                     Senha temporária *
                   </Label>
-                  <Input
-                    id="memberSenha"
-                    type="text"
-                    placeholder="Mínimo 6 caracteres"
-                    value={memberSenha}
-                    onChange={(e) => setMemberSenha(e.target.value)}
-                    className="font-mono"
-                  />
+                  <div className="relative">
+                    <Input
+                      id="memberSenha"
+                      type={showMemberSenha ? "text" : "password"}
+                      placeholder="Mínimo 6 caracteres"
+                      value={memberSenha}
+                      onChange={(e) => setMemberSenha(e.target.value)}
+                      className="font-mono pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowMemberSenha((v) => !v)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      tabIndex={-1}
+                    >
+                      {showMemberSenha ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="memberRole">Cargo</Label>

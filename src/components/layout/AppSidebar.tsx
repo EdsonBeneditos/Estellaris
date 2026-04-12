@@ -145,12 +145,8 @@ export function AppSidebar() {
   }
 
   const handleLogout = async () => {
-    const { error } = await signOut();
-    if (error) {
-      toast.error("Erro ao sair", { description: error.message });
-    } else {
-      toast.success("Você saiu do sistema");
-    }
+    await signOut();
+    // signOut() already clears RQ cache and redirects via window.location.href
   };
 
   return (

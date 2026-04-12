@@ -2,7 +2,6 @@ import { forwardRef } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Orcamento, OrcamentoItem } from "@/hooks/useOrcamentos";
-import logo from "@/assets/logo.png";
 
 interface OrcamentoPreviewProps {
   orcamento: Orcamento;
@@ -47,7 +46,7 @@ export const OrcamentoPreview = forwardRef<HTMLDivElement, OrcamentoPreviewProps
         {/* Header */}
         <div className="mb-8 flex items-start justify-between border-b border-slate-200 pb-6">
           <div className="flex items-center gap-4">
-            <img src={orgData?.logo_url || logo} alt="Logo" className="h-16 w-auto object-contain" />
+            <img src={orgData?.logo_url || "/estellaris_logo.png"} alt="Logo" className="h-16 w-auto object-contain" />
             <div>
               <h1 className="text-xl font-bold text-slate-900">{orgData?.nome || "Estellaris"}</h1>
               {orgData?.cnpj && <p className="text-sm text-slate-600">CNPJ: {orgData.cnpj}</p>}
